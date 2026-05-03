@@ -156,6 +156,23 @@ function Nav({ tweaks, onRequest }) {
 
         {/* CTA */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginLeft: 24 }}>
+          {/* ── BOTÃO PT — adicionar aqui ── */}
+  <button onClick={() => window.location.href = '/'} style={{
+    display: 'flex', alignItems: 'center', gap: 6,
+    background: 'transparent',
+    border: '1px solid rgba(0,0,0,0.15)',
+    borderRadius: 20, padding: '5px 12px',
+    color: 'var(--text-mid)', fontSize: 12, fontWeight: 600,
+    cursor: 'pointer', fontFamily: 'var(--ff-body)',
+    transition: 'all 0.2s', letterSpacing: '0.04em',
+  }}
+  onMouseEnter={e => e.currentTarget.style.borderColor = tweaks.accentColor}
+  onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(0,0,0,0.15)'}
+  >
+    🌐 PT
+  </button>
+  {/* ── fim do botão PT ── */}
+
           <a href="tel:+1-800-ALTUSMED" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-mid)', fontWeight: 500 }}>
             <IconPhone /> 24/7 Dispatch
           </a>

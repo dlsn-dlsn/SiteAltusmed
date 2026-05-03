@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AltusMed — Área Restrita</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy:  #1B3A6B;
+  --navyD: #0F2245;
+  --mid:   #162038;
+  --lime:  #78BE20;
+  --limeD: #5a9018;
+  --black: #090E1A;
+  --bg:    #0C1526;
+  --text:  rgba(255,255,255,0.88);
+  --muted: rgba(255,255,255,0.45);
+  --border: rgba(255,255,255,0.08);
+  --card:  rgba(255,255,255,0.04);
+  --ff:    'Space Grotesk', sans-serif;
+  --ffd:   'DM Sans', sans-serif;
+}
+html, body, #root { height: 100%; }
+body { background: var(--bg); color: var(--text); font-family: var(--ff); -webkit-font-smoothing: antialiased; }
+input, select, textarea, button { font-family: var(--ff); }
+::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; color: black; }
+  .print-report { display: block !important; }
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+const { useState, useEffect, useRef } = React;
+
+// ── Brand ────────────────────────────────────────────────────────────
+const B = { navy:'#1B3A6B', navyD:'#0F2245', lime:'#78BE20', black:'#090E1A', bg:'#0C1526' };
+
+const ROLES = {
+  DIR: { label:'Diretor Aeromédico', labelEn:'Aeromedical Director', color:'#D4A820', dash:'director' },
+  MED: { label:'Médico Aeromédico',  labelEn:'Aeromedical Physician', color:'#78BE20', dash:'medico' },
+  ENF: { label:'Enfermeiro Aeromédico', labelEn:'Aeromedical Nurse', color:'#29B6C8', dash:'enfermeiro' },
+  REG: { label:'Regulador de Missão', labelEn:'Mission Regulator', color:'#E07820', dash:'regulador' },
+};
+
+// Demo users
+const USERS = [
+  { id:'AM-0001', pin:'000001', name:'Dr. Davi Lucas S. Nunes', role:'DIR', crm:'CRM-PA XXXXX' },
+  { id:'AM-0012', pin:'000012', name:'Dr. João Silva',           role:'MED', crm:'CRM-PA YYYYY' },
+  { id:'AM-0023', pin:'000023', name:'Enf. Maria Santos',        role:'ENF', crm:'COREN-PA ZZZZZ' },
+  { id:'AM-0034', pin:'000034', name:'Carlos Regulação',         role:'REG', crm:'' },
+];
+
+// ── ECG ──────────────────────────────────────────────────────────────
+function ECG({ color='#78BE20', w=100, h=24 }) {
+  return (
+    <svg width={w} height={h} viewBox="0 0 100 24" fill="none">
+      <polyline points="0,12 18,12 24,4 30,20 36,2 42,22 48,12 72,12 82,12 100,12"
+        stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+// ── Logo ─────────────────────────────────────────────────────────────
+function Logo({ size=18 }) {
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:7 }}>
+      <svg width={size} height={size} viewBox="0 0 40 40" fill="none">
+        <path d="M4 22l9-13 3.5 5L27 7l-4 14 7 3-2 5-9-2-3.5 7-5-2 2-7L4 22z" fill="#78BE20"/>
+      </svg>
+      <span style={{ fontWeight:700, fontSize:size*0.9, color:'white', letterSpacing:'-0.02em' }}>
+        ALTUS<span style={{ color:'#78BE20' }}>MED</span>
+      </span>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// LOGIN SCREEN
+// ══════════════════════════════════════════════════════════════════════
+function LoginScreen({ onLogin }) {
+  const [id, setId] = useState('');
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const pinRef = useRef();
+
+  const handleLogin = () => {
+    setError('');
+    const user = USERS.find(u => u.id === id.toUpperCase() && u.pin === pin);
+    if (!user) { setError('ID ou PIN inválido. / Invalid ID or PIN.'); return; }
+    setLoading(true);
+    setTimeout(() => onLogin(user), 800);
+  };
+
+  const inp = (extra={}) => ({
+    style: {
+      width:'100%', background:'rgba(255,255,255,0.06)',
+      border:`1px solid ${error?'rgba(220,80,60,0.4)':'rgba(255,255,255,0.12)'}`,
+      borderRadius:8, padding:'12px 16px', fontSize:15, color:'white', outline:'none',
+      transition:'border-color 0.2s', fontFamily:'var(--ff)', letterSpacing:'0.04em',
+      ...extra,
+    },
+    onFocus: e => { e.target.style.borderColor='rgba(120,190,32,0.5)'; e.target.style.background='rgba(255,255,255,0.08)'; },
+    onBlur:  e => { e.target.style.borderColor=error?'rgba(220,80,60,0.4)':'rgba(255,255,255,0.12)'; e.target.style.background='rgba(255,255,255,0.06)'; },
+  });
+
+  return (
+    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:`linear-gradient(160deg, ${B.navyD} 0%, ${B.bg} 100%)`, padding:20, position:'relative', overflow:'hidden' }}>
+      {/* Background grid */}
+      <div style={{ position:'absolute', inset:0, opacity:0.03 }}>
+        <svg width="100%" height="100%"><defs><pattern id="g" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0L0 0 0 40" fill="none" stroke="white" strokeWidth="0.8"/></pattern></defs><rect width="100%" height="100%" fill="url(#g)"/></svg>
+      </div>
+      {/* Glow */}
+      <div style={{ position:'absolute', top:'30%', left:'50%', transform:'translateX(-50%)', width:400, height:400, borderRadius:'50%', background:'#78BE20', opacity:0.04, filter:'blur(80px)', pointerEvents:'none' }}/>
+
+      <div style={{ width:'100%', maxWidth:420, position:'relative' }}>
+        {/* Header */}
+        <div style={{ textAlign:'center', marginBottom:36 }}>
+          <Logo size={24}/>
+          <div style={{ marginTop:16, marginBottom:6 }}>
+            <h1 style={{ fontSize:22, fontWeight:700, color:'white', letterSpacing:'-0.02em' }}>Área Restrita</h1>
+            <p style={{ fontSize:13, color:'rgba(255,255,255,0.4)', marginTop:4, fontFamily:'var(--ffd)' }}>Acesso exclusivo para equipes AltusMed</p>
+          </div>
+          <div style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(120,190,32,0.1)', border:'1px solid rgba(120,190,32,0.2)', borderRadius:20, padding:'4px 12px', marginTop:8 }}>
+            <div style={{ width:6, height:6, borderRadius:'50%', background:'#78BE20', boxShadow:'0 0 6px #78BE20' }}/>
+            <span style={{ fontSize:11, color:'rgba(255,255,255,0.6)', letterSpacing:'0.04em' }}>Sistema operacional</span>
+          </div>
+        </div>
+
+        {/* Card */}
+        <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:16, padding:'32px 28px', backdropFilter:'blur(12px)' }}>
+          <div style={{ marginBottom:18 }}>
+            <label style={{ fontSize:11, fontWeight:600, color:'rgba(255,255,255,0.4)', display:'block', marginBottom:7, textTransform:'uppercase', letterSpacing:'0.08em' }}>ID de Colaborador</label>
+            <input {...inp()} value={id} onChange={e=>setId(e.target.value)} placeholder="AM-0001"
+              onKeyDown={e=>{ if(e.key==='Enter') pinRef.current?.focus(); }}/>
+          </div>
+          <div style={{ marginBottom:24 }}>
+            <label style={{ fontSize:11, fontWeight:600, color:'rgba(255,255,255,0.4)', display:'block', marginBottom:7, textTransform:'uppercase', letterSpacing:'0.08em' }}>PIN</label>
+            <input {...inp()} type="password" ref={pinRef} value={pin} onChange={e=>setPin(e.target.value)} placeholder="••••••" maxLength={6}
+              onKeyDown={e=>{ if(e.key==='Enter') handleLogin(); }}/>
+          </div>
+          {error && <div style={{ fontSize:12, color:'rgba(220,100,80,0.9)', marginBottom:16, textAlign:'center', fontFamily:'var(--ffd)', background:'rgba(220,80,60,0.08)', borderRadius:6, padding:'8px' }}>{error}</div>}
+          <button onClick={handleLogin} disabled={loading} style={{
+            width:'100%', background:loading?'rgba(120,190,32,0.5)':'#78BE20', color:'#090E1A',
+            border:'none', borderRadius:8, padding:'13px', fontSize:15, fontWeight:700,
+            cursor:loading?'default':'pointer', transition:'opacity 0.2s', display:'flex', alignItems:'center', justifyContent:'center', gap:8,
+          }}>
+            {loading ? <><ECG color="#090E1A" w={60} h={18}/> Entrando...</> : 'Entrar →'}
+          </button>
+          <div style={{ marginTop:16, display:'flex', justifyContent:'space-between' }}>
+            <a href="AltusMed Website.html" style={{ fontSize:12, color:'rgba(255,255,255,0.3)', fontFamily:'var(--ffd)' }}>← Voltar ao site</a>
+            <span style={{ fontSize:12, color:'rgba(255,255,255,0.3)', fontFamily:'var(--ffd)', cursor:'pointer' }}>Esqueci o acesso</span>
+          </div>
+        </div>
+
+        {/* Demo hint */}
+        <div style={{ marginTop:16, background:'rgba(120,190,32,0.07)', border:'1px solid rgba(120,190,32,0.15)', borderRadius:10, padding:'10px 14px' }}>
+          <div style={{ fontSize:10, color:'rgba(120,190,32,0.7)', fontWeight:700, letterSpacing:'0.08em', marginBottom:4 }}>DEMO — IDs DE TESTE</div>
+          {USERS.map(u=>(
+            <div key={u.id} style={{ fontSize:11, color:'rgba(255,255,255,0.4)', fontFamily:'monospace', marginBottom:2 }}>
+              {u.id} / {u.pin} → {ROLES[u.role].label}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// MISSION REPORT FORM
+// ══════════════════════════════════════════════════════════════════════
+const VITALS_TEMPLATE = () => ({ time: new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}), hr:'', spo2:'', sbp:'', dbp:'', rr:'', temp:'', gcs:'' });
+
+function MissionReport({ user, mission, onClose, onSave }) {
+  const roleColor = ROLES[user.role].color;
+  const [tab, setTab] = useState('patient');
+  const [form, setForm] = useState({
+    // Patient
+    patName:'', patAge:'', patSex:'M', patWeight:'', patBlood:'',
+    patDiagnosis:'', patHistory:'',
+    // Mission
+    missionId: mission?.id || `AM-${Date.now().toString().slice(-6)}`,
+    origin:'', destination:'', departure:'', arrival:'',
+    aircraft:'', crew: user.name,
+    transportType:'UTI Aérea',
+    // Vitals series
+    vitals: [VITALS_TEMPLATE()],
+    // GCS
+    gcsE:'', gcsV:'', gcsM:'',
+    // Meds
+    medications:[{ time:'', drug:'', dose:'', route:'', note:'' }],
+    // Procedures
+    procedures:[{ time:'', proc:'', obs:'' }],
+    // Notes
+    clinicalNotes:'',
+    // Outcome
+    outcome:'Estável', handoverTo:'', handoverTime:'',
+    handoverNotes:'',
+  });
+
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+
+  const addVital = () => set('vitals',[...form.vitals, VITALS_TEMPLATE()]);
+  const setVital = (i,k,v) => set('vitals', form.vitals.map((x,idx)=>idx===i?{...x,[k]:v}:x));
+  const removeVital = i => set('vitals', form.vitals.filter((_,idx)=>idx!==i));
+
+  const addMed = () => set('medications',[...form.medications,{time:'',drug:'',dose:'',route:'',note:''}]);
+  const setMed = (i,k,v) => set('medications', form.medications.map((x,idx)=>idx===i?{...x,[k]:v}:x));
+
+  const addProc = () => set('procedures',[...form.procedures,{time:'',proc:'',obs:''}]);
+  const setProc = (i,k,v) => set('procedures', form.procedures.map((x,idx)=>idx===i?{...x,[k]:v}:x));
+
+  const inputStyle = {
+    background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)',
+    borderRadius:6, padding:'8px 12px', fontSize:13, color:'white', outline:'none',
+    fontFamily:'var(--ff)', width:'100%', transition:'border-color 0.15s',
+  };
+  const inp = { style:inputStyle, onFocus:e=>e.target.style.borderColor=roleColor+'80', onBlur:e=>e.target.style.borderColor='rgba(255,255,255,0.1)' };
+
+  const labelStyle = { fontSize:11, fontWeight:600, color:'rgba(255,255,255,0.4)', display:'block', marginBottom:5, letterSpacing:'0.06em', textTransform:'uppercase' };
+
+  const tabs = [
+    { id:'patient', label:'Paciente' },
+    { id:'vitals',  label:'Sinais Vitais' },
+    { id:'meds',    label:'Medicamentos' },
+    { id:'procs',   label:'Procedimentos' },
+    { id:'notes',   label:'Notas Clínicas' },
+    { id:'outcome', label:'Desfecho' },
+  ];
+
+  const handlePrint = () => window.print();
+
+  return (
+    <div style={{ position:'fixed', inset:0, zIndex:200, background:'rgba(0,0,0,0.7)', backdropFilter:'blur(6px)', display:'flex', alignItems:'center', justifyContent:'center', padding:16 }} className="no-print">
+      <div style={{ background:'#0F1E3A', border:'1px solid rgba(255,255,255,0.1)', borderRadius:18, width:'100%', maxWidth:820, maxHeight:'92vh', display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 32px 80px rgba(0,0,0,0.6)' }}>
+        {/* Header */}
+        <div style={{ padding:'18px 24px', borderBottom:'1px solid rgba(255,255,255,0.08)', display:'flex', alignItems:'center', justifyContent:'space-between', background:'rgba(0,0,0,0.2)', flexShrink:0 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+            <div style={{ width:40, height:40, borderRadius:10, background:roleColor, display:'flex', alignItems:'center', justifyContent:'center', color:B.black, fontWeight:800, fontSize:13, flexShrink:0 }}>{user.role}</div>
+            <div>
+              <div style={{ fontWeight:700, fontSize:15, color:'white' }}>Relatório de Missão</div>
+              <div style={{ fontSize:11, color:'rgba(255,255,255,0.4)', fontFamily:'var(--ffd)' }}>{form.missionId} · {new Date().toLocaleDateString('pt-BR')} · {user.name}</div>
+            </div>
+          </div>
+          <div style={{ display:'flex', gap:8 }}>
+            <button onClick={handlePrint} style={{ background:`${roleColor}20`, border:`1px solid ${roleColor}40`, borderRadius:7, padding:'7px 14px', fontSize:12, fontWeight:600, color:roleColor, cursor:'pointer' }}>Imprimir / PDF</button>
+            <button onClick={()=>{ onSave(form); onClose(); }} style={{ background:roleColor, border:'none', borderRadius:7, padding:'7px 16px', fontSize:12, fontWeight:700, color:B.black, cursor:'pointer' }}>Salvar</button>
+            <button onClick={onClose} style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:7, width:32, height:32, cursor:'pointer', color:'rgba(255,255,255,0.5)', fontSize:18 }}>×</button>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display:'flex', gap:2, padding:'10px 24px 0', borderBottom:'1px solid rgba(255,255,255,0.07)', flexShrink:0, overflowX:'auto' }}>
+          {tabs.map(t => (
+            <button key={t.id} onClick={()=>setTab(t.id)} style={{
+              background:'none', border:'none', borderBottom:`2px solid ${tab===t.id?roleColor:'transparent'}`,
+              color:tab===t.id?'white':'rgba(255,255,255,0.4)', padding:'6px 14px 10px',
+              fontSize:12, fontWeight:tab===t.id?700:400, cursor:'pointer', whiteSpace:'nowrap',
+              transition:'color 0.15s',
+            }}>{t.label}</button>
+          ))}
+        </div>
+
+        {/* Content */}
+        <div style={{ flex:1, overflowY:'auto', padding:24 }}>
+
+          {/* ── TAB: PATIENT ── */}
+          {tab==='patient' && (
+            <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12 }}>
+                {[['patName','Nome completo'],['patAge','Idade'],['patWeight','Peso (kg)']].map(([k,l])=>(
+                  <div key={k}><label style={labelStyle}>{l}</label><input {...inp} value={form[k]} onChange={e=>set(k,e.target.value)} placeholder={l}/></div>
+                ))}
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12 }}>
+                <div><label style={labelStyle}>Sexo</label>
+                  <select value={form.patSex} onChange={e=>set('patSex',e.target.value)} style={{...inputStyle}}>
+                    <option value="M">Masculino</option><option value="F">Feminino</option><option value="O">Outro</option>
+                  </select>
+                </div>
+                <div><label style={labelStyle}>Tipo Sanguíneo</label><input {...inp} value={form.patBlood} onChange={e=>set('patBlood',e.target.value)} placeholder="A+"/></div>
+                <div><label style={labelStyle}>Tipo de Transporte</label>
+                  <select value={form.transportType} onChange={e=>set('transportType',e.target.value)} style={{...inputStyle}}>
+                    {['UTI Aérea','Aeromédico Comercial','Transporte Terrestre','Regulação'].map(t=><option key={t}>{t}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div><label style={labelStyle}>Diagnóstico Principal</label><input {...inp} value={form.patDiagnosis} onChange={e=>set('patDiagnosis',e.target.value)} placeholder="CID / Diagnóstico"/></div>
+              <div><label style={labelStyle}>Histórico Clínico Relevante</label>
+                <textarea value={form.patHistory} onChange={e=>set('patHistory',e.target.value)} rows={3} placeholder="Comorbidades, medicamentos em uso, alergias..." style={{...inputStyle, resize:'vertical'}}
+                  onFocus={e=>e.target.style.borderColor=roleColor+'80'} onBlur={e=>e.target.style.borderColor='rgba(255,255,255,0.1)'}/>
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                <div><label style={labelStyle}>Origem</label><input {...inp} value={form.origin} onChange={e=>set('origin',e.target.value)} placeholder="Hospital / Cidade de origem"/></div>
+                <div><label style={labelStyle}>Destino</label><input {...inp} value={form.destination} onChange={e=>set('destination',e.target.value)} placeholder="Hospital / Cidade de destino"/></div>
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12 }}>
+                <div><label style={labelStyle}>Partida</label><input {...inp} type="datetime-local" value={form.departure} onChange={e=>set('departure',e.target.value)}/></div>
+                <div><label style={labelStyle}>Chegada Prevista</label><input {...inp} type="datetime-local" value={form.arrival} onChange={e=>set('arrival',e.target.value)}/></div>
+                <div><label style={labelStyle}>Aeronave / Veículo</label><input {...inp} value={form.aircraft} onChange={e=>set('aircraft',e.target.value)} placeholder="PT-XXX / Modelo"/></div>
+              </div>
+            </div>
+          )}
+
+          {/* ── TAB: VITALS ── */}
+          {tab==='vitals' && (
+            <div>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+                <div style={{ fontSize:13, color:'rgba(255,255,255,0.5)', fontFamily:'var(--ffd)' }}>Registre os sinais vitais ao longo do transporte</div>
+                <button onClick={addVital} style={{ background:`${roleColor}20`, border:`1px solid ${roleColor}40`, borderRadius:7, padding:'7px 14px', fontSize:12, fontWeight:600, color:roleColor, cursor:'pointer' }}>+ Adicionar Registro</button>
+              </div>
+              {/* Table header */}
+              <div style={{ display:'grid', gridTemplateColumns:'80px 70px 70px 90px 70px 80px 70px 1fr 32px', gap:6, marginBottom:8 }}>
+                {['Horário','FC (bpm)','SpO2 (%)','PA (mmHg)','FR /min','Temp °C','Glasgow','',''].map((h,i)=>(
+                  <div key={i} style={{ fontSize:9, fontWeight:700, color:'rgba(255,255,255,0.3)', letterSpacing:'0.06em', textTransform:'uppercase', padding:'0 4px' }}>{h}</div>
+                ))}
+              </div>
+              {form.vitals.map((v,i)=>(
+                <div key={i} style={{ display:'grid', gridTemplateColumns:'80px 70px 70px 90px 70px 80px 70px 1fr 32px', gap:6, marginBottom:8, padding:8, background:'rgba(255,255,255,0.03)', borderRadius:8, borderLeft:`2px solid ${roleColor}40` }}>
+                  <input {...inp} value={v.time} onChange={e=>setVital(i,'time',e.target.value)} placeholder="HH:MM" style={{...inputStyle, fontSize:12}}/>
+                  <input {...inp} value={v.hr}   onChange={e=>setVital(i,'hr',e.target.value)}   placeholder="72" style={{...inputStyle, fontSize:12}}/>
+                  <input {...inp} value={v.spo2} onChange={e=>setVital(i,'spo2',e.target.value)} placeholder="98" style={{...inputStyle, fontSize:12}}/>
+                  <input {...inp} value={v.sbp+'/'+v.dbp} onChange={e=>{const[s,d]=(e.target.value||'/').split('/');setVital(i,'sbp',s);setVital(i,'dbp',d||'');}} placeholder="120/80" style={{...inputStyle, fontSize:12}}/>
+                  <input {...inp} value={v.rr}   onChange={e=>setVital(i,'rr',e.target.value)}   placeholder="16" style={{...inputStyle, fontSize:12}}/>
+                  <input {...inp} value={v.temp} onChange={e=>setVital(i,'temp',e.target.value)} placeholder="36.5" style={{...inputStyle, fontSize:12}}/>
+                  <input {...inp} value={v.gcs}  onChange={e=>setVital(i,'gcs',e.target.value)}  placeholder="15" style={{...inputStyle, fontSize:12}}/>
+                  <div/>
+                  {form.vitals.length>1 && <button onClick={()=>removeVital(i)} style={{ background:'rgba(220,80,60,0.15)', border:'none', borderRadius:5, color:'rgba(220,100,80,0.7)', cursor:'pointer', fontSize:14 }}>×</button>}
+                </div>
+              ))}
+              {/* GCS detail */}
+              <div style={{ marginTop:20, padding:'16px', background:'rgba(255,255,255,0.03)', borderRadius:10, border:'1px solid rgba(255,255,255,0.07)' }}>
+                <div style={{ fontSize:11, fontWeight:700, color:roleColor, letterSpacing:'0.08em', marginBottom:12 }}>ESCALA DE GLASGOW DETALHADA</div>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12 }}>
+                  <div><label style={labelStyle}>Abertura Ocular (E) 1–4</label>
+                    <select value={form.gcsE} onChange={e=>set('gcsE',e.target.value)} style={{...inputStyle}}>
+                      <option value="">—</option>
+                      {[['4','4 — Espontânea'],['3','3 — Ao Som'],['2','2 — À Dor'],['1','1 — Ausente']].map(([v,l])=><option key={v} value={v}>{l}</option>)}
+                    </select>
+                  </div>
+                  <div><label style={labelStyle}>Resposta Verbal (V) 1–5</label>
+                    <select value={form.gcsV} onChange={e=>set('gcsV',e.target.value)} style={{...inputStyle}}>
+                      <option value="">—</option>
+                      {[['5','5 — Orientado'],['4','4 — Confuso'],['3','3 — Palavras'],['2','2 — Sons'],['1','1 — Ausente']].map(([v,l])=><option key={v} value={v}>{l}</option>)}
+                    </select>
+                  </div>
+                  <div><label style={labelStyle}>Resposta Motora (M) 1–6</label>
+                    <select value={form.gcsM} onChange={e=>set('gcsM',e.target.value)} style={{...inputStyle}}>
+                      <option value="">—</option>
+                      {[['6','6 — Obedece'],['5','5 — Localiza'],['4','4 — Retira'],['3','3 — Flexão'],['2','2 — Extensão'],['1','1 — Ausente']].map(([v,l])=><option key={v} value={v}>{l}</option>)}
+                    </select>
+                  </div>
+                </div>
+                {(form.gcsE && form.gcsV && form.gcsM) && (
+                  <div style={{ marginTop:10, fontSize:14, fontWeight:700, color:'white' }}>
+                    Total GCS: <span style={{ color:roleColor }}>{(+form.gcsE||0)+(+form.gcsV||0)+(+form.gcsM||0)}/15</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── TAB: MEDS ── */}
+          {tab==='meds' && (
+            <div>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+                <div style={{ fontSize:13, color:'rgba(255,255,255,0.5)', fontFamily:'var(--ffd)' }}>Medicamentos administrados durante o transporte</div>
+                <button onClick={addMed} style={{ background:`${roleColor}20`, border:`1px solid ${roleColor}40`, borderRadius:7, padding:'7px 14px', fontSize:12, fontWeight:600, color:roleColor, cursor:'pointer' }}>+ Adicionar</button>
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'80px 1fr 100px 100px 1fr', gap:6, marginBottom:8 }}>
+                {['Horário','Medicamento','Dose','Via','Observação'].map(h=>(
+                  <div key={h} style={{ fontSize:9, fontWeight:700, color:'rgba(255,255,255,0.3)', letterSpacing:'0.06em', textTransform:'uppercase', padding:'0 4px' }}>{h}</div>
+                ))}
+              </div>
+              {form.medications.map((m,i)=>(
+                <div key={i} style={{ display:'grid', gridTemplateColumns:'80px 1fr 100px 100px 1fr', gap:6, marginBottom:8, padding:8, background:'rgba(255,255,255,0.03)', borderRadius:8, borderLeft:`2px solid ${roleColor}40` }}>
+                  <input {...inp} value={m.time} onChange={e=>setMed(i,'time',e.target.value)} placeholder="HH:MM" style={{...inputStyle,fontSize:12}}/>
+                  <input {...inp} value={m.drug} onChange={e=>setMed(i,'drug',e.target.value)} placeholder="Fármaco" style={{...inputStyle,fontSize:12}}/>
+                  <input {...inp} value={m.dose} onChange={e=>setMed(i,'dose',e.target.value)} placeholder="mg/mL" style={{...inputStyle,fontSize:12}}/>
+                  <select value={m.route} onChange={e=>setMed(i,'route',e.target.value)} style={{...inputStyle,fontSize:12}}>
+                    <option value="">Via</option>
+                    {['IV','IM','SC','VO','SL','IN','Inalatória'].map(r=><option key={r}>{r}</option>)}
+                  </select>
+                  <input {...inp} value={m.note} onChange={e=>setMed(i,'note',e.target.value)} placeholder="Obs." style={{...inputStyle,fontSize:12}}/>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ── TAB: PROCEDURES ── */}
+          {tab==='procs' && (
+            <div>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+                <div style={{ fontSize:13, color:'rgba(255,255,255,0.5)', fontFamily:'var(--ffd)' }}>Procedimentos realizados durante o transporte</div>
+                <button onClick={addProc} style={{ background:`${roleColor}20`, border:`1px solid ${roleColor}40`, borderRadius:7, padding:'7px 14px', fontSize:12, fontWeight:600, color:roleColor, cursor:'pointer' }}>+ Adicionar</button>
+              </div>
+              {form.procedures.map((p,i)=>(
+                <div key={i} style={{ display:'grid', gridTemplateColumns:'80px 1fr 1fr', gap:12, marginBottom:10, padding:12, background:'rgba(255,255,255,0.03)', borderRadius:8, borderLeft:`2px solid ${roleColor}40` }}>
+                  <div><label style={labelStyle}>Horário</label><input {...inp} value={p.time} onChange={e=>setProc(i,'time',e.target.value)} placeholder="HH:MM" style={{...inputStyle,fontSize:12}}/></div>
+                  <div><label style={labelStyle}>Procedimento</label>
+                    <select value={p.proc} onChange={e=>setProc(i,'proc',e.target.value)} style={{...inputStyle,fontSize:12}}>
+                      <option value="">Selecionar...</option>
+                      {['IOT / Intubação','Acesso Venoso Central','Acesso Venoso Periférico','Sondagem Vesical','Sondagem Nasogástrica','Cardioversão','Desfibrilação','RCP','Cricotireoidotomia','Drenagem Torácica','Cateter Nasal O2','Máscara O2','VNI','Outro'].map(x=><option key={x}>{x}</option>)}
+                    </select>
+                  </div>
+                  <div><label style={labelStyle}>Observações</label><input {...inp} value={p.obs} onChange={e=>setProc(i,'obs',e.target.value)} placeholder="Notas do procedimento" style={{...inputStyle,fontSize:12}}/></div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ── TAB: NOTES ── */}
+          {tab==='notes' && (
+            <div>
+              <label style={labelStyle}>Narrativa Clínica / Clinical Notes</label>
+              <textarea value={form.clinicalNotes} onChange={e=>set('clinicalNotes',e.target.value)} rows={16}
+                placeholder="Descreva cronologicamente a evolução do paciente durante o transporte. Include estado ao embarque, intercorrências, respostas a intervenções e estado ao desembarque.
+
+Describe chronologically the patient's evolution during transport. Include boarding status, complications, responses to interventions and disembarkation status."
+                style={{...inputStyle, resize:'vertical', lineHeight:1.65, fontFamily:'var(--ffd)'}}
+                onFocus={e=>e.target.style.borderColor=roleColor+'80'} onBlur={e=>e.target.style.borderColor='rgba(255,255,255,0.1)'}/>
+            </div>
+          )}
+
+          {/* ── TAB: OUTCOME ── */}
+          {tab==='outcome' && (
+            <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                <div><label style={labelStyle}>Estado Final do Paciente</label>
+                  <select value={form.outcome} onChange={e=>set('outcome',e.target.value)} style={{...inputStyle}}>
+                    {['Estável','Crítico Estabilizado','Crítico','Piora durante transporte','PCR durante transporte','Óbito durante transporte'].map(o=><option key={o}>{o}</option>)}
+                  </select>
+                </div>
+                <div><label style={labelStyle}>Horário de Passagem</label><input {...inp} type="time" value={form.handoverTime} onChange={e=>set('handoverTime',e.target.value)}/></div>
+              </div>
+              <div><label style={labelStyle}>Passagem para (médico / equipe receptora)</label><input {...inp} value={form.handoverTo} onChange={e=>set('handoverTo',e.target.value)} placeholder="Nome / função do profissional receptor"/></div>
+              <div><label style={labelStyle}>Resumo da Passagem de Plantão</label>
+                <textarea value={form.handoverNotes} onChange={e=>set('handoverNotes',e.target.value)} rows={6}
+                  placeholder="SBAR: Situation / Background / Assessment / Recommendation..."
+                  style={{...inputStyle, resize:'vertical', fontFamily:'var(--ffd)'}}
+                  onFocus={e=>e.target.style.borderColor=roleColor+'80'} onBlur={e=>e.target.style.borderColor='rgba(255,255,255,0.1)'}/>
+              </div>
+              {/* Signature area */}
+              <div style={{ padding:16, background:'rgba(255,255,255,0.03)', borderRadius:10, border:'1px solid rgba(255,255,255,0.07)', marginTop:8 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:roleColor, letterSpacing:'0.08em', marginBottom:10 }}>ASSINATURA / SIGNATURE</div>
+                <div style={{ display:'flex', gap:24, flexWrap:'wrap' }}>
+                  {[['Responsável pela Missão', user.name, user.crm || ROLES[user.role].label]].map(([t,n,c])=>(
+                    <div key={t}>
+                      <div style={{ borderTop:'1px solid rgba(255,255,255,0.2)', paddingTop:6, marginTop:24, minWidth:200 }}>
+                        <div style={{ fontSize:12, fontWeight:600, color:'white' }}>{n}</div>
+                        <div style={{ fontSize:10, color:'rgba(255,255,255,0.4)', fontFamily:'var(--ffd)' }}>{c}</div>
+                        <div style={{ fontSize:10, color:'rgba(255,255,255,0.3)', fontFamily:'var(--ffd)' }}>{t}</div>
+                        <div style={{ fontSize:10, color:'rgba(255,255,255,0.3)', fontFamily:'var(--ffd)', marginTop:2 }}>{new Date().toLocaleDateString('pt-BR')}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════════════════════════════════
+function Dashboard({ user, onLogout }) {
+  const role = ROLES[user.role];
+  const [showReport, setShowReport] = useState(false);
+  const [reports, setReports] = useState([]);
+  const [activeMission, setActiveMission] = useState(null);
+
+  // Demo missions
+  const missions = [
+    { id:'AM-241801', patient:'J. Costa, 67a', origin:'Belém', destination:'São Paulo', type:'UTI Aérea', status:'Em andamento', crew: user.name, time:'14:32' },
+    { id:'AM-241800', patient:'M. Silva, 45a', origin:'Manaus', destination:'Brasília', type:'Aeromédico Comercial', status:'Concluída', crew:'Dr. João Silva', time:'09:15' },
+    { id:'AM-241799', patient:'A. Souza, 82a', origin:'Fortaleza', destination:'Recife', type:'Terrestre', status:'Concluída', crew:'Enf. Maria Santos', time:'06:48' },
+  ];
+
+  const statusColor = s => s==='Em andamento'?'#78BE20':s==='Concluída'?'rgba(255,255,255,0.3)':'#E07820';
+
+  return (
+    <div style={{ minHeight:'100vh', background:B.bg, display:'flex', flexDirection:'column' }}>
+      {/* Top nav */}
+      <nav style={{ background:'rgba(15,34,69,0.95)', backdropFilter:'blur(12px)', borderBottom:'1px solid rgba(255,255,255,0.07)', padding:'0 28px', height:60, display:'flex', alignItems:'center', gap:20, position:'sticky', top:0, zIndex:50 }} className="no-print">
+        <Logo size={18}/>
+        <div style={{ height:18, width:1, background:'rgba(255,255,255,0.1)' }}/>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <div style={{ width:8, height:8, borderRadius:'50%', background:role.color, boxShadow:`0 0 6px ${role.color}` }}/>
+          <span style={{ fontSize:12, color:'rgba(255,255,255,0.6)', fontFamily:'var(--ffd)' }}>{role.label}</span>
+        </div>
+        <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:12 }}>
+          <span style={{ fontSize:13, fontWeight:600, color:'white' }}>{user.name}</span>
+          <button onClick={()=>setShowReport(true)} style={{ background:role.color, color:B.black, border:'none', borderRadius:7, padding:'7px 16px', fontSize:12, fontWeight:700, cursor:'pointer' }}>+ Nova Missão</button>
+          <button onClick={onLogout} style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:7, padding:'7px 14px', fontSize:12, color:'rgba(255,255,255,0.5)', cursor:'pointer' }}>Sair</button>
+        </div>
+      </nav>
+
+      <div style={{ flex:1, padding:'28px 28px', maxWidth:1200, margin:'0 auto', width:'100%' }}>
+        {/* Welcome */}
+        <div style={{ marginBottom:28 }}>
+          <h1 style={{ fontSize:22, fontWeight:700, color:'white', letterSpacing:'-0.02em' }}>
+            Olá, {user.name.split(' ')[0]} <span style={{ color:role.color }}>·</span> {role.label}
+          </h1>
+          <p style={{ fontSize:13, color:'rgba(255,255,255,0.4)', marginTop:4, fontFamily:'var(--ffd)' }}>
+            {new Date().toLocaleDateString('pt-BR', { weekday:'long', year:'numeric', month:'long', day:'numeric' })} · Sistema AltusMed v2.0
+          </p>
+        </div>
+
+        {/* Stats row */}
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:16, marginBottom:28 }}>
+          {[
+            ['Missões Este Mês','18', role.color],
+            ['Em Andamento','1','#29B6C8'],
+            ['Relatórios Pendentes', reports.length.toString(), '#E07820'],
+            ['Km Este Mês','12.400','rgba(255,255,255,0.6)'],
+          ].map(([l,v,c])=>(
+            <div key={l} style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:12, padding:'18px 20px', borderTop:`2px solid ${c}` }}>
+              <div style={{ fontSize:26, fontWeight:700, color:'white', lineHeight:1 }}>{v}</div>
+              <div style={{ fontSize:12, color:'rgba(255,255,255,0.4)', marginTop:6, fontFamily:'var(--ffd)' }}>{l}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Missions table */}
+        <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:14, overflow:'hidden', marginBottom:28 }}>
+          <div style={{ padding:'16px 20px', borderBottom:'1px solid rgba(255,255,255,0.07)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <div style={{ fontSize:14, fontWeight:700, color:'white' }}>Missões Recentes</div>
+            <button onClick={()=>setShowReport(true)} style={{ background:`${role.color}15`, border:`1px solid ${role.color}30`, borderRadius:6, padding:'6px 12px', fontSize:11, fontWeight:600, color:role.color, cursor:'pointer' }}>+ Nova Missão</button>
+          </div>
+          <div style={{ padding:'0 20px' }}>
+            {/* Header */}
+            <div style={{ display:'grid', gridTemplateColumns:'100px 1fr 1fr 1fr 140px 100px 80px', gap:12, padding:'10px 0', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
+              {['Missão','Paciente','Origem','Destino','Tipo','Equipe','Status'].map(h=>(
+                <div key={h} style={{ fontSize:9, fontWeight:700, color:'rgba(255,255,255,0.3)', letterSpacing:'0.08em', textTransform:'uppercase' }}>{h}</div>
+              ))}
+            </div>
+            {missions.map(m=>(
+              <div key={m.id} onClick={()=>{ setActiveMission(m); setShowReport(true); }} style={{ display:'grid', gridTemplateColumns:'100px 1fr 1fr 1fr 140px 100px 80px', gap:12, padding:'12px 0', borderBottom:'1px solid rgba(255,255,255,0.04)', cursor:'pointer', transition:'background 0.15s', borderRadius:4 }}
+                onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}
+                onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                <div style={{ fontSize:11, fontFamily:'monospace', color:role.color }}>{m.id}</div>
+                <div style={{ fontSize:12, color:'white', fontWeight:500 }}>{m.patient}</div>
+                <div style={{ fontSize:12, color:'rgba(255,255,255,0.55)' }}>{m.origin}</div>
+                <div style={{ fontSize:12, color:'rgba(255,255,255,0.55)' }}>{m.destination}</div>
+                <div style={{ fontSize:11, color:'rgba(255,255,255,0.45)' }}>{m.type}</div>
+                <div style={{ fontSize:11, color:'rgba(255,255,255,0.4)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{m.crew.split(' ').slice(0,2).join(' ')}</div>
+                <div style={{ fontSize:10, fontWeight:600, color:statusColor(m.status) }}>{m.status}</div>
+              </div>
+            ))}
+            {reports.map((r,i)=>(
+              <div key={i} style={{ display:'grid', gridTemplateColumns:'100px 1fr 1fr 1fr 140px 100px 80px', gap:12, padding:'12px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
+                <div style={{ fontSize:11, fontFamily:'monospace', color:role.color }}>{r.missionId}</div>
+                <div style={{ fontSize:12, color:'white', fontWeight:500 }}>{r.patName||'—'}</div>
+                <div style={{ fontSize:12, color:'rgba(255,255,255,0.55)' }}>{r.origin||'—'}</div>
+                <div style={{ fontSize:12, color:'rgba(255,255,255,0.55)' }}>{r.destination||'—'}</div>
+                <div style={{ fontSize:11, color:'rgba(255,255,255,0.45)' }}>{r.transportType}</div>
+                <div style={{ fontSize:11, color:'rgba(255,255,255,0.4)' }}>{user.name.split(' ').slice(0,2).join(' ')}</div>
+                <div style={{ fontSize:10, fontWeight:600, color:'rgba(255,255,255,0.5)' }}>Salvo</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Quick dispatch — only for REG and DIR */}
+        {(user.role==='REG'||user.role==='DIR') && (
+          <div style={{ background:'rgba(255,255,255,0.03)', border:`1px solid ${role.color}25`, borderRadius:14, padding:20 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:'white', marginBottom:12 }}>Central de Regulação — Despacho Rápido</div>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12 }}>
+              {['UTI Aérea Disponível','Aeromédico Comercial','Transporte Terrestre'].map((t,i)=>(
+                <div key={t} style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:10, padding:'14px 16px', display:'flex', alignItems:'center', gap:10 }}>
+                  <div style={{ width:8, height:8, borderRadius:'50%', background:i===0?'#78BE20':'rgba(255,255,255,0.2)', boxShadow:i===0?'0 0 6px #78BE20':'none', flexShrink:0 }}/>
+                  <div>
+                    <div style={{ fontSize:12, fontWeight:600, color:'white' }}>{t}</div>
+                    <div style={{ fontSize:10, color:'rgba(255,255,255,0.35)', marginTop:2 }}>{i===0?'1 aeronave · Belém':'Sob consulta'}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {showReport && (
+        <MissionReport
+          user={user}
+          mission={activeMission}
+          onClose={()=>{ setShowReport(false); setActiveMission(null); }}
+          onSave={r=>setReports(rs=>[...rs,r])}
+        />
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// APP ROOT
+// ══════════════════════════════════════════════════════════════════════
+function App() {
+  const [user, setUser] = useState(() => {
+    try { const s = localStorage.getItem('altusmed-user'); return s ? JSON.parse(s) : null; } catch { return null; }
+  });
+
+  const handleLogin = u => {
+    setUser(u);
+    localStorage.setItem('altusmed-user', JSON.stringify(u));
+  };
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('altusmed-user');
+  };
+
+  if (!user) return <LoginScreen onLogin={handleLogin}/>;
+  return <Dashboard user={user} onLogout={handleLogout}/>;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AltusMed — Medical Transport & Patient Regulation</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: oklch(22% 0.07 240);
+    --blue: oklch(52% 0.15 240);
+    --blue-light: oklch(94% 0.04 240);
+    --accent: oklch(52% 0.15 30);
+    --bg: oklch(98.5% 0.005 240);
+    --bg2: oklch(96% 0.008 240);
+    --text: oklch(22% 0.04 240);
+    --text-mid: oklch(50% 0.04 240);
+    --text-light: oklch(70% 0.03 240);
+    --border: oklch(88% 0.01 240);
+    --ff-head: 'DM Serif Display', Georgia, serif;
+    --ff-body: 'DM Sans', Helvetica, sans-serif;
+  }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font-family: var(--ff-body); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  #root { min-height: 100vh; }
+  a { color: inherit; text-decoration: none; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "accentColor": "oklch(52% 0.15 30)",
+  "blueColor": "oklch(52% 0.15 240)",
+  "navyColor": "oklch(22% 0.07 240)",
+  "heroLayout": "split",
+  "showStats": true,
+  "ctaLabel": "Request Transport"
+}/*EDITMODE-END*/;
+
+// ── Icons (minimal SVG) ──────────────────────────────────────────────
+const IconPlane = () => (
+  <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 14l6-8 2 3 8-5-3 10 5 2-1 3-7-1-2 4-4-1 1-4-5-3z"/>
+  </svg>
+);
+const IconAmbulance = () => (
+  <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="10" width="20" height="12" rx="2"/>
+    <path d="M22 14h3l2 4v4h-5"/>
+    <circle cx="7" cy="23" r="2"/><circle cx="18" cy="23" r="2"/>
+    <path d="M9 10V7h6v3"/><path d="M13 13v5M10.5 15.5h5"/>
+  </svg>
+);
+const IconGround = () => (
+  <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="11" width="22" height="11" rx="2"/>
+    <path d="M2 14h22M6 22v2M20 22v2"/><circle cx="7" cy="22" r="2"/><circle cx="21" cy="22" r="2"/>
+    <path d="M8 11V8a4 4 0 018 0v3"/>
+  </svg>
+);
+const IconRegulation = () => (
+  <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="4" y="3" width="20" height="22" rx="2"/>
+    <path d="M9 9h10M9 13h10M9 17h6"/>
+    <circle cx="6" cy="6" r="2" fill="currentColor" stroke="none"/>
+  </svg>
+);
+const IconChevron = ({ dir = "down" }) => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    {dir === "down" ? <path d="M3 6l5 5 5-5"/> : <path d="M3 10l5-5 5 5"/>}
+  </svg>
+);
+const IconPhone = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+    <path d="M3 2h3l1.5 4-2 1.2A10 10 0 009.8 10.5L11 8.5l4 1.5v3C15 14.3 13.3 16 11 15 5.5 13.8 2.2 10.5 1 5 0 2.7 1.7 1 3 2z"/>
+  </svg>
+);
+const IconArrow = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <path d="M3 8h10M9 4l4 4-4 4"/>
+  </svg>
+);
+const IconCross = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <path d="M9 4v10M4 9h10"/>
+  </svg>
+);
+const IconGlobe = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+    <circle cx="8" cy="8" r="6"/>
+    <path d="M8 2c-2 2-2 10 0 12M2 8h12M2.5 5h11M2.5 11h11"/>
+  </svg>
+);
+const IconCheck = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+    <path d="M2 7l4 4 6-6"/>
+  </svg>
+);
+
+// ── Nav ──────────────────────────────────────────────────────────────
+function Nav({ tweaks, onRequest }) {
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  useEffect(() => {
+    const fn = () => setScrolled(window.scrollY > 30);
+    window.addEventListener('scroll', fn);
+    return () => window.removeEventListener('scroll', fn);
+  }, []);
+  const links = [["Services","#services"],["About","#about"],["Coverage","#coverage"],["Contact","#contact"]];
+  return (
+    <nav style={{
+      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+      background: scrolled ? 'rgba(248,250,254,0.95)' : 'transparent',
+      backdropFilter: scrolled ? 'blur(12px)' : 'none',
+      borderBottom: scrolled ? '1px solid var(--border)' : '1px solid transparent',
+      transition: 'all 0.3s ease',
+      padding: '0 clamp(1.5rem, 5vw, 4rem)',
+    }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', height: 68, gap: 40 }}>
+        {/* Logo */}
+        <a href="#" style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 8,
+            background: tweaks.navyColor, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M2 12l5-7 2 3 6-4-2 7 4 2-1 3-5-1-2 4-3-1 1-4-4-2z" fill="white" opacity="0.9"/>
+              <path d="M10 16v-2" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <div style={{ fontFamily: 'var(--ff-body)', fontWeight: 600, fontSize: 17, letterSpacing: '-0.02em', color: 'var(--navy)' }}>AltusMed</div>
+            <div style={{ fontSize: 10, color: 'var(--text-light)', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1, marginTop: 1 }}>Medical Transport</div>
+          </div>
+        </a>
+
+        {/* Desktop links */}
+        <div style={{ display: 'flex', gap: 32, marginLeft: 'auto' }}>
+          {links.map(([label, href]) => (
+            <a key={label} href={href} style={{
+              fontSize: 14, fontWeight: 500, color: 'var(--text-mid)',
+              transition: 'color 0.2s', letterSpacing: '-0.01em',
+            }}
+            onMouseEnter={e => e.target.style.color = 'var(--navy)'}
+            onMouseLeave={e => e.target.style.color = 'var(--text-mid)'}
+            >{label}</a>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginLeft: 24 }}>
+          <a href="tel:+1-800-ALTUSMED" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-mid)', fontWeight: 500 }}>
+            <IconPhone /> 24/7 Dispatch
+          </a>
+          <button onClick={onRequest} style={{
+            background: tweaks.accentColor, color: 'white', border: 'none', borderRadius: 6,
+            padding: '9px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            letterSpacing: '-0.01em', transition: 'opacity 0.2s',
+          }}
+          onMouseEnter={e => e.target.style.opacity = '0.88'}
+          onMouseLeave={e => e.target.style.opacity = '1'}
+          >{tweaks.ctaLabel}</button>
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+// ── Hero ─────────────────────────────────────────────────────────────
+function Hero({ tweaks, onRequest }) {
+  return (
+    <section style={{
+      minHeight: '100vh', display: 'flex', alignItems: 'center',
+      background: `linear-gradient(160deg, ${tweaks.navyColor} 0%, oklch(28% 0.1 240) 100%)`,
+      padding: '100px clamp(1.5rem, 5vw, 4rem) 60px',
+      position: 'relative', overflow: 'hidden',
+    }}>
+      {/* Background texture */}
+      <div style={{ position: 'absolute', inset: 0, opacity: 0.04 }}>
+        <svg width="100%" height="100%"><defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="0.8"/></pattern></defs><rect width="100%" height="100%" fill="url(#grid)"/></svg>
+      </div>
+
+      {/* Decorative cross */}
+      <div style={{ position: 'absolute', top: '15%', right: '8%', color: tweaks.accentColor, opacity: 0.15 }}>
+        <svg width="160" height="160" viewBox="0 0 160 160"><rect x="60" y="10" width="40" height="140" rx="8" fill="currentColor"/><rect x="10" y="60" width="140" height="40" rx="8" fill="currentColor"/></svg>
+      </div>
+
+      <div style={{ maxWidth: 1200, margin: '0 auto', width: '100%', display: 'grid', gridTemplateColumns: tweaks.heroLayout === 'split' ? '1fr 1fr' : '1fr', gap: 60, alignItems: 'center' }}>
+        {/* Left column */}
+        <div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.1)', borderRadius: 100, padding: '5px 14px', marginBottom: 28 }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: tweaks.accentColor }}/>
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 500 }}>Available 24/7 — Worldwide</span>
+          </div>
+
+          <h1 style={{ fontFamily: 'var(--ff-head)', fontSize: 'clamp(2.4rem, 5vw, 4rem)', color: 'white', lineHeight: 1.1, marginBottom: 24, letterSpacing: '-0.02em' }}>
+            Critical care,<br />
+            <em style={{ color: tweaks.accentColor }}>wherever</em> it's needed.
+          </h1>
+
+          <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.7)', lineHeight: 1.7, marginBottom: 40, maxWidth: 480 }}>
+            AltusMed coordinates aeromedical and ground transport for critically ill patients — from initial assessment to bedside arrival.
+          </p>
+
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+            <button onClick={onRequest} style={{
+              background: tweaks.accentColor, color: 'white', border: 'none',
+              borderRadius: 8, padding: '14px 28px', fontSize: 15, fontWeight: 600,
+              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+              transition: 'transform 0.15s, opacity 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.opacity = '0.9'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.opacity = '1'; }}
+            >{tweaks.ctaLabel} <IconArrow /></button>
+            <a href="#services" style={{
+              background: 'rgba(255,255,255,0.1)', color: 'white',
+              borderRadius: 8, padding: '14px 28px', fontSize: 15, fontWeight: 500,
+              display: 'flex', alignItems: 'center', gap: 8,
+              border: '1px solid rgba(255,255,255,0.2)',
+              transition: 'background 0.2s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+            >Our Services</a>
+          </div>
+
+          {tweaks.showStats && (
+            <div style={{ display: 'flex', gap: 40, marginTop: 52, paddingTop: 40, borderTop: '1px solid rgba(255,255,255,0.12)' }}>
+              {[["500+","Missions/year"],["24h","Response time"],["3","Continents"],["100%","Medical crew"]].map(([n,l]) => (
+                <div key={l}>
+                  <div style={{ fontFamily: 'var(--ff-head)', fontSize: 28, color: 'white', lineHeight: 1 }}>{n}</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 4, letterSpacing: '0.02em' }}>{l}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Right column — placeholder imagery */}
+        {tweaks.heroLayout === 'split' && (
+          <div style={{ position: 'relative' }}>
+            <div style={{
+              borderRadius: 16, overflow: 'hidden', background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.1)', aspectRatio: '4/3',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12,
+            }}>
+              <svg width="80" height="80" viewBox="0 0 80 80" style={{ opacity: 0.15 }}>
+                <rect x="10" y="10" width="60" height="60" rx="8" fill="none" stroke="white" strokeWidth="1.5"
+                  strokeDasharray="4 4"/>
+              </svg>
+              <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: 12, fontFamily: 'monospace', letterSpacing: '0.04em' }}>
+                medical transport aircraft
+              </p>
+            </div>
+            {/* Floating card */}
+            <div style={{
+              position: 'absolute', bottom: -20, left: -20,
+              background: 'white', borderRadius: 12, padding: '16px 20px',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+              display: 'flex', alignItems: 'center', gap: 14,
+              minWidth: 220,
+            }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: tweaks.accentColor, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
+                <IconCross />
+              </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--navy)', lineHeight: 1.3 }}>Patient Regulation</div>
+                <div style={{ fontSize: 11, color: 'var(--text-light)', marginTop: 2 }}>End-to-end coordination</div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// ── Services ─────────────────────────────────────────────────────────
+function Services({ tweaks }) {
+  const services = [
+    {
+      icon: <IconPlane />,
+      title: "Commercial Aeromedical",
+      desc: "Accompaniment on scheduled commercial flights for stable or sub-acute patients. Medical team, oxygen, and equipment adapted to in-cabin constraints.",
+      features: ["Qualified nurse or doctor", "In-flight medical equipment", "Airline coordination", "Bedside-to-bedside service"],
+    },
+    {
+      icon: <IconAmbulance />,
+      title: "Air Ambulance",
+      desc: "Dedicated air ambulance operations for critical or intensive-care patients. Full life support aboard, adapted to any distance.",
+      features: ["ICU-grade equipment", "24/7 dispatch", "Long-range & short-haul", "International repatriation"],
+    },
+    {
+      icon: <IconGround />,
+      title: "Ground Transport",
+      desc: "Medicalized ground transport for inter-hospital transfers and last/first mile connections. Seamless continuity of care.",
+      features: ["MICU ambulances", "BLS & ALS capability", "Hospital-to-hospital", "Airport transfers"],
+    },
+    {
+      icon: <IconRegulation />,
+      title: "Patient Regulation",
+      desc: "Medical and logistical regulation center — we assess, triage, and coordinate the optimal transport solution for each patient.",
+      features: ["24/7 medical hotline", "Clinical assessment", "Insurance liaison", "Full mission tracking"],
+    },
+  ];
+
+  const [active, setActive] = useState(null);
+
+  return (
+    <section id="services" style={{ padding: '100px clamp(1.5rem, 5vw, 4rem)', background: 'var(--bg)' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+        <div style={{ marginBottom: 60 }}>
+          <div style={{ fontSize: 12, color: tweaks.blueColor, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600, marginBottom: 12 }}>Our Services</div>
+          <h2 style={{ fontFamily: 'var(--ff-head)', fontSize: 'clamp(2rem, 3.5vw, 2.8rem)', color: 'var(--navy)', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+            Complete medical transport,<br />from planning to arrival.
+          </h2>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 24 }}>
+          {services.map((s, i) => (
+            <div key={i}
+              onClick={() => setActive(active === i ? null : i)}
+              style={{
+                background: active === i ? tweaks.navyColor : 'white',
+                border: `1px solid ${active === i ? 'transparent' : 'var(--border)'}`,
+                borderRadius: 14, padding: '32px 28px', cursor: 'pointer',
+                transition: 'all 0.25s ease',
+                boxShadow: active === i ? `0 24px 60px -8px oklch(22% 0.07 240 / 0.35)` : '0 2px 8px rgba(0,0,0,0.04)',
+              }}
+              onMouseEnter={e => { if (active !== i) e.currentTarget.style.borderColor = tweaks.blueColor; }}
+              onMouseLeave={e => { if (active !== i) e.currentTarget.style.borderColor = 'var(--border)'; }}
+            >
+              <div style={{ color: active === i ? tweaks.accentColor : tweaks.blueColor, marginBottom: 18 }}>{s.icon}</div>
+              <h3 style={{ fontFamily: 'var(--ff-head)', fontSize: 20, color: active === i ? 'white' : 'var(--navy)', marginBottom: 12, lineHeight: 1.25 }}>{s.title}</h3>
+              <p style={{ fontSize: 14, color: active === i ? 'rgba(255,255,255,0.65)' : 'var(--text-mid)', lineHeight: 1.65, marginBottom: active === i ? 20 : 0 }}>{s.desc}</p>
+              {active === i && (
+                <ul style={{ listStyle: 'none', paddingTop: 8 }}>
+                  {s.features.map(f => (
+                    <li key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'rgba(255,255,255,0.8)', marginBottom: 8 }}>
+                      <span style={{ color: tweaks.accentColor, flexShrink: 0 }}><IconCheck /></span> {f}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── Process ──────────────────────────────────────────────────────────
+function Process({ tweaks }) {
+  const steps = [
+    { n: "01", title: "Initial Contact", desc: "Call our 24/7 regulation center. Our medical team takes the first clinical assessment immediately." },
+    { n: "02", title: "Mission Planning", desc: "We define the transport type, assemble the medical team, and coordinate with airlines or ambulance operators." },
+    { n: "03", title: "Departure & En Route", desc: "Continuous monitoring and medical care throughout the journey, with real-time updates to the receiving team." },
+    { n: "04", title: "Handover & Debrief", desc: "Seamless patient handover at the destination, with full medical documentation and mission report." },
+  ];
+  return (
+    <section style={{ padding: '100px clamp(1.5rem, 5vw, 4rem)', background: 'var(--bg2)' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+        <div style={{ marginBottom: 60 }}>
+          <div style={{ fontSize: 12, color: tweaks.blueColor, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600, marginBottom: 12 }}>How It Works</div>
+          <h2 style={{ fontFamily: 'var(--ff-head)', fontSize: 'clamp(2rem, 3.5vw, 2.8rem)', color: 'var(--navy)', letterSpacing: '-0.02em' }}>
+            A proven process for<br />every mission.
+          </h2>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 0, position: 'relative' }}>
+          {/* Connecting line */}
+          <div style={{ position: 'absolute', top: 28, left: '12.5%', right: '12.5%', height: 1, background: `linear-gradient(90deg, transparent, var(--border), var(--border), transparent)` }}/>
+          {steps.map((s, i) => (
+            <div key={i} style={{ padding: '0 24px 0 0', position: 'relative' }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: 12,
+                background: i === 0 ? tweaks.navyColor : 'white',
+                border: `1px solid ${i === 0 ? 'transparent' : 'var(--border)'}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: 'var(--ff-head)', fontSize: 18,
+                color: i === 0 ? 'white' : 'var(--text-light)',
+                marginBottom: 24, position: 'relative', zIndex: 1,
+              }}>{s.n}</div>
+              <h4 style={{ fontSize: 15, fontWeight: 600, color: 'var(--navy)', marginBottom: 8 }}>{s.title}</h4>
+              <p style={{ fontSize: 13.5, color: 'var(--text-mid)', lineHeight: 1.6 }}>{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── About / Why Us ───────────────────────────────────────────────────
+function About({ tweaks }) {
+  const points = [
+    "Medical crew on every mission — physician, nurse, or paramedic depending on acuity",
+    "Regulatory compliance across Europe, Africa, and the Americas",
+    "Partnership with certified air operators — no compromise on airworthiness",
+    "Transparent pricing and full insurance coordination",
+  ];
+  return (
+    <section id="about" style={{ padding: '100px clamp(1.5rem, 5vw, 4rem)', background: 'var(--bg)' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
+        {/* Placeholder */}
+        <div style={{
+          borderRadius: 16, background: 'var(--bg2)', border: '1px solid var(--border)',
+          aspectRatio: '4/3', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12,
+        }}>
+          <svg width="60" height="60" viewBox="0 0 60 60" style={{ opacity: 0.2 }}>
+            <rect x="5" y="5" width="50" height="50" rx="6" fill="none" stroke="var(--navy)" strokeWidth="1.5" strokeDasharray="4 4"/>
+          </svg>
+          <p style={{ color: 'var(--text-light)', fontSize: 11, fontFamily: 'monospace', letterSpacing: '0.04em' }}>team / operations photo</p>
+        </div>
+        {/* Text */}
+        <div>
+          <div style={{ fontSize: 12, color: tweaks.blueColor, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600, marginBottom: 12 }}>About AltusMed</div>
+          <h2 style={{ fontFamily: 'var(--ff-head)', fontSize: 'clamp(1.8rem, 3vw, 2.4rem)', color: 'var(--navy)', letterSpacing: '-0.02em', lineHeight: 1.2, marginBottom: 20 }}>
+            Built around the patient,<br />not the logistics.
+          </h2>
+          <p style={{ fontSize: 16, color: 'var(--text-mid)', lineHeight: 1.75, marginBottom: 32 }}>
+            AltusMed was founded by medical professionals and transport specialists who saw the gap between clinical need and logistical reality. We bridge it — every time.
+          </p>
+          <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {points.map(p => (
+              <li key={p} style={{ display: 'flex', gap: 12, fontSize: 14, color: 'var(--text)', lineHeight: 1.55 }}>
+                <span style={{ flexShrink: 0, marginTop: 2, color: tweaks.accentColor }}><IconCheck /></span>
+                {p}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── Coverage ─────────────────────────────────────────────────────────
+function Coverage({ tweaks }) {
+  const regions = [
+    { name: "Europe", detail: "France, Belgium, Switzerland, Germany, Spain and beyond" },
+    { name: "North Africa", detail: "Morocco, Tunisia, Algeria, Egypt" },
+    { name: "Sub-Saharan Africa", detail: "Senegal, Côte d'Ivoire, Cameroon, and more" },
+    { name: "Americas", detail: "Repatriation and transport on request" },
+  ];
+  return (
+    <section id="coverage" style={{ padding: '100px clamp(1.5rem, 5vw, 4rem)', background: `linear-gradient(160deg, ${tweaks.navyColor} 0%, oklch(28% 0.1 240) 100%)`, position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', inset: 0, opacity: 0.04 }}>
+        <svg width="100%" height="100%"><defs><pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="white"/></pattern></defs><rect width="100%" height="100%" fill="url(#dots)"/></svg>
+      </div>
+      <div style={{ maxWidth: 1200, margin: '0 auto', position: 'relative' }}>
+        <div style={{ marginBottom: 56, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 20 }}>
+          <div>
+            <div style={{ fontSize: 12, color: tweaks.accentColor, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600, marginBottom: 12 }}>Coverage</div>
+            <h2 style={{ fontFamily: 'var(--ff-head)', fontSize: 'clamp(2rem, 3.5vw, 2.8rem)', color: 'white', letterSpacing: '-0.02em' }}>
+              Global reach,<br />local expertise.
+            </h2>
+          </div>
+          <div style={{ display: 'flex', align: 'center', gap: 8, color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>
+            <IconGlobe /> <span>Operations across 3 continents</span>
+          </div>
+        </div>
+
+        {/* Map placeholder */}
+        <div style={{
+          borderRadius: 16, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+          height: 260, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 40,
+        }}>
+          <svg width="60" height="60" viewBox="0 0 60 60" style={{ opacity: 0.15 }}>
+            <rect x="5" y="5" width="50" height="50" rx="6" fill="none" stroke="white" strokeWidth="1.5" strokeDasharray="4 4"/>
+          </svg>
+          <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: 11, fontFamily: 'monospace', letterSpacing: '0.04em' }}>coverage map</p>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+          {regions.map(r => (
+            <div key={r.name} style={{ background: 'rgba(255,255,255,0.07)', borderRadius: 10, padding: '20px 22px', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ fontWeight: 600, fontSize: 15, color: 'white', marginBottom: 6 }}>{r.name}</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>{r.detail}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── Contact ───────────────────────────────────────────────────────────
+function Contact({ tweaks }) {
+  const [form, setForm] = useState({ name: '', org: '', email: '', phone: '', type: '', message: '' });
+  const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setTimeout(() => { setLoading(false); setSent(true); }, 1200);
+  };
+  return (
+    <section id="contact" style={{ padding: '100px clamp(1.5rem, 5vw, 4rem)', background: 'var(--bg2)' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: 80, alignItems: 'start' }}>
+        {/* Left */}
+        <div>
+          <div style={{ fontSize: 12, color: tweaks.blueColor, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600, marginBottom: 12 }}>Contact</div>
+          <h2 style={{ fontFamily: 'var(--ff-head)', fontSize: 'clamp(2rem, 3vw, 2.8rem)', color: 'var(--navy)', letterSpacing: '-0.02em', lineHeight: 1.2, marginBottom: 20 }}>
+            Ready to coordinate<br />your next mission?
+          </h2>
+          <p style={{ fontSize: 15, color: 'var(--text-mid)', lineHeight: 1.7, marginBottom: 40 }}>
+            Our regulation center is available around the clock. For urgent cases, please call directly.
+          </p>
+          {[
+            ["Emergency Dispatch", "24/7 — call for immediate transport", "+33 (0)1 XX XX XX XX"],
+            ["General Enquiries", "Partnerships, quotes, information", "contact@altusmed.com"],
+          ].map(([t, s, v]) => (
+            <div key={t} style={{ marginBottom: 28, paddingBottom: 28, borderBottom: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.06em', color: tweaks.blueColor, fontWeight: 600, marginBottom: 4 }}>{t}</div>
+              <div style={{ fontSize: 13, color: 'var(--text-light)', marginBottom: 4 }}>{s}</div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--navy)' }}>{v}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Form */}
+        <div style={{ background: 'white', borderRadius: 16, padding: '40px 36px', border: '1px solid var(--border)', boxShadow: '0 4px 24px rgba(0,0,0,0.05)' }}>
+          {sent ? (
+            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+              <div style={{ width: 56, height: 56, borderRadius: '50%', background: tweaks.accentColor, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', color: 'white' }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12l5 5L20 7"/></svg>
+              </div>
+              <h3 style={{ fontFamily: 'var(--ff-head)', fontSize: 22, color: 'var(--navy)', marginBottom: 10 }}>Request received</h3>
+              <p style={{ color: 'var(--text-mid)', fontSize: 14 }}>Our team will contact you within the hour.</p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit}>
+              <h3 style={{ fontFamily: 'var(--ff-head)', fontSize: 20, color: 'var(--navy)', marginBottom: 24 }}>{tweaks.ctaLabel}</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                {[["name","Full name","text"],["org","Organisation","text"]].map(([id, ph, type]) => (
+                  <div key={id}>
+                    <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-mid)', display: 'block', marginBottom: 6, textTransform: 'capitalize' }}>{ph}</label>
+                    <input
+                      type={type} placeholder={ph} value={form[id]}
+                      onChange={e => setForm(f => ({...f, [id]: e.target.value}))}
+                      style={{ width: '100%', border: '1px solid var(--border)', borderRadius: 6, padding: '9px 12px', fontSize: 14, outline: 'none', fontFamily: 'var(--ff-body)' }}
+                      onFocus={e => e.target.style.borderColor = tweaks.blueColor}
+                      onBlur={e => e.target.style.borderColor = 'var(--border)'}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                {[["email","Email","email"],["phone","Phone","tel"]].map(([id, ph, type]) => (
+                  <div key={id}>
+                    <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-mid)', display: 'block', marginBottom: 6, textTransform: 'capitalize' }}>{ph}</label>
+                    <input
+                      type={type} placeholder={ph} value={form[id]}
+                      onChange={e => setForm(f => ({...f, [id]: e.target.value}))}
+                      style={{ width: '100%', border: '1px solid var(--border)', borderRadius: 6, padding: '9px 12px', fontSize: 14, outline: 'none', fontFamily: 'var(--ff-body)' }}
+                      onFocus={e => e.target.style.borderColor = tweaks.blueColor}
+                      onBlur={e => e.target.style.borderColor = 'var(--border)'}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-mid)', display: 'block', marginBottom: 6 }}>Transport type</label>
+                <select value={form.type} onChange={e => setForm(f => ({...f, type: e.target.value}))}
+                  style={{ width: '100%', border: '1px solid var(--border)', borderRadius: 6, padding: '9px 12px', fontSize: 14, outline: 'none', fontFamily: 'var(--ff-body)', background: 'white', color: form.type ? 'var(--text)' : 'var(--text-light)' }}>
+                  <option value="">Select a service</option>
+                  <option>Commercial Aeromedical</option>
+                  <option>Air Ambulance</option>
+                  <option>Ground Transport</option>
+                  <option>Patient Regulation</option>
+                </select>
+              </div>
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-mid)', display: 'block', marginBottom: 6 }}>Message</label>
+                <textarea value={form.message} onChange={e => setForm(f => ({...f, message: e.target.value}))}
+                  placeholder="Describe the patient's situation and destination..."
+                  rows={4}
+                  style={{ width: '100%', border: '1px solid var(--border)', borderRadius: 6, padding: '9px 12px', fontSize: 14, outline: 'none', fontFamily: 'var(--ff-body)', resize: 'vertical' }}
+                  onFocus={e => e.target.style.borderColor = tweaks.blueColor}
+                  onBlur={e => e.target.style.borderColor = 'var(--border)'}
+                />
+              </div>
+              <button type="submit" disabled={loading} style={{
+                width: '100%', background: tweaks.navyColor, color: 'white', border: 'none',
+                borderRadius: 8, padding: '13px', fontSize: 15, fontWeight: 600, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                transition: 'opacity 0.2s',
+                opacity: loading ? 0.7 : 1,
+              }}>
+                {loading ? 'Sending…' : <>{tweaks.ctaLabel} <IconArrow /></>}
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── Footer ────────────────────────────────────────────────────────────
+function Footer({ tweaks }) {
+  return (
+    <footer style={{ background: 'var(--navy)', padding: '48px clamp(1.5rem, 5vw, 4rem) 32px', color: 'rgba(255,255,255,0.5)' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 28, height: 28, borderRadius: 6, background: tweaks.accentColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M2 12l5-7 2 3 6-4-2 7 4 2-1 3-5-1-2 4-3-1 1-4-4-2z" fill="white" opacity="0.9"/></svg>
+          </div>
+          <span style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 600, fontSize: 14 }}>AltusMed</span>
+        </div>
+        <div style={{ fontSize: 12 }}>© 2026 AltusMed — Medical Transport & Patient Regulation</div>
+        <div style={{ display: 'flex', gap: 20, fontSize: 12 }}>
+          {["Privacy","Legal","RGPD"].map(l => (
+            <a key={l} href="#" style={{ color: 'rgba(255,255,255,0.4)', transition: 'color 0.2s' }}
+              onMouseEnter={e => e.target.style.color = 'white'}
+              onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,0.4)'}>{l}</a>
+          ))}
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+// ── Request Modal ─────────────────────────────────────────────────────
+function RequestModal({ tweaks, onClose }) {
+  const [step, setStep] = useState(0);
+  const [data, setData] = useState({ urgency: '', service: '', origin: '', dest: '', name: '', phone: '' });
+  const steps = [
+    {
+      title: "How urgent is this?",
+      field: "urgency",
+      options: [
+        { val: "immediate", label: "Immediate", sub: "Within the next few hours" },
+        { val: "scheduled", label: "Scheduled", sub: "Within 24–72 hours" },
+        { val: "elective", label: "Elective", sub: "More than 72 hours away" },
+      ],
+    },
+    {
+      title: "Which service do you need?",
+      field: "service",
+      options: [
+        { val: "commercial", label: "Commercial Aeromedical", sub: "Stable patient on commercial flight" },
+        { val: "air-ambulance", label: "Air Ambulance", sub: "Critical / intensive care" },
+        { val: "ground", label: "Ground Transport", sub: "Local or inter-hospital transfer" },
+        { val: "regulation", label: "Regulation Only", sub: "Need coordination advice" },
+      ],
+    },
+  ];
+  const current = steps[step];
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ background: 'white', borderRadius: 20, padding: '40px', maxWidth: 480, width: '90%', boxShadow: '0 40px 100px rgba(0,0,0,0.25)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+          <div>
+            <div style={{ fontSize: 11, color: tweaks.blueColor, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>Step {step+1} of {steps.length + 1}</div>
+            <h3 style={{ fontFamily: 'var(--ff-head)', fontSize: 22, color: 'var(--navy)', marginTop: 4 }}>
+              {step < steps.length ? current.title : "Your contact details"}
+            </h3>
+          </div>
+          <button onClick={onClose} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, width: 36, height: 36, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-mid)' }}>×</button>
+        </div>
+
+        {step < steps.length ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {current.options.map(opt => (
+              <button key={opt.val}
+                onClick={() => { setData(d => ({...d, [current.field]: opt.val})); setStep(s => s+1); }}
+                style={{
+                  textAlign: 'left', background: data[current.field] === opt.val ? tweaks.navyColor : 'var(--bg2)',
+                  border: `1px solid ${data[current.field] === opt.val ? 'transparent' : 'var(--border)'}`,
+                  borderRadius: 10, padding: '14px 18px', cursor: 'pointer', transition: 'all 0.15s',
+                }}
+                onMouseEnter={e => { if (data[current.field] !== opt.val) e.currentTarget.style.borderColor = tweaks.blueColor; }}
+                onMouseLeave={e => { if (data[current.field] !== opt.val) e.currentTarget.style.borderColor = 'var(--border)'; }}
+              >
+                <div style={{ fontWeight: 600, fontSize: 14, color: data[current.field] === opt.val ? 'white' : 'var(--navy)' }}>{opt.label}</div>
+                <div style={{ fontSize: 12, color: data[current.field] === opt.val ? 'rgba(255,255,255,0.6)' : 'var(--text-light)', marginTop: 2 }}>{opt.sub}</div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div>
+            {[["name","Your name","text"],["phone","Phone number","tel"]].map(([id, ph, type]) => (
+              <div key={id} style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-mid)', display: 'block', marginBottom: 6 }}>{ph}</label>
+                <input type={type} placeholder={ph} value={data[id]||''} onChange={e => setData(d => ({...d, [id]: e.target.value}))}
+                  style={{ width: '100%', border: '1px solid var(--border)', borderRadius: 6, padding: '10px 12px', fontSize: 14, outline: 'none', fontFamily: 'var(--ff-body)' }}/>
+              </div>
+            ))}
+            <button onClick={onClose} style={{
+              width: '100%', background: tweaks.accentColor, color: 'white', border: 'none',
+              borderRadius: 8, padding: '13px', fontSize: 15, fontWeight: 600, cursor: 'pointer', marginTop: 8,
+            }}>Confirm & Submit</button>
+          </div>
+        )}
+
+        {step > 0 && step < steps.length && (
+          <button onClick={() => setStep(s => s-1)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-light)', fontSize: 13, marginTop: 16, padding: 0 }}>← Back</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Tweaks Panel ──────────────────────────────────────────────────────
+function TweaksPanel({ tweaks, setTweaks }) {
+  const update = (key, val) => {
+    setTweaks(t => {
+      const next = {...t, [key]: val};
+      window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { [key]: val } }, '*');
+      return next;
+    });
+  };
+  return (
+    <div style={{
+      position: 'fixed', bottom: 20, right: 20, zIndex: 300,
+      background: 'white', borderRadius: 14, padding: '20px 22px',
+      boxShadow: '0 8px 40px rgba(0,0,0,0.15)', border: '1px solid var(--border)',
+      width: 280, fontFamily: 'var(--ff-body)',
+    }}>
+      <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--navy)', marginBottom: 16 }}>Tweaks</div>
+
+      <label style={{ fontSize: 12, color: 'var(--text-mid)', display: 'block', marginBottom: 4 }}>CTA Label</label>
+      <input value={tweaks.ctaLabel} onChange={e => update('ctaLabel', e.target.value)}
+        style={{ width: '100%', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 10px', fontSize: 13, marginBottom: 14 }}/>
+
+      <label style={{ fontSize: 12, color: 'var(--text-mid)', display: 'block', marginBottom: 4 }}>Hero Layout</label>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+        {['split','centered'].map(v => (
+          <button key={v} onClick={() => update('heroLayout', v)} style={{
+            flex: 1, border: `1px solid ${tweaks.heroLayout === v ? tweaks.blueColor : 'var(--border)'}`,
+            background: tweaks.heroLayout === v ? 'var(--blue-light)' : 'white',
+            borderRadius: 6, padding: '6px', fontSize: 12, cursor: 'pointer', fontFamily: 'var(--ff-body)',
+            color: tweaks.heroLayout === v ? tweaks.blueColor : 'var(--text-mid)',
+          }}>{v}</button>
+        ))}
+      </div>
+
+      <label style={{ fontSize: 12, color: 'var(--text-mid)', display: 'block', marginBottom: 4 }}>Show Stats Bar</label>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+        {[true, false].map(v => (
+          <button key={String(v)} onClick={() => update('showStats', v)} style={{
+            flex: 1, border: `1px solid ${tweaks.showStats === v ? tweaks.blueColor : 'var(--border)'}`,
+            background: tweaks.showStats === v ? 'var(--blue-light)' : 'white',
+            borderRadius: 6, padding: '6px', fontSize: 12, cursor: 'pointer', fontFamily: 'var(--ff-body)',
+            color: tweaks.showStats === v ? tweaks.blueColor : 'var(--text-mid)',
+          }}>{v ? 'On' : 'Off'}</button>
+        ))}
+      </div>
+
+      <label style={{ fontSize: 12, color: 'var(--text-mid)', display: 'block', marginBottom: 6 }}>Accent Color</label>
+      <div style={{ display: 'flex', gap: 8 }}>
+        {[
+          ['oklch(52% 0.15 30)', '#c06030', 'Warm'],
+          ['oklch(52% 0.15 160)', '#20a06a', 'Medical'],
+          ['oklch(52% 0.15 280)', '#7060c8', 'Royal'],
+        ].map(([val, hex, label]) => (
+          <button key={val} onClick={() => update('accentColor', val)} title={label} style={{
+            width: 28, height: 28, borderRadius: '50%', background: hex, border: `2px solid ${tweaks.accentColor === val ? 'var(--navy)' : 'transparent'}`,
+            cursor: 'pointer', outline: 'none',
+          }}/>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── App ───────────────────────────────────────────────────────────────
+function App() {
+  const [tweaks, setTweaks] = useState(TWEAK_DEFAULTS);
+  const [showTweaks, setShowTweaks] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.data?.type === '__activate_edit_mode') setShowTweaks(true);
+      if (e.data?.type === '__deactivate_edit_mode') setShowTweaks(false);
+    };
+    window.addEventListener('message', handler);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
+  // Apply CSS vars
+  useEffect(() => {
+    document.documentElement.style.setProperty('--blue', tweaks.blueColor);
+    document.documentElement.style.setProperty('--navy', tweaks.navyColor);
+  }, [tweaks.blueColor, tweaks.navyColor]);
+
+  return (
+    <>
+      <Nav tweaks={tweaks} onRequest={() => setShowModal(true)} />
+      <Hero tweaks={tweaks} onRequest={() => setShowModal(true)} />
+      <Services tweaks={tweaks} />
+      <Process tweaks={tweaks} />
+      <About tweaks={tweaks} />
+      <Coverage tweaks={tweaks} />
+      <Contact tweaks={tweaks} />
+      <Footer tweaks={tweaks} />
+      {showTweaks && <TweaksPanel tweaks={tweaks} setTweaks={setTweaks} />}
+      {showModal && <RequestModal tweaks={tweaks} onClose={() => setShowModal(false)} />}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

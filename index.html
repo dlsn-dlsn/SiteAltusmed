@@ -270,15 +270,15 @@ function Nav({ t, lang, setLang, onRequest, onLogin }) {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 32 }}>
           <LangToggle lang={lang} setLang={setLang}/>
-          <button onClick={onLogin} style={{
-            display: 'flex', alignItems: 'center', gap: 6, background: 'transparent',
-            border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6,
-            color: 'rgba(255,255,255,0.55)', fontSize: 12, fontWeight: 500, cursor: 'pointer',
-            padding: '7px 14px', fontFamily: 'var(--ff)', transition: 'all 0.2s',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.color = 'white'; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; }}
-          >{Ico.lock} {t.nav.login}</button>
+          <button onClick={() => window.location.href='/restrito'} style={{
+  display: 'flex', alignItems: 'center', gap: 6, background: 'transparent',
+  border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6,
+  color: 'rgba(255,255,255,0.55)', fontSize: 12, fontWeight: 500, cursor: 'pointer',
+  padding: '7px 14px', fontFamily: 'var(--ff)', transition: 'all 0.2s',
+}}
+onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.color = 'white'; }}
+onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; }}
+>{Ico.lock} {t.nav.login}</button>
           <button onClick={onRequest} style={{
             background: '#78BE20', color: '#090E1A', border: 'none', borderRadius: 6,
             padding: '8px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer',

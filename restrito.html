@@ -479,7 +479,7 @@
     <div class="page-nav">
       <div class="page-nav-item active" id="nav-dashboard" onclick="irPara('dashboard')">Dashboard</div>
       <div class="page-nav-item" id="nav-missoes" onclick="irPara('missoes')">Missões</div>
-      <div class="page-nav-item" id="nav-regulacao" onclick="irPara('regulacao')" style="display:none;">🩺 Regulação</div>
+      <div class="page-nav-item" id="nav-regulacao" onclick="window.location.href='regulacao.html'" style="display:none;">🩺 Regulação</div>
       <div class="page-nav-item" id="nav-perfil" onclick="irPara('perfil')">Meu Perfil</div>
       <div class="page-nav-item" id="nav-usuarios" onclick="irPara('usuarios')" style="display:none;">👥 Usuários</div>
     </div>
@@ -622,7 +622,7 @@
             </div>
             <div class="perfil-field">
               <label>Tipo de Cargo</label>
-              <select id="pf-cargo-tipo">
+              <select id="pf-cargo-tipo" onchange="atualizarLabelRegistro()">
                 <option value="diretor">Diretor Aeromédico</option>
                 <option value="medico">Médico Aeromédico</option>
                 <option value="enfermeiro">Enfermeiro Aeromédico</option>
@@ -632,7 +632,7 @@
               </select>
             </div>
             <div class="perfil-field">
-              <label>CRM</label>
+              <label id="pf-crm-label">CRM</label>
               <input type="text" id="pf-crm" placeholder="PA 12345">
             </div>
             <div class="perfil-field full">
@@ -704,14 +704,8 @@
       </div>
     </div>
 
-    <!-- Página: Regulação -->
-    <div class="page" id="page-regulacao" style="height:calc(100vh - 120px);">
-      <iframe
-        src="regulacao-uti-aerea-v3.html"
-        style="width:100%; height:100%; border:none; border-radius:10px;"
-        title="Sistema de Regulação Aeromédica">
-      </iframe>
-    </div>
+    <!-- Página: Regulação (redireciona para página standalone) -->
+    <div class="page" id="page-regulacao" style="height:calc(100vh - 120px);"></div>
 
   </div><!-- /main -->
 </div><!-- /app -->
@@ -898,11 +892,18 @@ async function carregarPerfil() {
   }
 }
 
+function atualizarLabelRegistro() {
+  const tipo  = document.getElementById('pf-cargo-tipo')?.value || perfilAtual.cargo_tipo || '';
+  const label = document.getElementById('pf-crm-label');
+  if (label) label.textContent = tipo === 'enfermeiro' ? 'COREN' : 'CRM';
+}
+
 function atualizarUI() {
   const nome  = perfilAtual.nome  || 'Usuário';
   const cargo = perfilAtual.cargo || 'Médico';
   const tipo  = perfilAtual.cargo_tipo || 'medico';
   const info  = infoCargo(tipo);
+  atualizarLabelRegistro();
 
   document.getElementById('topbar-nome').textContent  = nome;
   document.getElementById('dash-nome').textContent    = nome;

@@ -180,7 +180,7 @@
     </div>
     <span class="topbar-title">Nova Regulação Aeromédica</span>
     <div class="topbar-right">
-      <span class="topbar-user">Dr. <strong id="topbar-nome">...</strong></span>
+      <span class="topbar-user"><span id="topbar-saudacao"></span><strong id="topbar-nome">...</strong></span>
       <a href="restrito.html" class="btn-sm">← Voltar</a>
     </div>
   </div>
@@ -439,11 +439,16 @@ async function init() {
     await carregarPerfil();
     document.getElementById('app').style.display = 'block';
   } catch(e) {
-    console.error('Erro na inicialização:', e);
     window.location.href = 'restrito.html';
   } finally {
     document.getElementById('loading').style.display = 'none';
   }
+}
+
+function saudacaoCargo(tipo) {
+  if (tipo === 'medico' || tipo === 'diretor') return 'Dr. ';
+  if (tipo === 'enfermeiro') return 'ENF(a). ';
+  return '';
 }
 
 async function carregarPerfil() {
@@ -451,6 +456,7 @@ async function carregarPerfil() {
     const { data } = await db.from('perfis').select('*')
       .eq('id', usuarioAtual.id).single();
     perfilAtual = data || {};
+    document.getElementById('topbar-saudacao').textContent = saudacaoCargo(perfilAtual.cargo_tipo);
     document.getElementById('topbar-nome').textContent = perfilAtual.nome || usuarioAtual.email;
   } catch(e) {}
 }
@@ -576,9 +582,9 @@ async function finalizarRegulacao() {
       status:         'Em andamento',
       naca,
       diagnostico:    regulacaoData.diagnostico,
-      hora_pouso:     '',
-      hora_transferencia: '',
-      desfecho:       '',
+      hora_pouso:     null,
+      hora_transferencia: null,
+      desfecho:       null,
     }).select('id').single();
     if (missErr) throw missErr;
 
@@ -590,8 +596,7 @@ async function finalizarRegulacao() {
     toast('✓ Regulação e missão criadas com sucesso!');
     setTimeout(() => { window.location.href = 'restrito.html#missoes'; }, 2000);
   } catch(e) {
-    console.error('Erro ao finalizar regulação:', e);
-    toast('Erro ao salvar. Verifique os dados e tente novamente.', true);
+    toast('Erro ao salvar: ' + (e.message || 'verifique os dados e tente novamente.'), true);
     btn.disabled = false; btn.textContent = '✓ Finalizar e Criar Missão';
   }
 }

@@ -528,8 +528,16 @@ async function finalizarRegulacao() {
 
   const codigo = 'AM-' + String(Date.now()).slice(-6);
 
-  const gcsTotal = parseInt(document.getElementById('gcs-total').textContent) || null;
-  const o2Uso    = document.getElementById('o2_uso').value;
+  const gcsTotal   = parseInt(document.getElementById('gcs-total').textContent) || null;
+  const o2Ativo    = document.getElementById('o2_uso').value === 'Sim';
+  const o2Flow     = o2Ativo ? parseFloat(document.getElementById('o2_flow').value) || null : null;
+  const o2Cilindro = o2Ativo ? document.getElementById('o2_cilindro').value : null;
+  const o2Duracao  = (o2Ativo && o2Flow && o2Cilindro)
+    ? Math.floor((O2_CAP[o2Cilindro] || 0) / o2Flow) : null;
+
+  const paSist  = document.getElementById('pa_sist').value;
+  const paDiast = document.getElementById('pa_diast').value;
+  const pa = (paSist && paDiast) ? `${paSist}/${paDiast}` : null;
 
   const regulacaoData = {
     codigo,
@@ -544,8 +552,7 @@ async function finalizarRegulacao() {
     paciente_sexo:    document.getElementById('paciente_sexo').value,
     diagnostico:      document.getElementById('diagnostico').value.trim(),
     naca,
-    pa_sist:          parseInt(document.getElementById('pa_sist').value) || null,
-    pa_diast:         parseInt(document.getElementById('pa_diast').value) || null,
+    pa,
     fc:               parseInt(document.getElementById('fc').value) || null,
     fr:               parseInt(document.getElementById('fr').value) || null,
     spo2:             parseInt(document.getElementById('spo2').value) || null,
@@ -554,9 +561,10 @@ async function finalizarRegulacao() {
     gcs_v:            parseInt(document.getElementById('gcs_v').value) || null,
     gcs_m:            parseInt(document.getElementById('gcs_m').value) || null,
     gcs_total:        gcsTotal,
-    o2_uso:           o2Uso,
-    o2_flow:          o2Uso === 'Sim' ? parseFloat(document.getElementById('o2_flow').value) || null : null,
-    o2_cilindro:      o2Uso === 'Sim' ? document.getElementById('o2_cilindro').value : null,
+    o2_ativo:         o2Ativo,
+    o2_flow:          o2Flow,
+    o2_cilindro:      o2Cilindro,
+    o2_duracao:       o2Duracao,
     conduta:          document.getElementById('conduta').value.trim(),
     medicamentos:     document.getElementById('medicamentos').value.trim(),
     status:           'Em andamento',

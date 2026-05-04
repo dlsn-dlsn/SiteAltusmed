@@ -868,22 +868,24 @@ function RequestModal({ t, onClose }) {
         email_contato:    data.email || '',
         status:           'Pendente',
       });
-      await fetch('https://hdovkmuwofvwpcyfkiih.supabase.co/functions/v1/smooth-handler', {
-        method:  'POST',
-        headers: {
-          'Content-Type':  'application/json',
-          'Authorization': 'Bearer sb_publishable_GetcnIgIEe6owbOQea2HOg_0MuxtLdP',
-          'apikey':        'sb_publishable_GetcnIgIEe6owbOQea2HOg_0MuxtLdP',
-        },
-        body: JSON.stringify({
-          urgencia:  data.urgencia,
-          servico:   data.servico,
-          descricao: data.descricao || '',
-          nome:      data.nome,
-          telefone:  data.telefone,
-          email:     data.email,
-        }),
-      });
+      try {
+        await fetch('https://hdovkmuwofvwpcyfkiih.supabase.co/functions/v1/smooth-handler', {
+          method:  'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': 'Bearer sb_publishable_GetcnIgIEe6owbOQea2HOg_0MuxtLdP',
+            'apikey':        'sb_publishable_GetcnIgIEe6owbOQea2HOg_0MuxtLdP',
+          },
+          body: JSON.stringify({
+            urgencia:  data.urgencia,
+            servico:   data.servico,
+            descricao: data.descricao || '',
+            nome:      data.nome,
+            telefone:  data.telefone,
+            email:     data.email,
+          }),
+        });
+      } catch(err) {}
     } catch(e) { console.error('Erro ao enviar solicitação:', e); }
     setLoading(false);
     setSent(true);

@@ -219,9 +219,9 @@ function ECG({ color = '#78BE20', w = 120, h = 28 }) {
 }
 
 // ── Lang toggle ───────────────────────────────────────────────────────
-function LangToggle({ lang, setLang }) {
+function LangToggle() {
   return (
-    <button onClick={() => setLang(l => l === 'pt' ? 'en' : 'pt')} style={{
+    <button onClick={() => window.location.href='/AltusMedENG.html'} style={{
       display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.07)',
       border: '1px solid rgba(255,255,255,0.12)', borderRadius: 20, padding: '5px 12px',
       color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
@@ -230,13 +230,13 @@ function LangToggle({ lang, setLang }) {
     onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(120,190,32,0.5)'}
     onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'}
     >
-      {Ico.globe} {lang === 'pt' ? 'EN' : 'PT'}
+      {Ico.globe} EN
     </button>
   );
 }
 
 // ── Nav ───────────────────────────────────────────────────────────────
-function Nav({ t, lang, setLang, onRequest, onLogin }) {
+function Nav({ t, onRequest, onLogin }) {
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 40);
@@ -269,7 +269,7 @@ function Nav({ t, lang, setLang, onRequest, onLogin }) {
           ))}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 32 }}>
-          <LangToggle lang={lang} setLang={setLang}/>
+          <LangToggle />
           <button onClick={() => window.location.href='/restrito'} style={{
   display: 'flex', alignItems: 'center', gap: 6, background: 'transparent',
   border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6,
@@ -936,7 +936,7 @@ function App() {
 
   return (
     <>
-      <Nav t={t} lang={lang} setLang={setLang} onRequest={() => setShowRequest(true)} onLogin={() => setShowLogin(true)}/>
+      <Nav t={t} onRequest={() => setShowRequest(true)} onLogin={() => setShowLogin(true)}/>
       <Hero t={t} lang={lang} onRequest={() => setShowRequest(true)}/>
       <Services t={t}/>
       <About t={t}/>

@@ -251,6 +251,33 @@
     text-transform: uppercase; letter-spacing: .05em;
     margin-bottom: .75rem; padding-bottom: .35rem; border-bottom: 1px solid var(--border);
   }
+
+  /* ── ALTITUDE TOGGLES ── */
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .75rem 0; border-bottom: 1px solid var(--border);
+  }
+  .toggle-label { font-size: .9rem; color: var(--text); flex: 1; padding-right: 1rem; }
+  .toggle-group { display: flex; gap: 4px; flex-shrink: 0; }
+  .toggle-btn {
+    padding: .35rem .9rem; border: none; border-radius: 6px;
+    font-size: .8rem; font-weight: 700; cursor: pointer;
+    background: rgba(255,255,255,.08); color: var(--text-m);
+    transition: all .2s;
+  }
+  .toggle-btn.active-sim { background: #dc2626; color: white; }
+  .toggle-btn.active-nao { background: #d97706; color: white; }
+
+  /* ── FLUXO CARDS ── */
+  .fluxo-card {
+    border: 2px solid var(--border); border-radius: 10px;
+    padding: 1rem 1.25rem; cursor: pointer; transition: all .2s;
+    font-size: .9rem; font-weight: 600; color: var(--text-m); margin-bottom: .6rem;
+  }
+  .fluxo-card.selected-liberado     { border-color: #16a34a; background: rgba(22,163,74,.1);   color: #16a34a; }
+  .fluxo-card.selected-reavaliacao  { border-color: #d97706; background: rgba(217,119,6,.1);   color: #d97706; }
+  .fluxo-card.selected-misericordia { border-color: #dc2626; background: rgba(220,38,38,.1);   color: #ef4444; }
+  .fluxo-card.selected-negado       { border-color: #6b7280; background: rgba(107,114,128,.1); color: #9ca3af; }
 </style>
 </head>
 <body>
@@ -641,7 +668,7 @@
       <div class="section-body" id="body-infusao">
         <div class="form-grid">
           <div class="field">
-            <label>Paciente em infusão contínua?</label>
+            <label>Recebe medicação de infusão contínua?</label>
             <select id="infusao-ativo" onchange="toggleInfusaoFields()">
               <option value="Não">Não</option>
               <option value="Sim">Sim</option>
@@ -663,21 +690,117 @@
       </div>
     </div>
 
-    <!-- SEÇÃO 6: CONDUTA E MEDICAMENTOS -->
+    <!-- SEÇÃO 6: OBSERVAÇÕES E RESTRIÇÕES DE VOO -->
     <div class="section">
       <div class="section-header" onclick="toggleSection('conduta')">
-        <span class="section-title">💊 Conduta e Medicamentos</span>
+        <span class="section-title">📋 Observações e Restrições de Voo</span>
         <span class="section-toggle open" id="toggle-conduta">▼</span>
       </div>
       <div class="section-body" id="body-conduta">
-        <div class="form-grid full">
+
+        <!-- Observações e anotações -->
+        <div class="field" style="margin-bottom:1.5rem;">
+          <label>Observações e Anotações Pertinentes ao Caso</label>
+          <textarea id="obs-anotacoes" rows="4"
+            placeholder="Informações relevantes para a equipe de transporte, intercorrências, histórico..."
+            style="background:rgba(255,255,255,.05);color:var(--green);border:1px solid var(--border);border-radius:8px;padding:.6rem .9rem;font-family:var(--ff);font-size:.9rem;outline:none;resize:vertical;width:100%;transition:border-color .2s;"></textarea>
+        </div>
+
+        <!-- Restrições de altitude -->
+        <div>
+          <div style="font-size:.82rem;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.85rem;">
+            ⚠️ Recomendações de Voo com Altitude de Cabine Reduzida
+          </div>
+
+          <div class="toggle-row">
+            <span class="toggle-label">Cirurgia recente &lt; 7 dias?</span>
+            <div class="toggle-group">
+              <button class="toggle-btn" id="tog-cirurgia-sim" onclick="setToggle('cirurgia', true)">SIM</button>
+              <button class="toggle-btn active-nao" id="tog-cirurgia-nao" onclick="setToggle('cirurgia', false)">NÃO</button>
+            </div>
+          </div>
+
+          <div class="toggle-row">
+            <span class="toggle-label">Pneumotórax / Pneumoencéfalo / Pneumoperitôneo não drenado?</span>
+            <div class="toggle-group">
+              <button class="toggle-btn" id="tog-pneumo-sim" onclick="setToggle('pneumo', true)">SIM</button>
+              <button class="toggle-btn active-nao" id="tog-pneumo-nao" onclick="setToggle('pneumo', false)">NÃO</button>
+            </div>
+          </div>
+
+          <div class="toggle-row">
+            <span class="toggle-label">Obstrução intestinal?</span>
+            <div class="toggle-group">
+              <button class="toggle-btn" id="tog-obstrucao-sim" onclick="setToggle('obstrucao', true)">SIM</button>
+              <button class="toggle-btn active-nao" id="tog-obstrucao-nao" onclick="setToggle('obstrucao', false)">NÃO</button>
+            </div>
+          </div>
+
+          <div class="toggle-row" style="border-bottom:none;">
+            <span class="toggle-label">Outra recomendação para voo com altitude de cabine reduzida?</span>
+            <div class="toggle-group">
+              <button class="toggle-btn" id="tog-outra-restricao-sim" onclick="setToggle('outra-restricao', true)">SIM</button>
+              <button class="toggle-btn active-nao" id="tog-outra-restricao-nao" onclick="setToggle('outra-restricao', false)">NÃO</button>
+            </div>
+          </div>
+
+          <div id="outra-restricao-obs-wrap" style="display:none;margin-top:.75rem;">
+            <textarea id="outra-restricao-obs" rows="3"
+              placeholder="Descreva a recomendação..."
+              style="width:100%;background:rgba(30,58,95,0.8);color:#78BE20;border:1px solid #78BE20;border-radius:8px;padding:.6rem .9rem;font-family:var(--ff);font-size:.9rem;outline:none;resize:vertical;"></textarea>
+          </div>
+
+          <div id="aviso-altitude" style="display:none;background:rgba(220,38,38,.12);border:1.5px solid rgba(220,38,38,.4);border-radius:10px;padding:1rem 1.25rem;margin-top:1rem;align-items:center;gap:.75rem;">
+            <span style="font-size:1.4rem;">⚠️</span>
+            <div>
+              <div style="font-weight:700;color:#ef4444;font-size:.95rem;">RECOMENDAÇÃO DE VOO COM ALTITUDE DE CABINE REDUZIDA</div>
+              <div style="font-size:.82rem;color:#fca5a5;margin-top:3px;">Altitude de cabine &lt; 5.000 pés ou a critério médico — expansão de gases</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO 7: FLUXO E DECISÃO MÉDICA -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection('fluxo')">
+        <span class="section-title">✈️ Fluxo e Decisão Médica</span>
+        <span class="section-toggle open" id="toggle-fluxo">▼</span>
+      </div>
+      <div class="section-body" id="body-fluxo">
+        <div class="fluxo-card" id="fluxo-liberado" onclick="selecionarFluxo('liberado')">✅ Liberado para Voo</div>
+        <div class="fluxo-card" id="fluxo-reavaliacao" onclick="selecionarFluxo('reavaliacao')">🕐 Reavaliação em X horas</div>
+        <div class="fluxo-card" id="fluxo-misericordia" onclick="selecionarFluxo('misericordia')">🚨 Voo para Salvaguardar a Vida Humana (Voo de Misericórdia)</div>
+        <div class="fluxo-card" id="fluxo-negado" onclick="selecionarFluxo('negado')">❌ Voo Negado</div>
+
+        <div id="reavaliacao-horas-wrap" style="display:none;margin-top:.75rem;">
+          <div class="field" style="max-width:220px;">
+            <label>Reavaliar em quantas horas?</label>
+            <input type="number" id="fluxo-horas" min="1" max="72" placeholder="Ex: 6">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO 8: EQUIPE DE VOO -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection('equipe')">
+        <span class="section-title">👨‍⚕️ Equipe de Voo</span>
+        <span class="section-toggle open" id="toggle-equipe">▼</span>
+      </div>
+      <div class="section-body" id="body-equipe">
+        <div class="form-grid">
           <div class="field">
-            <label>Conduta</label>
-            <textarea id="conduta" rows="3" placeholder="Procedimentos realizados, intervenções..."></textarea>
+            <label>Médico responsável pelo voo</label>
+            <select id="equipe-medico">
+              <option value="">Não designado</option>
+            </select>
           </div>
           <div class="field">
-            <label>Medicamentos em uso</label>
-            <textarea id="medicamentos" rows="3" placeholder="Medicações em curso, doses..."></textarea>
+            <label>Enfermeiro(a) responsável</label>
+            <select id="equipe-enfermeiro">
+              <option value="">Não designado</option>
+            </select>
           </div>
         </div>
       </div>
@@ -743,13 +866,21 @@ let usuarioAtual   = null;
 let perfilAtual    = {};
 let regulacaoSalva = null;
 
+const toggleState = {
+  cirurgia: false,
+  pneumo: false,
+  obstrucao: false,
+  'outra-restricao': false
+};
+let fluxoSelecionado = '';
+
 // ── Auth ──────────────────────────────────────────────────────────────
 async function init() {
   try {
     const { data: { session } } = await db.auth.getSession();
     if (!session) { window.location.href = 'restrito.html'; return; }
     usuarioAtual = session.user;
-    await Promise.all([carregarPerfil(), carregarAeroportosCustom()]);
+    await Promise.all([carregarPerfil(), carregarAeroportosCustom(), carregarEquipe()]);
     document.getElementById('app').style.display = 'block';
   } catch(e) {
     window.location.href = 'restrito.html';
@@ -771,6 +902,33 @@ async function carregarPerfil() {
     document.getElementById('topbar-saudacao').textContent = saudacaoCargo(perfilAtual.cargo_tipo);
     document.getElementById('topbar-nome').textContent = perfilAtual.nome || usuarioAtual.email;
   } catch(e) {}
+}
+
+// ── Equipe de voo ─────────────────────────────────────────────────────
+async function carregarEquipe() {
+  try {
+    const { data } = await db.from('perfis')
+      .select('id, nome, cargo, cargo_tipo, crm')
+      .in('cargo_tipo', ['medico', 'diretor', 'enfermeiro'])
+      .order('nome');
+
+    const medicos     = (data || []).filter(p => ['medico','diretor'].includes(p.cargo_tipo));
+    const enfermeiros = (data || []).filter(p => p.cargo_tipo === 'enfermeiro');
+
+    popularSelect('equipe-medico',     medicos);
+    popularSelect('equipe-enfermeiro', enfermeiros);
+  } catch(e) {}
+}
+
+function popularSelect(id, lista) {
+  const sel = document.getElementById(id);
+  sel.innerHTML = '<option value="">Não designado</option>';
+  lista.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = p.nome + (p.crm ? ' — CRM ' + p.crm : '') + ' (' + (p.cargo || p.cargo_tipo) + ')';
+    sel.appendChild(opt);
+  });
 }
 
 // ── Aeroportos custom ────────────────────────────────────────────────
@@ -925,17 +1083,28 @@ function calcGCS() {
   const m = parseInt(document.getElementById('gcs_m').value) || 0;
   const total = o + v + m;
   document.getElementById('gcs-total').textContent = total;
+  calcGCSP();
+}
 
-  const pupilarVal = document.getElementById('gcs-pupilar').value;
-  const gcsPEl     = document.getElementById('gcs-p-resultado');
-  if (pupilarVal) {
-    const p    = parseInt(pupilarVal);
-    const gcsp = total - p;
-    gcsPEl.textContent = 'GCS-P: ' + gcsp + ' (GCS ' + total + ' − Pupilar ' + p + ')';
-    gcsPEl.style.display = 'block';
-  } else {
-    gcsPEl.style.display = 'none';
+function calcGCSP() {
+  const gcsTot  = parseInt(document.getElementById('gcs-total').textContent) || 0;
+  const pupilar = document.getElementById('gcs-pupilar').value;
+
+  let desconto = 0;
+  if (pupilar === '1') desconto = 0;
+  if (pupilar === '2') desconto = 1;
+  if (pupilar === '3') desconto = 2;
+
+  if (pupilar === '' || pupilar === 'ignorada') {
+    document.getElementById('gcs-p-resultado').style.display = 'none';
+    return;
   }
+
+  const gcsp = gcsTot - desconto;
+  document.getElementById('gcs-p-resultado').textContent =
+    'GCS-P: ' + gcsp +
+    (desconto > 0 ? ' (desconto pupilar: −' + desconto + ')' : ' (sem desconto pupilar)');
+  document.getElementById('gcs-p-resultado').style.display = 'block';
 }
 
 function togglePediatricoGCS() {
@@ -983,6 +1152,33 @@ function togglePediatricoGCS() {
   calcGCS();
 }
 
+// ── Altitude toggles ──────────────────────────────────────────────────
+function setToggle(id, valor) {
+  toggleState[id] = valor;
+  const sim = document.getElementById('tog-' + id + '-sim');
+  const nao = document.getElementById('tog-' + id + '-nao');
+  sim.className = 'toggle-btn' + (valor  ? ' active-sim' : '');
+  nao.className = 'toggle-btn' + (!valor ? ' active-nao' : '');
+
+  if (id === 'outra-restricao') {
+    document.getElementById('outra-restricao-obs-wrap').style.display = valor ? 'block' : 'none';
+  }
+  verificarAltitude();
+}
+
+function verificarAltitude() {
+  const algumSim = Object.values(toggleState).some(v => v);
+  document.getElementById('aviso-altitude').style.display = algumSim ? 'flex' : 'none';
+}
+
+// ── Fluxo e decisão ───────────────────────────────────────────────────
+function selecionarFluxo(id) {
+  fluxoSelecionado = id;
+  document.querySelectorAll('.fluxo-card').forEach(c => c.className = 'fluxo-card');
+  document.getElementById('fluxo-' + id).classList.add('selected-' + id);
+  document.getElementById('reavaliacao-horas-wrap').style.display = id === 'reavaliacao' ? 'block' : 'none';
+}
+
 // ── O2 ────────────────────────────────────────────────────────────────
 function toggleO2Fields() {
   const sim = document.getElementById('o2_uso').value === 'Sim';
@@ -1025,7 +1221,7 @@ function calcO2Necessario() {
     'Cilindros: C=' + cil.C + ' | D=' + cil.D + ' | E=' + cil.E + ' | H=' + cil.H;
   resultado.style.display = 'block';
 
-  document.getElementById('o2-litros-hidden').value   = litros.toFixed(1);
+  document.getElementById('o2-litros-hidden').value    = litros.toFixed(1);
   document.getElementById('o2-cilindros-hidden').value = cil.E;
 }
 
@@ -1040,7 +1236,7 @@ function toggleOutra(tipo, n) {
   const outraId = tipo === 'dva' ? 'dva-outra-'  + n : 'droga-outra-' + n;
   const sel     = document.getElementById(selId);
   const outra   = document.getElementById(outraId);
-  if (outra) outra.style.display = sel?.value === 'Outra' ? 'block' : 'none';
+  if (outra) outra.style.display = sel?.value === 'Outra' || sel?.value === 'Outra hidratação' ? 'block' : 'none';
 }
 
 function addDVA() {
@@ -1107,6 +1303,20 @@ function addDroga() {
           <option>Labetalol</option><option>Nicardipina</option>
           <option value="Outra">Outra</option>
         </optgroup>
+        <optgroup label="Aporte Calórico / Hidratação">
+          <option>Nutrição Parenteral Total (NPT)</option>
+          <option>Lipídeos EV</option>
+          <option>Albumina 20%</option>
+          <option>Albumina 4%</option>
+          <option>Dextrose 50%</option>
+          <option>Solução Glicosada 10%</option>
+          <option>Solução Glicosada 5%</option>
+          <option>Solução Fisiológica 0,9%</option>
+          <option>Ringer Lactato</option>
+          <option>Solução de Manitol 20%</option>
+          <option>Bicarbonato de Sódio 8,4%</option>
+          <option value="Outra hidratação">Outra hidratação (campo livre)</option>
+        </optgroup>
       </select>
       <input type="text" class="infusao-input" id="droga-outra-${n}"
              placeholder="Nome da droga" style="display:none;">
@@ -1150,7 +1360,8 @@ function coletarDrogas() {
       const id = l.dataset.drogaId;
       const drogaEl = document.getElementById('droga-nome-' + id);
       let droga = drogaEl?.value;
-      if (droga === 'Outra') droga = document.getElementById('droga-outra-' + id)?.value.trim() || 'Outra';
+      if (droga === 'Outra' || droga === 'Outra hidratação')
+        droga = document.getElementById('droga-outra-' + id)?.value.trim() || droga;
       return {
         droga,
         valor:   parseFloat(document.getElementById('droga-valor-'   + id)?.value) || null,
@@ -1191,10 +1402,10 @@ async function finalizarRegulacao() {
   if (vooMin > 210) totalMin += 60;
 
   // PA / PAM
-  const pas   = document.getElementById('pas').value;
-  const pad   = document.getElementById('pad').value;
-  const pa    = (pas && pad) ? `${pas}/${pad}` : null;
-  const pam   = parseFloat(document.getElementById('pam-valor').value) || null;
+  const pas = document.getElementById('pas').value;
+  const pad = document.getElementById('pad').value;
+  const pa  = (pas && pad) ? `${pas}/${pad}` : null;
+  const pam = parseFloat(document.getElementById('pam-valor').value) || null;
 
   // GCS
   const gcsTotal      = parseInt(document.getElementById('gcs-total').textContent) || null;
@@ -1203,19 +1414,30 @@ async function finalizarRegulacao() {
   const gcsPediatrico = document.getElementById('badge-pediatrico').style.display !== 'none';
 
   // O2
-  const o2Ativo    = document.getElementById('o2_uso').value === 'Sim';
-  const o2Disp     = o2Ativo ? document.getElementById('o2-dispositivo').value : null;
-  const o2Flow     = o2Ativo ? parseFloat(document.getElementById('o2-flow').value) || null : null;
-  const o2Litros   = parseFloat(document.getElementById('o2-litros-hidden').value)   || null;
-  const o2Cilindros= parseFloat(document.getElementById('o2-cilindros-hidden').value)|| null;
-  const hasVM      = o2Ativo && ['CPAP', 'VMI', 'VNI'].includes(o2Disp);
-  const isCPAP     = o2Disp === 'CPAP';
-  const isVMI      = o2Disp === 'VMI';
+  const o2Ativo     = document.getElementById('o2_uso').value === 'Sim';
+  const o2Disp      = o2Ativo ? document.getElementById('o2-dispositivo').value : null;
+  const o2Flow      = o2Ativo ? parseFloat(document.getElementById('o2-flow').value) || null : null;
+  const o2Litros    = parseFloat(document.getElementById('o2-litros-hidden').value)    || null;
+  const o2Cilindros = parseFloat(document.getElementById('o2-cilindros-hidden').value) || null;
+  const hasVM       = o2Ativo && ['CPAP', 'VMI', 'VNI'].includes(o2Disp);
+  const isCPAP      = o2Disp === 'CPAP';
+  const isVMI       = o2Disp === 'VMI';
 
   // Infusão
   const infusaoContinua = document.getElementById('infusao-ativo').value === 'Sim';
-  const duas        = infusaoContinua ? coletarDVAs()   : [];
-  const outrasDrogas= infusaoContinua ? coletarDrogas() : [];
+  const duas            = infusaoContinua ? coletarDVAs()   : [];
+  const outrasDrogas    = infusaoContinua ? coletarDrogas() : [];
+
+  // Restrições de altitude
+  const recomendacaoAltitude = Object.values(toggleState).some(v => v);
+
+  // Equipe
+  const selMedico       = document.getElementById('equipe-medico');
+  const selEnfermeiro   = document.getElementById('equipe-enfermeiro');
+  const medicoVooId     = selMedico.value     || null;
+  const enfermeiroVooId = selEnfermeiro.value || null;
+  const medicoVooNome   = medicoVooId     ? selMedico.options[selMedico.selectedIndex].text         : null;
+  const enfermeiroNome  = enfermeiroVooId ? selEnfermeiro.options[selEnfermeiro.selectedIndex].text : null;
 
   const regulacaoData = {
     codigo,
@@ -1240,35 +1462,50 @@ async function finalizarRegulacao() {
     naca,
     pa,
     pam,
-    fc:                    parseInt(document.getElementById('fc').value)   || null,
-    fr:                    parseInt(document.getElementById('fr').value)   || null,
-    spo2:                  parseInt(document.getElementById('spo2').value) || null,
+    fc:                    parseInt(document.getElementById('fc').value)     || null,
+    fr:                    parseInt(document.getElementById('fr').value)     || null,
+    spo2:                  parseInt(document.getElementById('spo2').value)   || null,
     temp:                  parseFloat(document.getElementById('temp').value) || null,
-    gcs_o:                 parseInt(document.getElementById('gcs_o').value) || null,
-    gcs_v:                 parseInt(document.getElementById('gcs_v').value) || null,
-    gcs_m:                 parseInt(document.getElementById('gcs_m').value) || null,
+    gcs_o:                 parseInt(document.getElementById('gcs_o').value)  || null,
+    gcs_v:                 parseInt(document.getElementById('gcs_v').value)  || null,
+    gcs_m:                 parseInt(document.getElementById('gcs_m').value)  || null,
     gcs_total:             gcsTotal,
     gcs_pupilar:           gcsPupilar,
     gcs_pediatrico:        gcsPediatrico,
     o2_ativo:              o2Ativo,
     o2_dispositivo:        o2Disp,
     o2_flow:               o2Flow,
-    vm_modo:               hasVM && !isCPAP ? document.getElementById('vm-modo')?.value  || null : null,
-    vm_fio2:               hasVM ? parseInt(isCPAP ? document.getElementById('vm-cpap-fio2')?.value : document.getElementById('vm-fio2')?.value)  || null : null,
-    vm_peep:               hasVM && !isCPAP ? parseInt(document.getElementById('vm-peep')?.value)   || null : null,
-    vm_volume:             isVMI ? parseInt(document.getElementById('vm-volume')?.value) || null : null,
-    vm_freq:               hasVM && !isCPAP ? parseInt(document.getElementById('vm-freq')?.value)   || null : null,
-    vm_ps:                 hasVM && !isCPAP ? parseFloat(document.getElementById('vm-ps')?.value)   || null : null,
-    vm_ti:                 hasVM && !isCPAP ? parseFloat(document.getElementById('vm-ti')?.value)   || null : null,
-    vm_fluxo:              hasVM && !isCPAP ? parseFloat(document.getElementById('vm-fluxo')?.value)|| null : null,
+    vm_modo:               hasVM && !isCPAP ? document.getElementById('vm-modo')?.value    || null : null,
+    vm_fio2:               hasVM ? parseInt(isCPAP ? document.getElementById('vm-cpap-fio2')?.value : document.getElementById('vm-fio2')?.value) || null : null,
+    vm_peep:               hasVM && !isCPAP ? parseInt(document.getElementById('vm-peep')?.value)    || null : null,
+    vm_volume:             isVMI ? parseInt(document.getElementById('vm-volume')?.value)    || null : null,
+    vm_freq:               hasVM && !isCPAP ? parseInt(document.getElementById('vm-freq')?.value)    || null : null,
+    vm_ps:                 hasVM && !isCPAP ? parseFloat(document.getElementById('vm-ps')?.value)    || null : null,
+    vm_ti:                 hasVM && !isCPAP ? parseFloat(document.getElementById('vm-ti')?.value)    || null : null,
+    vm_fluxo:              hasVM && !isCPAP ? parseFloat(document.getElementById('vm-fluxo')?.value) || null : null,
     vm_obs:                hasVM ? (isCPAP ? document.getElementById('vm-cpap-obs')?.value.trim() || null : document.getElementById('vm-obs')?.value.trim() || null) : null,
-    o2_litros_necessarios: o2Litros,
+    o2_litros_necessarios:    o2Litros,
     o2_cilindros_necessarios: o2Cilindros,
     infusao_continua:      infusaoContinua,
-    duas:                  duas.length        ? JSON.stringify(duas)        : null,
-    outras_drogas:         outrasDrogas.length? JSON.stringify(outrasDrogas): null,
-    conduta:               document.getElementById('conduta').value.trim(),
-    medicamentos:          document.getElementById('medicamentos').value.trim(),
+    duas:                  duas.length         ? JSON.stringify(duas)         : null,
+    outras_drogas:         outrasDrogas.length ? JSON.stringify(outrasDrogas) : null,
+    observacoes:           document.getElementById('obs-anotacoes').value.trim() || null,
+    cirurgia_recente:      toggleState.cirurgia,
+    pneumo_nao_drenado:    toggleState.pneumo,
+    obstrucao_intestinal:  toggleState.obstrucao,
+    outra_restricao_altitude: toggleState['outra-restricao'],
+    outra_restricao_obs:   toggleState['outra-restricao']
+      ? document.getElementById('outra-restricao-obs').value.trim() || null
+      : null,
+    recomendacao_altitude: recomendacaoAltitude,
+    fluxo:                 fluxoSelecionado || null,
+    fluxo_reavaliacao_horas: fluxoSelecionado === 'reavaliacao'
+      ? parseInt(document.getElementById('fluxo-horas').value) || null
+      : null,
+    medico_voo_id:         medicoVooId,
+    enfermeiro_voo_id:     enfermeiroVooId,
+    medico_voo_nome:       medicoVooNome,
+    enfermeiro_voo_nome:   enfermeiroNome,
     status:                'Em andamento',
     created_at:            new Date().toISOString(),
   };
@@ -1361,7 +1598,7 @@ function exportarPDF() {
   doc.setFont('helvetica', 'bold'); doc.setFontSize(20); doc.setTextColor(120, 190, 32);
   doc.text('ALTUSMED', ml, 13);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(180, 200, 220);
-  doc.text('Regulacao Aeromédica', ml, 21);
+  doc.text('Regulacao Aeromedica', ml, 21);
   doc.setFontSize(8); doc.setTextColor(120, 140, 160);
   doc.text('Gerado em: ' + now, pw - ml, 21, { align: 'right' });
   y = 36;
@@ -1370,7 +1607,7 @@ function exportarPDF() {
   doc.setFillColor(235, 243, 255); doc.setDrawColor(26, 46, 74);
   doc.roundedRect(ml, y, cw, 10, 2, 2, 'FD');
   doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(26, 46, 74);
-  doc.text('Missão: ' + d.codigo, pw / 2, y + 7, { align: 'center' });
+  doc.text('Missao: ' + d.codigo, pw / 2, y + 7, { align: 'center' });
   y += 16;
 
   // Logística
@@ -1387,7 +1624,7 @@ function exportarPDF() {
   if (d.tempo_total_missao) {
     const ht = Math.floor(d.tempo_total_missao / 60), mt = d.tempo_total_missao % 60;
     const nota = (d.tempo_voo_horas * 60 + d.tempo_voo_minutos) > 210 ? ' (incl. reabastecimento)' : '';
-    row('Tempo total missão', ht + 'h ' + mt + 'min' + nota);
+    row('Tempo total missao', ht + 'h ' + mt + 'min' + nota);
   }
 
   // Paciente
@@ -1406,7 +1643,7 @@ function exportarPDF() {
   if (d.paciente_peso) row('Peso', d.paciente_peso + ' kg');
   row('Sexo', d.paciente_sexo);
   row('NACA', d.naca);
-  multiRow('Diagnóstico', d.diagnostico);
+  multiRow('Diagnostico', d.diagnostico);
 
   // Sinais Vitais
   secHeader('SINAIS VITAIS');
@@ -1415,14 +1652,16 @@ function exportarPDF() {
   row('FC',          d.fc   ? d.fc   + ' bpm' : null);
   row('FR',          d.fr   ? d.fr   + ' rpm' : null);
   row('SpO2',        d.spo2 ? d.spo2 + ' %'   : null);
-  row('Temperatura', d.temp ? d.temp + ' °C'  : null);
+  row('Temperatura', d.temp ? d.temp + ' oC'  : null);
   if (d.gcs_total) {
-    const pedStr = d.gcs_pediatrico ? ' (Pediátrico)' : '';
+    const pedStr = d.gcs_pediatrico ? ' (Pediatrico)' : '';
     row('GCS Total' + pedStr, d.gcs_total + ' / 15');
     row('GCS  O / V / M', d.gcs_o + ' / ' + d.gcs_v + ' / ' + d.gcs_m);
     if (d.gcs_pupilar != null) {
-      const gcsp = d.gcs_total - d.gcs_pupilar;
-      row('GCS-P', gcsp + ' (Pupilar: ' + d.gcs_pupilar + ')');
+      const descontoMap = { 1: 0, 2: 1, 3: 2 };
+      const desc = descontoMap[d.gcs_pupilar] ?? 0;
+      const gcsp = d.gcs_total - desc;
+      row('GCS-P', gcsp + (desc > 0 ? ' (desconto pupilar: -' + desc + ')' : ' (sem desconto)'));
     }
   }
 
@@ -1432,20 +1671,20 @@ function exportarPDF() {
     row('Dispositivo', d.o2_dispositivo);
     row('Flow', d.o2_flow ? d.o2_flow + ' L/min' : null);
     if (d.o2_litros_necessarios)
-      row('O2 necessário', d.o2_litros_necessarios + ' L (E=' + d.o2_cilindros_necessarios + ' cil.)');
-    if (d.vm_modo)    row('Modo VM',   d.vm_modo);
-    if (d.vm_fio2)    row('FiO2',      d.vm_fio2 + ' %');
-    if (d.vm_peep)    row('PEEP',      d.vm_peep + ' cmH2O');
-    if (d.vm_volume)  row('Vol. corrente', d.vm_volume + ' ml');
-    if (d.vm_freq)    row('Freq. prog.', d.vm_freq + ' rpm');
-    if (d.vm_ps)      row('Pressão suporte', d.vm_ps + ' cmH2O');
-    if (d.vm_ti)      row('Tempo insp.', d.vm_ti + ' s');
-    if (d.vm_fluxo)   row('Fluxo',     d.vm_fluxo + ' L/min');
-    if (d.vm_obs)     row('Obs. VM',   d.vm_obs);
+      row('O2 necessario', d.o2_litros_necessarios + ' L (E=' + d.o2_cilindros_necessarios + ' cil.)');
+    if (d.vm_modo)   row('Modo VM',         d.vm_modo);
+    if (d.vm_fio2)   row('FiO2',            d.vm_fio2 + ' %');
+    if (d.vm_peep)   row('PEEP',            d.vm_peep + ' cmH2O');
+    if (d.vm_volume) row('Vol. corrente',   d.vm_volume + ' ml');
+    if (d.vm_freq)   row('Freq. prog.',     d.vm_freq + ' rpm');
+    if (d.vm_ps)     row('Pressao suporte', d.vm_ps + ' cmH2O');
+    if (d.vm_ti)     row('Tempo insp.',     d.vm_ti + ' s');
+    if (d.vm_fluxo)  row('Fluxo',          d.vm_fluxo + ' L/min');
+    if (d.vm_obs)    row('Obs. VM',         d.vm_obs);
   }
 
   // Infusão Contínua
-  const dvaList   = d.duas        ? JSON.parse(d.duas)        : [];
+  const dvaList   = d.duas         ? JSON.parse(d.duas)         : [];
   const drogaList = d.outras_drogas ? JSON.parse(d.outras_drogas) : [];
   if (d.infusao_continua && (dvaList.length || drogaList.length)) {
     secHeader('MEDICACOES EM INFUSAO CONTINUA');
@@ -1461,11 +1700,59 @@ function exportarPDF() {
     }
   }
 
-  // Conduta
-  if (d.conduta || d.medicamentos) {
-    secHeader('CONDUTA E MEDICAMENTOS');
-    multiRow('Conduta', d.conduta);
-    multiRow('Medicamentos', d.medicamentos);
+  // Observações
+  if (d.observacoes) {
+    secHeader('OBSERVACOES E ANOTACOES');
+    multiRow('', d.observacoes);
+  }
+
+  // Restrições de altitude
+  const restricoes = [];
+  if (d.cirurgia_recente)         restricoes.push('Cirurgia recente < 7 dias');
+  if (d.pneumo_nao_drenado)       restricoes.push('Pneumotorax / Pneumoencefalo / Pneumoperitonio nao drenado');
+  if (d.obstrucao_intestinal)     restricoes.push('Obstrucao intestinal');
+  if (d.outra_restricao_altitude) restricoes.push('Outra: ' + (d.outra_restricao_obs || 'ver observacoes'));
+
+  if (d.recomendacao_altitude) {
+    secHeader('RESTRICOES DE ALTITUDE');
+    restricoes.forEach(r => {
+      checkPage();
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(20, 20, 20);
+      doc.text('  * ' + r, ml, y); y += 6;
+    });
+
+    checkPage(); y += 2;
+    doc.setFillColor(253, 220, 220);
+    doc.setDrawColor(220, 38, 38);
+    doc.setLineWidth(0.6);
+    doc.roundedRect(ml, y, cw, 14, 2, 2, 'FD');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(180, 20, 20);
+    doc.text('! RECOMENDACAO DE VOO COM ALTITUDE DE CABINE REDUZIDA', ml + 4, y + 5.5);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(160, 40, 40);
+    doc.text('Altitude de cabine < 5.000 pes ou a criterio medico — expansao de gases', ml + 4, y + 10.5);
+    doc.setLineWidth(0.2);
+    y += 18;
+  }
+
+  // Fluxo
+  if (d.fluxo) {
+    secHeader('FLUXO E DECISAO MEDICA');
+    const fluxoLabels = {
+      liberado:     'Liberado para Voo',
+      reavaliacao:  'Reavaliacao',
+      misericordia: 'Voo de Misericordia (Salvaguardar a Vida Humana)',
+      negado:       'Voo Negado'
+    };
+    row('Decisao', fluxoLabels[d.fluxo] || d.fluxo);
+    if (d.fluxo === 'reavaliacao' && d.fluxo_reavaliacao_horas)
+      row('Reavaliar em', d.fluxo_reavaliacao_horas + ' horas');
+  }
+
+  // Equipe de voo
+  if (d.medico_voo_nome || d.enfermeiro_voo_nome) {
+    secHeader('EQUIPE DE VOO');
+    if (d.medico_voo_nome)    row('Medico',         d.medico_voo_nome);
+    if (d.enfermeiro_voo_nome) row('Enfermeiro(a)', d.enfermeiro_voo_nome);
   }
 
   // Rodapé
@@ -1474,10 +1761,10 @@ function exportarPDF() {
   doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(60, 60, 60);
   const medicoNome = perfilAtual.nome || usuarioAtual?.email || '';
   const crm = perfilAtual.crm ? '  |  CRM-PA ' + perfilAtual.crm : '';
-  doc.text('Médico Regulador: ' + medicoNome + crm, ml, footY + 5);
+  doc.text('Medico Regulador: ' + medicoNome + crm, ml, footY + 5);
   doc.setDrawColor(100, 100, 100); doc.line(ml, footY + 14, ml + 72, footY + 14);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(100, 100, 100);
-  doc.text('Assinatura do Médico Regulador', ml, footY + 18);
+  doc.text('Assinatura do Medico Regulador', ml, footY + 18);
 
   doc.save('AltusMed-' + d.codigo + '.pdf');
 }

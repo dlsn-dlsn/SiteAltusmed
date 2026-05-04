@@ -29,6 +29,7 @@
   </svg>
 </template>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
@@ -124,8 +125,8 @@ const T = {
     footer: { rights: '© 2026 AltusMed — Transporte Aeromédico & Regulação de Pacientes', tagline: 'Belém, Pará — Brasil' },
     modal: {
       urgency: { title: 'Qual o grau de urgência?', opts: [['immediate','Imediato','Nas próximas horas'],['scheduled','Programado','24 a 72 horas'],['elective','Eletivo','Mais de 72 horas']] },
-      service: { title: 'Qual serviço você precisa?', opts: [['commercial','Aeromédico Comercial','Paciente estável em voo comercial'],['air','UTI Aérea','Paciente crítico / intensivo'],['ground','Transporte Terrestre','Transfer local ou inter-hospitalar'],['reg','Regulação','Preciso de orientação de coordenação']] },
-      contact: { title: 'Seus dados de contato', name: 'Nome', phone: 'Telefone', confirm: 'Confirmar & Enviar' },
+      service: { title: 'Qual serviço você precisa?', opts: [['commercial','Aeromédico Comercial','Paciente estável em voo comercial'],['air','UTI Aérea','Paciente crítico / intensivo'],['ground','Transporte Terrestre','Transfer local ou inter-hospitalar'],['reg','Regulação','Preciso de orientação de coordenação'],['ajuda','Não tenho certeza, me ajude a decidir','Nossa equipe avalia o caso e indica a melhor opção']] },
+      contact: { title: 'Seus dados de contato', name: 'Nome completo', phone: 'Telefone / WhatsApp', email: 'E-mail', desc: 'Descreva brevemente o estado do paciente', confirm: 'Confirmar & Enviar', successTitle: 'Solicitação enviada!', successMsg: 'Nossa equipe entrará em contato em breve. Em casos de emergência ligue: (91) 9117-0682' },
       step: 'Passo',
       of: 'de',
     },
@@ -834,46 +835,98 @@ function Footer({ t }) {
 }
 
 // ── Request Modal ─────────────────────────────────────────────────────
+const SUPA_URL = 'https://hdovkmuwofvwpcyfkiih.supabase.co';
+const SUPA_KEY = 'sb_publishable_GetcnIgIEe6owbOQea2HOg_0MuxtLdP';
+
 function RequestModal({ t, onClose }) {
-  const [step, setStep] = useState(0);
-  const [data, setData] = useState({});
+  const [step, setStep]     = useState(0);
+  const [data, setData]     = useState({});
+  const [loading, setLoading] = useState(false);
+  const [sent, setSent]     = useState(false);
   const steps = [t.modal.urgency, t.modal.service];
-  const cur = steps[step];
+  const cur   = steps[step];
+  const c     = t.modal.contact;
   const inputStyle = { width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:6, padding:'10px 12px', fontSize:14, outline:'none', fontFamily:'var(--ff)', color:'white' };
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    try {
+      const { createClient } = supabase;
+      const db = createClient(SUPA_URL, SUPA_KEY);
+      await db.from('solicitacoes').insert({
+        urgencia:         data.urgency,
+        servico:          data.service,
+        descricao:        data.desc || '',
+        nome_contato:     data.nome  || '',
+        telefone_contato: data.telefone || '',
+        email_contato:    data.email || '',
+        status:           'Pendente',
+      });
+      await fetch(`${SUPA_URL}/functions/v1/smooth-handler`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPA_KEY}` },
+        body: JSON.stringify({ urgencia: data.urgency, servico: data.service, descricao: data.desc || '', nome: data.nome || '', telefone: data.telefone || '', email: data.email || '' }),
+      });
+    } catch(e) { console.error('Erro ao enviar solicitação:', e); }
+    setLoading(false);
+    setSent(true);
+  };
+
   return (
     <div style={{ position:'fixed', inset:0, zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.65)', backdropFilter:'blur(6px)' }}
       onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
       <div style={{ background:'#0F2245', border:'1px solid rgba(255,255,255,0.1)', borderRadius:20, padding:'36px', maxWidth:460, width:'90%', boxShadow:'0 40px 100px rgba(0,0,0,0.6)' }}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:24 }}>
-          <div>
-            <div style={{ fontSize:10, color:'#78BE20', letterSpacing:'0.08em', textTransform:'uppercase', fontWeight:700 }}>{t.modal.step} {step+1} {t.modal.of} {steps.length+1}</div>
-            <h3 style={{ fontFamily:'var(--ff)', fontSize:21, color:'white', marginTop:4, fontWeight:700 }}>{step < steps.length ? cur.title : t.modal.contact.title}</h3>
-          </div>
-          <button onClick={onClose} style={{ background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:8, width:36, height:36, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,0.5)', fontSize:18 }}>×</button>
-        </div>
-        {step < steps.length ? (
-          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-            {cur.opts.map(([val, label, sub]) => (
-              <button key={val} onClick={()=>{ setData(d=>({...d,[step===0?'urgency':'service']:val})); setStep(s=>s+1); }}
-                style={{ textAlign:'left', background:data[step===0?'urgency':'service']===val?'rgba(120,190,32,0.15)':'rgba(255,255,255,0.04)', border:`1px solid ${data[step===0?'urgency':'service']===val?'rgba(120,190,32,0.4)':'rgba(255,255,255,0.08)'}`, borderRadius:10, padding:'14px 16px', cursor:'pointer', transition:'all 0.15s' }}>
-                <div style={{ fontWeight:700, fontSize:14, color:'white', fontFamily:'var(--ff)' }}>{label}</div>
-                <div style={{ fontSize:12, color:'rgba(255,255,255,0.45)', marginTop:2, fontFamily:'var(--ffd)' }}>{sub}</div>
-              </button>
-            ))}
+        {sent ? (
+          <div style={{ textAlign:'center', padding:'12px 0' }}>
+            <div style={{ fontSize:40, marginBottom:16 }}>✓</div>
+            <h3 style={{ fontFamily:'var(--ff)', fontSize:21, color:'#78BE20', fontWeight:700, marginBottom:12 }}>{c.successTitle}</h3>
+            <p style={{ fontSize:14, color:'rgba(255,255,255,0.65)', fontFamily:'var(--ffd)', lineHeight:1.6 }}>{c.successMsg}</p>
+            <button onClick={onClose} style={{ marginTop:24, background:'#78BE20', color:'#090E1A', border:'none', borderRadius:8, padding:'11px 28px', fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:'var(--ff)' }}>Fechar</button>
           </div>
         ) : (
-          <div>
-            {[t.modal.contact.name, t.modal.contact.phone].map((ph, i) => (
-              <div key={ph} style={{ marginBottom:14 }}>
-                <label style={{ fontSize:11, fontWeight:600, color:'rgba(255,255,255,0.4)', display:'block', marginBottom:6 }}>{ph}</label>
-                <input type={i===1?'tel':'text'} placeholder={ph} style={inputStyle}/>
+          <>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:24 }}>
+              <div>
+                <div style={{ fontSize:10, color:'#78BE20', letterSpacing:'0.08em', textTransform:'uppercase', fontWeight:700 }}>{t.modal.step} {step+1} {t.modal.of} {steps.length+1}</div>
+                <h3 style={{ fontFamily:'var(--ff)', fontSize:21, color:'white', marginTop:4, fontWeight:700 }}>{step < steps.length ? cur.title : c.title}</h3>
               </div>
-            ))}
-            <button onClick={onClose} style={{ width:'100%', background:'#78BE20', color:'#090E1A', border:'none', borderRadius:8, padding:'13px', fontSize:15, fontWeight:700, cursor:'pointer', marginTop:8, fontFamily:'var(--ff)' }}>{t.modal.contact.confirm}</button>
-          </div>
-        )}
-        {step > 0 && step < steps.length && (
-          <button onClick={()=>setStep(s=>s-1)} style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.35)', fontSize:13, marginTop:16, padding:0, fontFamily:'var(--ff)' }}>← Back</button>
+              <button onClick={onClose} style={{ background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:8, width:36, height:36, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,0.5)', fontSize:18 }}>×</button>
+            </div>
+            {step < steps.length ? (
+              <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                {cur.opts.map(([val, label, sub]) => (
+                  <button key={val} onClick={()=>{ setData(d=>({...d,[step===0?'urgency':'service']:val})); setStep(s=>s+1); }}
+                    style={{ textAlign:'left', background:data[step===0?'urgency':'service']===val?'rgba(120,190,32,0.15)':'rgba(255,255,255,0.04)', border:`1px solid ${data[step===0?'urgency':'service']===val?'rgba(120,190,32,0.4)':'rgba(255,255,255,0.08)'}`, borderRadius:10, padding:'14px 16px', cursor:'pointer', transition:'all 0.15s' }}>
+                    <div style={{ fontWeight:700, fontSize:14, color:'white', fontFamily:'var(--ff)' }}>{label}</div>
+                    <div style={{ fontSize:12, color:'rgba(255,255,255,0.45)', marginTop:2, fontFamily:'var(--ffd)' }}>{sub}</div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div>
+                {data.service === 'ajuda' && (
+                  <div style={{ background:'rgba(120,190,32,0.08)', border:'1px solid rgba(120,190,32,0.2)', borderRadius:10, padding:'14px 16px', marginBottom:16 }}>
+                    <p style={{ fontSize:13, color:'rgba(255,255,255,0.75)', fontFamily:'var(--ffd)', lineHeight:1.6, margin:'0 0 10px' }}>
+                      Sem problema! Descreva brevemente o estado do paciente e nossa equipe médica entrará em contato para orientar a melhor solução.
+                    </p>
+                    <textarea placeholder={c.desc} rows={3} value={data.desc||''} onChange={e=>setData(d=>({...d,desc:e.target.value}))} style={{...inputStyle,resize:'vertical',lineHeight:1.5}}/>
+                  </div>
+                )}
+                {[{ph:c.name,key:'nome',type:'text'},{ph:c.phone,key:'telefone',type:'tel'},{ph:c.email,key:'email',type:'email'}].map(({ph,key,type})=>(
+                  <div key={key} style={{ marginBottom:14 }}>
+                    <label style={{ fontSize:11, fontWeight:600, color:'rgba(255,255,255,0.4)', display:'block', marginBottom:6 }}>{ph}</label>
+                    <input type={type} placeholder={ph} value={data[key]||''} onChange={e=>setData(d=>({...d,[key]:e.target.value}))} style={inputStyle}/>
+                  </div>
+                ))}
+                <button onClick={handleSubmit} disabled={loading} style={{ width:'100%', background:'#78BE20', color:'#090E1A', border:'none', borderRadius:8, padding:'13px', fontSize:15, fontWeight:700, cursor:loading?'not-allowed':'pointer', opacity:loading?0.7:1, marginTop:8, fontFamily:'var(--ff)' }}>
+                  {loading ? 'Enviando...' : c.confirm}
+                </button>
+              </div>
+            )}
+            {step > 0 && step < steps.length && (
+              <button onClick={()=>setStep(s=>s-1)} style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.35)', fontSize:13, marginTop:16, padding:0, fontFamily:'var(--ff)' }}>← Voltar</button>
+            )}
+          </>
         )}
       </div>
     </div>

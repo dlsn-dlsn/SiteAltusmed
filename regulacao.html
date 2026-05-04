@@ -170,6 +170,36 @@
     animation: spin .7s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── AUTOCOMPLETE ── */
+  .autocomplete-wrap { position: relative; }
+  .autocomplete-dropdown {
+    display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 50;
+    background: var(--navy2); border: 1px solid var(--border); border-radius: 8px;
+    margin-top: 2px; max-height: 220px; overflow-y: auto;
+  }
+  .autocomplete-item {
+    padding: .55rem .9rem; font-size: .88rem; color: var(--text);
+    cursor: pointer; transition: background .15s; border-bottom: 1px solid var(--border);
+  }
+  .autocomplete-item:last-child { border-bottom: none; }
+  .autocomplete-item:hover { background: rgba(255,255,255,.07); color: var(--green); }
+  .btn-add-airport {
+    margin-top: .4rem; font-size: .78rem; font-weight: 600;
+    color: var(--amber); background: rgba(245,158,11,.08);
+    border: 1px dashed rgba(245,158,11,.35); border-radius: 6px;
+    padding: .35rem .75rem; cursor: pointer; font-family: var(--ff);
+    transition: all .2s; width: 100%;
+  }
+  .btn-add-airport:hover { background: rgba(245,158,11,.15); }
+
+  /* ── TEMPO RESULTADO ── */
+  .tempo-resultado {
+    display: none; margin-top: .5rem;
+    background: rgba(120,190,32,.1); border: 1px solid rgba(120,190,32,.25);
+    border-radius: 8px; padding: .6rem 1rem; font-size: .87rem; color: var(--green);
+  }
+  .tempo-resultado small { display: block; margin-top: .2rem; opacity: .8; font-size: .78rem; }
 </style>
 </head>
 <body>
@@ -208,11 +238,39 @@
         <div class="form-grid">
           <div class="field">
             <label>Origem *</label>
-            <input type="text" id="origem" placeholder="Cidade/Aeroporto">
+            <div class="autocomplete-wrap">
+              <input type="text" id="origem" placeholder="Cidade/Aeroporto" autocomplete="off"
+                     oninput="acInput('origem')" onblur="acBlur('origem')">
+              <div class="autocomplete-dropdown" id="ac-origem"></div>
+              <button class="btn-add-airport" id="add-origem" style="display:none;"
+                      onmousedown="addAirport('origem')">+ Adicionar este aeroporto à lista</button>
+            </div>
           </div>
           <div class="field">
             <label>Destino *</label>
-            <input type="text" id="destino" placeholder="Cidade/Aeroporto">
+            <div class="autocomplete-wrap">
+              <input type="text" id="destino" placeholder="Cidade/Aeroporto" autocomplete="off"
+                     oninput="acInput('destino')" onblur="acBlur('destino')">
+              <div class="autocomplete-dropdown" id="ac-destino"></div>
+              <button class="btn-add-airport" id="add-destino" style="display:none;"
+                      onmousedown="addAirport('destino')">+ Adicionar este aeroporto à lista</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>Hospital de Origem</label>
+            <input type="text" id="log-hospital-origem" placeholder="Nome do hospital">
+          </div>
+          <div class="field">
+            <label>Leito de Origem</label>
+            <input type="text" id="log-leito-origem" placeholder="Ex: UTI 12">
+          </div>
+          <div class="field">
+            <label>Hospital de Destino</label>
+            <input type="text" id="log-hospital-destino" placeholder="Nome do hospital">
+          </div>
+          <div class="field">
+            <label>Leito de Destino</label>
+            <input type="text" id="log-leito-destino" placeholder="Ex: CTI 5">
           </div>
           <div class="field">
             <label>Tipo de Aeronave</label>
@@ -224,14 +282,18 @@
             </select>
           </div>
           <div class="field">
-            <label>Tempo estimado de voo</label>
-            <input type="text" id="tempo_voo" placeholder="Ex: 2h30">
-          </div>
-          <div class="field">
-            <label>Hora de decolagem</label>
-            <input type="time" id="hora_decolagem">
+            <label>Tempo de Voo</label>
+            <div style="display:flex;gap:.5rem;align-items:center;">
+              <input type="number" id="log-horas" placeholder="0" min="0" max="24"
+                     style="flex:1;" oninput="calcularTempoMissao()">
+              <span style="color:var(--text-l);font-size:.9rem;">h</span>
+              <input type="number" id="log-min" placeholder="0" min="0" max="59"
+                     style="flex:1;" oninput="calcularTempoMissao()">
+              <span style="color:var(--text-l);font-size:.9rem;">min</span>
+            </div>
           </div>
         </div>
+        <div class="tempo-resultado" id="tempo-resultado"></div>
       </div>
     </div>
 
@@ -248,8 +310,22 @@
             <input type="text" id="paciente_nome" placeholder="Nome completo">
           </div>
           <div class="field">
-            <label>Idade</label>
-            <input type="number" id="paciente_idade" placeholder="anos" min="0" max="130">
+            <label>Idade (anos)</label>
+            <input type="number" id="paciente_idade" placeholder="anos" min="0" max="130"
+                   oninput="toggleIdadeMeses()">
+          </div>
+          <div class="field" id="field-meses" style="display:none;">
+            <label>Meses</label>
+            <input type="number" id="pac-meses" placeholder="0–11" min="0" max="11"
+                   oninput="toggleIdadeMeses()">
+          </div>
+          <div class="field" id="field-dias" style="display:none;">
+            <label>Dias</label>
+            <input type="number" id="pac-dias" placeholder="0–31" min="0" max="31">
+          </div>
+          <div class="field">
+            <label>Peso (kg)</label>
+            <input type="number" id="pac-peso" placeholder="Ex: 70.5" min="0" step="0.1">
           </div>
           <div class="field">
             <label>Sexo</label>
@@ -439,6 +515,33 @@ const SUPA_KEY = 'sb_publishable_GetcnIgIEe6owbOQea2HOg_0MuxtLdP';
 const { createClient } = supabase;
 const db = createClient(SUPA_URL, SUPA_KEY);
 
+const AEROPORTOS_BASE = [
+  "Araguaína/TO — AUX","Aracaju/SE — AJU — Santa Maria",
+  "Barreirinhas/MA — BRB","Belém/PA — BEL — Val-de-Cans",
+  "Belo Horizonte/MG — CNF — Confins","Boa Vista/RR — BOA — Atlas Brasil Cantanhede",
+  "Brasília/DF — BSB — Internacional","Campinas/SP — VCP — Viracopos",
+  "Campo Grande/MS — CGR — Internacional","Campos dos Goytacazes/RJ — CAW",
+  "Caxias do Sul/RS — CXJ — Hugo Cantergiani","Cuiabá/MT — CGB — Marechal Rondon",
+  "Curitiba/PR — CWB — Afonso Pena","Florianópolis/SC — FLN — Hercílio Luz",
+  "Fortaleza/CE — FOR — Pinto Martins","Goiânia/GO — GYN — Santa Genoveva",
+  "Imperatriz/MA — IMP — Prefeito Renato Moreira","João Pessoa/PB — JPA — Presidente Castro Pinto",
+  "Joinville/SC — JOI — Lauro Carneiro de Loyola","Londrina/PR — LDB — Governador José Richa",
+  "Macapá/AP — MCP — Alberto Alcolumbre","Maceió/AL — MCZ — Zumbi dos Palmares",
+  "Manaus/AM — MAO — Eduardo Gomes","Manicoré/AM — MNX",
+  "Marabá/PA — MAB — João Correa da Rocha","Monte Dourado/PA — MDD",
+  "Natal/RN — NAT — Governador Aluízio Alves","Oiapoque/AP — OYK",
+  "Palmas/TO — PMW — Internacional","Parnaíba/PI — PHB — Prefeito Dr. João Silva Filho",
+  "Pinheiro/MA — PIN","Porto Alegre/RS — POA — Salgado Filho",
+  "Porto Velho/RO — PVH — Governador Jorge Teixeira","Recife/PE — REC — Guararapes",
+  "Rio Branco/AC — RBR — Plácido de Castro","Rio de Janeiro/RJ — GIG — Galeão",
+  "Rio de Janeiro/RJ — SDU — Santos Dumont","Salvador/BA — SSA — Dep. Luís Eduardo Magalhães",
+  "Santarém/PA — STM — Maestro Wilson Fonseca","São Luís/MA — SLZ — Marechal Cunha Machado",
+  "São Paulo/SP — CGH — Congonhas","São Paulo/SP — GRU — Guarulhos",
+  "Teresina/PI — THE — Senador Petrônio Portella","Timon/MA — TIM",
+  "Uberlândia/MG — UDI","Vitória/ES — VIX — Eurico de Aguiar Salles"
+];
+let aeroportosCustom = [];
+
 let usuarioAtual   = null;
 let perfilAtual    = {};
 let regulacaoSalva = null;
@@ -452,7 +555,7 @@ async function init() {
       return;
     }
     usuarioAtual = session.user;
-    await carregarPerfil();
+    await Promise.all([carregarPerfil(), carregarAeroportosCustom()]);
     document.getElementById('app').style.display = 'block';
   } catch(e) {
     window.location.href = 'restrito.html';
@@ -475,6 +578,120 @@ async function carregarPerfil() {
     document.getElementById('topbar-saudacao').textContent = saudacaoCargo(perfilAtual.cargo_tipo);
     document.getElementById('topbar-nome').textContent = perfilAtual.nome || usuarioAtual.email;
   } catch(e) {}
+}
+
+// ── Aeroportos custom ────────────────────────────────────────────────
+async function carregarAeroportosCustom() {
+  try {
+    const { data } = await db.from('aeroportos_custom').select('nome');
+    aeroportosCustom = (data || []).map(r => r.nome);
+  } catch(e) {}
+}
+
+// ── Autocomplete de aeroportos ────────────────────────────────────────
+function jaccard(a, b) {
+  const tri = s => {
+    const t = new Set(), p = '  ' + s.toLowerCase() + '  ';
+    for (let i = 0; i < p.length - 2; i++) t.add(p.slice(i, i + 3));
+    return t;
+  };
+  const ta = tri(a), tb = tri(b);
+  const inter = [...ta].filter(x => tb.has(x)).length;
+  const union = new Set([...ta, ...tb]).size;
+  return union === 0 ? 0 : inter / union;
+}
+
+function melhorSim(val) {
+  const lista = [...AEROPORTOS_BASE, ...aeroportosCustom];
+  return lista.reduce((max, item) => Math.max(max, jaccard(val, item)), 0);
+}
+
+function acInput(campo) {
+  const input    = document.getElementById(campo);
+  const val      = input.value.trim();
+  const dropdown = document.getElementById('ac-' + campo);
+  const btnAdd   = document.getElementById('add-' + campo);
+
+  if (val.length < 2) {
+    dropdown.innerHTML = ''; dropdown.style.display = 'none';
+    btnAdd.style.display = 'none'; return;
+  }
+
+  const lista = [...AEROPORTOS_BASE, ...aeroportosCustom];
+  const valLow = val.toLowerCase();
+  const matches = lista.filter(a => a.toLowerCase().includes(valLow)).slice(0, 8);
+
+  if (matches.length > 0) {
+    dropdown._matches = matches;
+    dropdown.innerHTML = matches.map((m, i) =>
+      `<div class="autocomplete-item" onmousedown="acSelect('${campo}',${i})">${m}</div>`
+    ).join('');
+    dropdown.style.display = 'block';
+    btnAdd.style.display = 'none';
+  } else {
+    dropdown.innerHTML = ''; dropdown.style.display = 'none';
+    btnAdd.style.display = melhorSim(val) < 0.75 ? 'block' : 'none';
+  }
+}
+
+function acSelect(campo, idx) {
+  const dropdown = document.getElementById('ac-' + campo);
+  document.getElementById(campo).value = dropdown._matches[idx];
+  dropdown.style.display = 'none';
+  document.getElementById('add-' + campo).style.display = 'none';
+}
+
+function acBlur(campo) {
+  setTimeout(() => {
+    document.getElementById('ac-' + campo).style.display = 'none';
+  }, 150);
+}
+
+async function addAirport(campo) {
+  const val = document.getElementById(campo).value.trim();
+  if (!val) return;
+  try {
+    await db.from('aeroportos_custom').insert({ nome: val, criado_por: usuarioAtual.id });
+    aeroportosCustom.push(val);
+    document.getElementById('add-' + campo).style.display = 'none';
+    toast('Aeroporto adicionado à lista!');
+  } catch(e) {
+    toast('Erro ao salvar aeroporto.', true);
+  }
+}
+
+// ── Tempo de missão ───────────────────────────────────────────────────
+function calcularTempoMissao() {
+  const h   = parseInt(document.getElementById('log-horas').value) || 0;
+  const m   = parseInt(document.getElementById('log-min').value)   || 0;
+  const voo = h * 60 + m;
+  const res = document.getElementById('tempo-resultado');
+  if (voo === 0) { res.style.display = 'none'; return; }
+
+  let total = voo + 60;
+  if (voo > 210) total += 60;
+
+  const hT = Math.floor(total / 60), mT = total % 60;
+  res.innerHTML = 'Tempo estimado de missão: <strong>' + hT + 'h ' + mT + 'min</strong>' +
+    (voo > 210 ? '<small>Inclui 1h de parada para reabastecimento</small>' : '');
+  res.style.display = 'block';
+}
+
+// ── Idade pediátrica ──────────────────────────────────────────────────
+function toggleIdadeMeses() {
+  const anos        = parseInt(document.getElementById('paciente_idade').value);
+  const mesesInput  = document.getElementById('pac-meses');
+  const fieldMeses  = document.getElementById('field-meses');
+  const fieldDias   = document.getElementById('field-dias');
+
+  if (isNaN(anos) || anos > 0) {
+    fieldMeses.style.display = 'none'; fieldDias.style.display = 'none';
+    mesesInput.value = ''; document.getElementById('pac-dias').value = '';
+    return;
+  }
+  fieldMeses.style.display = 'flex';
+  const meses = parseInt(mesesInput.value);
+  fieldDias.style.display = (!isNaN(meses) && meses === 0 && mesesInput.value !== '') ? 'flex' : 'none';
 }
 
 // ── Seções colapsáveis ────────────────────────────────────────────────
@@ -555,17 +772,31 @@ async function finalizarRegulacao() {
   const paDiast = document.getElementById('pa_diast').value;
   const pa = (paSist && paDiast) ? `${paSist}/${paDiast}` : null;
 
+  const hVoo    = parseInt(document.getElementById('log-horas').value) || 0;
+  const mVoo    = parseInt(document.getElementById('log-min').value)   || 0;
+  const vooMin  = hVoo * 60 + mVoo;
+  let   totalMin = vooMin + 60;
+  if (vooMin > 210) totalMin += 60;
+
   const regulacaoData = {
     codigo,
-    medico_id:        usuarioAtual.id,
+    medico_id:            usuarioAtual.id,
     origem,
     destino,
-    aeronave:         document.getElementById('aeronave').value,
-    tempo_voo:        document.getElementById('tempo_voo').value.trim(),
-    hora_decolagem:   document.getElementById('hora_decolagem').value || null,
+    hospital_origem:      document.getElementById('log-hospital-origem').value.trim() || 'Ignorado',
+    leito_origem:         document.getElementById('log-leito-origem').value.trim()    || 'Ignorado',
+    hospital_destino:     document.getElementById('log-hospital-destino').value.trim() || 'Ignorado',
+    leito_destino:        document.getElementById('log-leito-destino').value.trim()   || 'Ignorado',
+    aeronave:             document.getElementById('aeronave').value,
+    tempo_voo_horas:      hVoo,
+    tempo_voo_minutos:    mVoo,
+    tempo_total_missao:   vooMin > 0 ? totalMin : null,
     paciente_nome,
-    paciente_idade:   parseInt(document.getElementById('paciente_idade').value) || null,
-    paciente_sexo:    document.getElementById('paciente_sexo').value,
+    paciente_idade:       parseInt(document.getElementById('paciente_idade').value) || null,
+    paciente_idade_meses: parseInt(document.getElementById('pac-meses').value) || null,
+    paciente_idade_dias:  parseInt(document.getElementById('pac-dias').value)  || null,
+    paciente_peso:        parseFloat(document.getElementById('pac-peso').value) || null,
+    paciente_sexo:        document.getElementById('paciente_sexo').value,
     diagnostico:      document.getElementById('diagnostico').value.trim(),
     naca,
     pa,
@@ -718,15 +949,35 @@ function exportarPDF() {
   // Logística
   secHeader('LOGISTICA');
   row('Origem', d.origem);
+  if (d.hospital_origem && d.hospital_origem !== 'Ignorado') row('Hospital Origem', d.hospital_origem);
+  if (d.leito_origem    && d.leito_origem    !== 'Ignorado') row('Leito Origem',    d.leito_origem);
   row('Destino', d.destino);
+  if (d.hospital_destino && d.hospital_destino !== 'Ignorado') row('Hospital Destino', d.hospital_destino);
+  if (d.leito_destino    && d.leito_destino    !== 'Ignorado') row('Leito Destino',    d.leito_destino);
   row('Aeronave', d.aeronave);
-  row('Tempo de voo', d.tempo_voo);
-  row('Hora de decolagem', d.hora_decolagem);
+  if (d.tempo_voo_horas || d.tempo_voo_minutos) {
+    row('Tempo de voo', (d.tempo_voo_horas || 0) + 'h ' + (d.tempo_voo_minutos || 0) + 'min');
+  }
+  if (d.tempo_total_missao) {
+    const ht = Math.floor(d.tempo_total_missao / 60), mt = d.tempo_total_missao % 60;
+    const nota = d.tempo_voo_horas * 60 + d.tempo_voo_minutos > 210 ? ' (incl. reabastecimento)' : '';
+    row('Tempo total missão', ht + 'h ' + mt + 'min' + nota);
+  }
 
   // Paciente
   secHeader('PACIENTE');
   row('Nome', d.paciente_nome);
-  row('Idade', d.paciente_idade ? d.paciente_idade + ' anos' : null);
+  (() => {
+    if (!d.paciente_idade && d.paciente_idade !== 0) return;
+    let idadeStr = d.paciente_idade + ' anos';
+    if (d.paciente_idade === 0 && d.paciente_idade_meses != null) {
+      idadeStr = d.paciente_idade_meses + ' meses';
+      if (d.paciente_idade_meses === 0 && d.paciente_idade_dias != null)
+        idadeStr = d.paciente_idade_dias + ' dias';
+    }
+    row('Idade', idadeStr);
+  })();
+  if (d.paciente_peso) row('Peso', d.paciente_peso + ' kg');
   row('Sexo', d.paciente_sexo);
   row('NACA', d.naca);
   multiRow('Diagnóstico', d.diagnostico);

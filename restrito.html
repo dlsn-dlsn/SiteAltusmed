@@ -856,6 +856,15 @@ async function carregarApp() {
     navReg.style.display = temAcesso ? 'block' : 'none';
   }
   mostrarApp();
+
+  const hash = window.location.hash;
+  if (hash === '#missoes') {
+    irPara('missoes');
+    window.history.replaceState(null, '', window.location.pathname);
+  } else if (hash === '#regulacao') {
+    irPara('regulacao');
+    window.history.replaceState(null, '', window.location.pathname);
+  }
 }
 
 async function carregarPerfil() {

@@ -27,6 +27,11 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: var(--ff); background: var(--navy); color: var(--text); min-height: 100vh; }
 
+  /* ── NUMBER SPINNERS ── */
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number] { -moz-appearance: textfield; }
+
   /* ── TOPBAR ── */
   .topbar {
     background: var(--navy2); border-bottom: 1px solid var(--border);
@@ -97,9 +102,7 @@
     outline: none; transition: border-color .2s;
     -webkit-appearance: none;
   }
-  .field input:focus, .field select:focus, .field textarea:focus {
-    border-color: var(--green);
-  }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--green); }
   .field select option { background: var(--navy2); }
   .field textarea { resize: vertical; }
 
@@ -107,6 +110,14 @@
   .pa-group { display: flex; align-items: center; gap: .5rem; }
   .pa-group input { flex: 1; }
   .pa-sep { color: var(--text-l); font-size: 1.2rem; font-weight: 300; }
+
+  /* ── PAM Badge ── */
+  .pam-badge {
+    display: none; margin-top: .4rem;
+    background: rgba(120,190,32,.1); border: 1px solid rgba(120,190,32,.25);
+    border-radius: 8px; padding: .45rem .9rem; font-size: .87rem;
+    color: var(--green); font-weight: 600;
+  }
 
   /* ── GCS ── */
   .gcs-group { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .85rem; }
@@ -117,15 +128,16 @@
   }
   .gcs-total-label { font-size: .85rem; color: var(--text-m); font-weight: 500; }
   .gcs-total-value { font-size: 1.6rem; font-weight: 700; color: var(--green); }
-
-  /* ── O2 Duração ── */
-  .o2-duracao {
-    margin-top: .75rem; padding: .75rem 1rem;
+  .gcs-p-result {
+    display: none; margin-top: .5rem;
     background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.2);
-    border-radius: 8px; display: flex; align-items: center; justify-content: space-between;
+    border-radius: 8px; padding: .5rem 1rem; font-size: .87rem; color: var(--amber); font-weight: 600;
   }
-  .o2-duracao-label { font-size: .85rem; color: var(--text-m); font-weight: 500; }
-  .o2-duracao-value { font-size: 1rem; font-weight: 700; color: var(--amber); }
+  .badge-amber {
+    display: none; align-items: center; gap: .35rem;
+    background: rgba(245,158,11,.12); border: 1px solid rgba(245,158,11,.3);
+    border-radius: 6px; padding: .25rem .6rem; font-size: .75rem; font-weight: 600; color: var(--amber);
+  }
 
   /* ── BOTÕES AÇÃO ── */
   .btn-area { display: flex; gap: .75rem; margin-top: 1.5rem; }
@@ -172,7 +184,8 @@
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* ── AUTOCOMPLETE ── */
-  .autocomplete-wrap { position: relative; }
+  .autocomplete-wrap { position: relative; width: 100%; }
+  .autocomplete-wrap > input { width: 100%; }
   .autocomplete-dropdown {
     display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 50;
     background: var(--navy2); border: 1px solid var(--border); border-radius: 8px;
@@ -193,13 +206,51 @@
   }
   .btn-add-airport:hover { background: rgba(245,158,11,.15); }
 
-  /* ── TEMPO RESULTADO ── */
+  /* ── RESULTADO VERDE (tempo / o2) ── */
   .tempo-resultado {
     display: none; margin-top: .5rem;
     background: rgba(120,190,32,.1); border: 1px solid rgba(120,190,32,.25);
     border-radius: 8px; padding: .6rem 1rem; font-size: .87rem; color: var(--green);
   }
   .tempo-resultado small { display: block; margin-top: .2rem; opacity: .8; font-size: .78rem; }
+
+  /* ── INFUSÃO CONTÍNUA ── */
+  .infusao-linha {
+    display: grid; grid-template-columns: 1fr 90px 140px auto;
+    gap: .5rem; align-items: start; margin-bottom: .5rem;
+  }
+  @media (max-width: 600px) { .infusao-linha { grid-template-columns: 1fr; } }
+  .infusao-select, .infusao-input {
+    background: rgba(255,255,255,.05); border: 1px solid var(--border);
+    border-radius: 8px; padding: .5rem .7rem;
+    color: var(--text); font-family: var(--ff); font-size: .85rem;
+    outline: none; transition: border-color .2s; -webkit-appearance: none; width: 100%;
+  }
+  .infusao-select:focus, .infusao-input:focus { border-color: var(--green); }
+  .infusao-select option { background: var(--navy2); }
+  .btn-remove-linha {
+    background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3);
+    border-radius: 6px; color: #fca5a5; cursor: pointer;
+    padding: .45rem .65rem; font-size: .9rem; font-family: var(--ff); transition: all .2s;
+  }
+  .btn-remove-linha:hover { background: rgba(239,68,68,.2); }
+  .btn-add-infusao {
+    background: rgba(120,190,32,.08); border: 1px dashed rgba(120,190,32,.35);
+    border-radius: 6px; color: var(--green); cursor: pointer;
+    padding: .4rem .9rem; font-size: .82rem; font-weight: 600;
+    font-family: var(--ff); transition: all .2s; margin-top: .5rem;
+  }
+  .btn-add-infusao:hover { background: rgba(120,190,32,.15); }
+  .infusao-subheader {
+    font-size: .75rem; font-weight: 700; color: var(--text-m);
+    text-transform: uppercase; letter-spacing: .05em;
+    margin: .85rem 0 .5rem; padding-bottom: .35rem; border-bottom: 1px solid var(--border);
+  }
+  .vm-subheader {
+    font-size: .75rem; font-weight: 700; color: var(--text-m);
+    text-transform: uppercase; letter-spacing: .05em;
+    margin-bottom: .75rem; padding-bottom: .35rem; border-bottom: 1px solid var(--border);
+  }
 </style>
 </head>
 <body>
@@ -363,15 +414,27 @@
         <span class="section-toggle open" id="toggle-sinais">▼</span>
       </div>
       <div class="section-body" id="body-sinais">
+
+        <!-- PA + SpO2 -->
         <div class="form-grid">
           <div class="field">
             <label>Pressão Arterial (mmHg)</label>
             <div class="pa-group">
-              <input type="number" id="pa_sist" placeholder="Sist." min="0" max="300">
+              <input type="number" id="pas" placeholder="PAS" min="0" max="300" oninput="calcPAM()">
               <span class="pa-sep">/</span>
-              <input type="number" id="pa_diast" placeholder="Diast." min="0" max="200">
+              <input type="number" id="pad" placeholder="PAD" min="0" max="200" oninput="calcPAM()">
             </div>
+            <div class="pam-badge" id="pam-resultado"></div>
+            <input type="hidden" id="pam-valor">
           </div>
+          <div class="field">
+            <label>SpO₂ (%)</label>
+            <input type="number" id="spo2" placeholder="%" min="0" max="100">
+          </div>
+        </div>
+
+        <!-- FC, FR, Temperatura — 3 colunas -->
+        <div class="form-grid cols3" style="margin-top:.85rem;">
           <div class="field">
             <label>FC (bpm)</label>
             <input type="number" id="fc" placeholder="bpm" min="0" max="300">
@@ -381,10 +444,6 @@
             <input type="number" id="fr" placeholder="rpm" min="0" max="60">
           </div>
           <div class="field">
-            <label>SpO₂ (%)</label>
-            <input type="number" id="spo2" placeholder="%" min="0" max="100">
-          </div>
-          <div class="field">
             <label>Temperatura (°C)</label>
             <input type="number" id="temp" placeholder="°C" min="30" max="43" step="0.1">
           </div>
@@ -392,8 +451,11 @@
 
         <!-- GCS -->
         <div style="margin-top:1rem;">
-          <label style="font-size:.75rem;font-weight:600;color:var(--text-m);text-transform:uppercase;letter-spacing:.05em;">Glasgow Coma Scale (GCS)</label>
-          <div class="gcs-group" style="margin-top:.5rem;">
+          <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem;flex-wrap:wrap;">
+            <label style="font-size:.75rem;font-weight:600;color:var(--text-m);text-transform:uppercase;letter-spacing:.05em;">Glasgow Coma Scale (GCS)</label>
+            <span class="badge-amber" id="badge-pediatrico">Glasgow Pediátrico</span>
+          </div>
+          <div class="gcs-group">
             <div class="field">
               <label>Ocular (O)</label>
               <select id="gcs_o" onchange="calcGCS()">
@@ -429,6 +491,22 @@
             <span class="gcs-total-label">Total GCS</span>
             <span class="gcs-total-value" id="gcs-total">15</span>
           </div>
+
+          <!-- Resposta Pupilar -->
+          <div style="margin-top:.85rem;">
+            <div style="max-width:300px;">
+              <div class="field">
+                <label>Resposta Pupilar</label>
+                <select id="gcs-pupilar" onchange="calcGCS()">
+                  <option value="">Ignorada</option>
+                  <option value="1">1 — Ambas reativas</option>
+                  <option value="2">2 — Uma não reativa</option>
+                  <option value="3">3 — Ambas não reativas</option>
+                </select>
+              </div>
+            </div>
+            <div class="gcs-p-result" id="gcs-p-resultado"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -442,38 +520,150 @@
       <div class="section-body" id="body-o2">
         <div class="form-grid">
           <div class="field">
-            <label>O₂ em uso?</label>
+            <label>Em uso de O2?</label>
             <select id="o2_uso" onchange="toggleO2Fields()">
               <option value="Não">Não</option>
               <option value="Sim">Sim</option>
             </select>
           </div>
         </div>
+
         <div id="o2-fields" style="display:none; margin-top:.85rem;">
           <div class="form-grid">
             <div class="field">
-              <label>Flow (L/min)</label>
-              <input type="number" id="o2_flow" placeholder="L/min" min="0" max="15" step="0.5" oninput="calcO2()">
-            </div>
-            <div class="field">
-              <label>Tipo de Cilindro</label>
-              <select id="o2_cilindro" onchange="calcO2()">
-                <option value="C">C (170 L)</option>
-                <option value="D">D (415 L)</option>
-                <option value="E">E (680 L)</option>
-                <option value="H">H (6900 L)</option>
+              <label>Dispositivo</label>
+              <select id="o2-dispositivo" onchange="toggleO2Dispositivo()">
+                <option value="CN">CN — Cateter Nasal</option>
+                <option value="MNR">MNR — Máscara Não Reinalante</option>
+                <option value="Venturi">Venturi — Máscara Venturi</option>
+                <option value="FSO">FSO — Face de Silicone com O2</option>
+                <option value="OAF">OAF — Oxigênio de Alto Fluxo</option>
+                <option value="TOT">TOT — Tubo Orotraqueal</option>
+                <option value="TQT">TQT — Traqueostomia</option>
+                <option value="CPAP">CPAP — CPAP</option>
+                <option value="VMI">VMI — Ventilação Mecânica Invasiva</option>
+                <option value="VNI">VNI — Ventilação Não Invasiva (BiPAP)</option>
               </select>
             </div>
+            <div class="field">
+              <label>Flow (L/min)</label>
+              <input type="number" id="o2-flow" placeholder="L/min" min="0" max="60" step="0.5"
+                     oninput="calcO2Necessario()">
+            </div>
           </div>
-          <div class="o2-duracao">
-            <span class="o2-duracao-label">Duração estimada</span>
-            <span class="o2-duracao-value" id="o2-duracao">— min</span>
+
+          <!-- Parâmetros Ventilatórios -->
+          <div id="vm-params" style="display:none; margin-top:.85rem;">
+            <div class="vm-subheader">Parâmetros Ventilatórios</div>
+
+            <!-- CPAP -->
+            <div id="vm-cpap-fields" style="display:none;">
+              <div class="form-grid cols3">
+                <div class="field">
+                  <label>Pressão CPAP (cmH2O)</label>
+                  <input type="number" id="vm-cpap-pressao" min="0" max="30">
+                </div>
+                <div class="field">
+                  <label>FiO2 (%)</label>
+                  <input type="number" id="vm-cpap-fio2" min="21" max="100" placeholder="21–100">
+                </div>
+                <div class="field">
+                  <label>Observações</label>
+                  <input type="text" id="vm-cpap-obs" placeholder="...">
+                </div>
+              </div>
+            </div>
+
+            <!-- VMI / VNI -->
+            <div id="vm-vent-fields" style="display:none;">
+              <div class="form-grid">
+                <div class="field">
+                  <label>Modo</label>
+                  <select id="vm-modo">
+                    <option value="">Selecione</option>
+                    <option value="VCV">VCV</option>
+                    <option value="PCV">PCV</option>
+                    <option value="PSV">PSV</option>
+                    <option value="SIMV">SIMV</option>
+                    <option value="APRV">APRV</option>
+                    <option value="BiLevel">BiLevel</option>
+                    <option value="CPAP">CPAP</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>FiO2 (%)</label>
+                  <input type="number" id="vm-fio2" min="21" max="100" placeholder="21–100">
+                </div>
+                <div class="field">
+                  <label>PEEP (cmH2O)</label>
+                  <input type="number" id="vm-peep" min="0" max="30">
+                </div>
+                <div class="field" id="vm-volume-field" style="display:none;">
+                  <label>Volume Corrente (ml)</label>
+                  <input type="number" id="vm-volume" min="0">
+                </div>
+                <div class="field">
+                  <label>Freq. Programada (rpm)</label>
+                  <input type="number" id="vm-freq" min="0" max="60">
+                </div>
+                <div class="field">
+                  <label>Pressão Suporte (cmH2O)</label>
+                  <input type="number" id="vm-ps" min="0" max="50">
+                </div>
+                <div class="field">
+                  <label>Tempo Inspiratório (s)</label>
+                  <input type="number" id="vm-ti" min="0" max="5" step="0.1">
+                </div>
+                <div class="field">
+                  <label>Fluxo (L/min)</label>
+                  <input type="number" id="vm-fluxo" min="0" max="100">
+                </div>
+                <div class="field full">
+                  <label>Observações</label>
+                  <input type="text" id="vm-obs" placeholder="Observações...">
+                </div>
+              </div>
+            </div>
           </div>
+
+          <!-- O2 necessário calculado -->
+          <div class="tempo-resultado" id="o2-calc-resultado"></div>
         </div>
       </div>
     </div>
 
-    <!-- SEÇÃO 5: CONDUTA E MEDICAMENTOS -->
+    <!-- SEÇÃO 5: INFUSÃO CONTÍNUA -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection('infusao')">
+        <span class="section-title">💉 Medicações de Infusão Contínua</span>
+        <span class="section-toggle open" id="toggle-infusao">▼</span>
+      </div>
+      <div class="section-body" id="body-infusao">
+        <div class="form-grid">
+          <div class="field">
+            <label>Paciente em infusão contínua?</label>
+            <select id="infusao-ativo" onchange="toggleInfusaoFields()">
+              <option value="Não">Não</option>
+              <option value="Sim">Sim</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="infusao-fields" style="display:none; margin-top:.85rem;">
+          <!-- DVAs -->
+          <div class="infusao-subheader">Drogas Vasoativas (DVA)</div>
+          <div id="dva-lista"></div>
+          <button class="btn-add-infusao" onclick="addDVA()">+ Adicionar DVA</button>
+
+          <!-- Outras Drogas -->
+          <div class="infusao-subheader" style="margin-top:1.25rem;">Outras Drogas em Infusão</div>
+          <div id="droga-lista"></div>
+          <button class="btn-add-infusao" onclick="addDroga()">+ Adicionar Droga</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO 6: CONDUTA E MEDICAMENTOS -->
     <div class="section">
       <div class="section-header" onclick="toggleSection('conduta')">
         <span class="section-title">💊 Conduta e Medicamentos</span>
@@ -502,6 +692,11 @@
         ⬇ Exportar PDF
       </button>
     </div>
+
+    <!-- Hidden inputs -->
+    <input type="hidden" id="tempo-total-hidden">
+    <input type="hidden" id="o2-litros-hidden">
+    <input type="hidden" id="o2-cilindros-hidden">
 
     <div style="height:3rem;"></div>
   </div><!-- /main -->
@@ -541,6 +736,8 @@ const AEROPORTOS_BASE = [
   "Uberlândia/MG — UDI","Vitória/ES — VIX — Eurico de Aguiar Salles"
 ];
 let aeroportosCustom = [];
+let dvaCont    = 0;
+let drogaCont  = 0;
 
 let usuarioAtual   = null;
 let perfilAtual    = {};
@@ -550,10 +747,7 @@ let regulacaoSalva = null;
 async function init() {
   try {
     const { data: { session } } = await db.auth.getSession();
-    if (!session) {
-      window.location.href = 'restrito.html';
-      return;
-    }
+    if (!session) { window.location.href = 'restrito.html'; return; }
     usuarioAtual = session.user;
     await Promise.all([carregarPerfil(), carregarAeroportosCustom()]);
     document.getElementById('app').style.display = 'block';
@@ -572,8 +766,7 @@ function saudacaoCargo(tipo) {
 
 async function carregarPerfil() {
   try {
-    const { data } = await db.from('perfis').select('*')
-      .eq('id', usuarioAtual.id).single();
+    const { data } = await db.from('perfis').select('*').eq('id', usuarioAtual.id).single();
     perfilAtual = data || {};
     document.getElementById('topbar-saudacao').textContent = saudacaoCargo(perfilAtual.cargo_tipo);
     document.getElementById('topbar-nome').textContent = perfilAtual.nome || usuarioAtual.email;
@@ -602,8 +795,8 @@ function jaccard(a, b) {
 }
 
 function melhorSim(val) {
-  const lista = [...AEROPORTOS_BASE, ...aeroportosCustom];
-  return lista.reduce((max, item) => Math.max(max, jaccard(val, item)), 0);
+  return [...AEROPORTOS_BASE, ...aeroportosCustom]
+    .reduce((max, item) => Math.max(max, jaccard(val, item)), 0);
 }
 
 function acInput(campo) {
@@ -617,8 +810,8 @@ function acInput(campo) {
     btnAdd.style.display = 'none'; return;
   }
 
-  const lista = [...AEROPORTOS_BASE, ...aeroportosCustom];
-  const valLow = val.toLowerCase();
+  const lista   = [...AEROPORTOS_BASE, ...aeroportosCustom];
+  const valLow  = val.toLowerCase();
   const matches = lista.filter(a => a.toLowerCase().includes(valLow)).slice(0, 8);
 
   if (matches.length > 0) {
@@ -642,9 +835,7 @@ function acSelect(campo, idx) {
 }
 
 function acBlur(campo) {
-  setTimeout(() => {
-    document.getElementById('ac-' + campo).style.display = 'none';
-  }, 150);
+  setTimeout(() => { document.getElementById('ac-' + campo).style.display = 'none'; }, 150);
 }
 
 async function addAirport(campo) {
@@ -655,9 +846,7 @@ async function addAirport(campo) {
     aeroportosCustom.push(val);
     document.getElementById('add-' + campo).style.display = 'none';
     toast('Aeroporto adicionado à lista!');
-  } catch(e) {
-    toast('Erro ao salvar aeroporto.', true);
-  }
+  } catch(e) { toast('Erro ao salvar aeroporto.', true); }
 }
 
 // ── Tempo de missão ───────────────────────────────────────────────────
@@ -666,32 +855,43 @@ function calcularTempoMissao() {
   const m   = parseInt(document.getElementById('log-min').value)   || 0;
   const voo = h * 60 + m;
   const res = document.getElementById('tempo-resultado');
-  if (voo === 0) { res.style.display = 'none'; return; }
+  const hiddenTotal = document.getElementById('tempo-total-hidden');
+
+  if (voo === 0) {
+    res.style.display = 'none';
+    hiddenTotal.value = '';
+    return;
+  }
 
   let total = voo + 60;
   if (voo > 210) total += 60;
+  hiddenTotal.value = total;
 
   const hT = Math.floor(total / 60), mT = total % 60;
   res.innerHTML = 'Tempo estimado de missão: <strong>' + hT + 'h ' + mT + 'min</strong>' +
     (voo > 210 ? '<small>Inclui 1h de parada para reabastecimento</small>' : '');
   res.style.display = 'block';
+
+  calcO2Necessario();
 }
 
 // ── Idade pediátrica ──────────────────────────────────────────────────
 function toggleIdadeMeses() {
-  const anos        = parseInt(document.getElementById('paciente_idade').value);
-  const mesesInput  = document.getElementById('pac-meses');
-  const fieldMeses  = document.getElementById('field-meses');
-  const fieldDias   = document.getElementById('field-dias');
+  const anos       = parseInt(document.getElementById('paciente_idade').value);
+  const mesesInput = document.getElementById('pac-meses');
+  const fieldMeses = document.getElementById('field-meses');
+  const fieldDias  = document.getElementById('field-dias');
 
   if (isNaN(anos) || anos > 0) {
     fieldMeses.style.display = 'none'; fieldDias.style.display = 'none';
     mesesInput.value = ''; document.getElementById('pac-dias').value = '';
-    return;
+  } else {
+    fieldMeses.style.display = 'flex';
+    const meses = parseInt(mesesInput.value);
+    fieldDias.style.display =
+      (!isNaN(meses) && meses === 0 && mesesInput.value !== '') ? 'flex' : 'none';
   }
-  fieldMeses.style.display = 'flex';
-  const meses = parseInt(mesesInput.value);
-  fieldDias.style.display = (!isNaN(meses) && meses === 0 && mesesInput.value !== '') ? 'flex' : 'none';
+  togglePediatricoGCS();
 }
 
 // ── Seções colapsáveis ────────────────────────────────────────────────
@@ -702,33 +902,261 @@ function toggleSection(id) {
   toggle.classList.toggle('open', !hidden);
 }
 
+// ── PAM ───────────────────────────────────────────────────────────────
+function calcPAM() {
+  const pas = parseFloat(document.getElementById('pas').value) || 0;
+  const pad = parseFloat(document.getElementById('pad').value) || 0;
+  const el  = document.getElementById('pam-resultado');
+  if (pas && pad) {
+    const pam = ((pas + 2 * pad) / 3).toFixed(1);
+    el.textContent = 'PAM: ' + pam + ' mmHg';
+    el.style.display = 'block';
+    document.getElementById('pam-valor').value = pam;
+  } else {
+    el.style.display = 'none';
+    document.getElementById('pam-valor').value = '';
+  }
+}
+
 // ── GCS ───────────────────────────────────────────────────────────────
 function calcGCS() {
   const o = parseInt(document.getElementById('gcs_o').value) || 0;
   const v = parseInt(document.getElementById('gcs_v').value) || 0;
   const m = parseInt(document.getElementById('gcs_m').value) || 0;
-  document.getElementById('gcs-total').textContent = o + v + m;
+  const total = o + v + m;
+  document.getElementById('gcs-total').textContent = total;
+
+  const pupilarVal = document.getElementById('gcs-pupilar').value;
+  const gcsPEl     = document.getElementById('gcs-p-resultado');
+  if (pupilarVal) {
+    const p    = parseInt(pupilarVal);
+    const gcsp = total - p;
+    gcsPEl.textContent = 'GCS-P: ' + gcsp + ' (GCS ' + total + ' − Pupilar ' + p + ')';
+    gcsPEl.style.display = 'block';
+  } else {
+    gcsPEl.style.display = 'none';
+  }
+}
+
+function togglePediatricoGCS() {
+  const anos    = parseInt(document.getElementById('paciente_idade').value);
+  const meses   = parseInt(document.getElementById('pac-meses').value) || 0;
+  const ped     = (!isNaN(anos) && anos < 5) || (anos === 0 && meses >= 0 && document.getElementById('field-meses').style.display !== 'none');
+  const badge   = document.getElementById('badge-pediatrico');
+  badge.style.display = ped ? 'inline-flex' : 'none';
+
+  const gcsV = document.getElementById('gcs_v');
+  const gcsM = document.getElementById('gcs_m');
+  const vCur = gcsV.value, mCur = gcsM.value;
+
+  if (ped) {
+    gcsV.innerHTML = `
+      <option value="5">5 — Balbucia/palavras habituais</option>
+      <option value="4">4 — Choro consolável</option>
+      <option value="3">3 — Choro inconsolável</option>
+      <option value="2">2 — Gemidos</option>
+      <option value="1">1 — Ausente</option>`;
+    gcsM.innerHTML = `
+      <option value="6">6 — Movimentos espontâneos normais</option>
+      <option value="5">5 — Localiza dor</option>
+      <option value="4">4 — Retirada ao toque</option>
+      <option value="3">3 — Flexão anormal</option>
+      <option value="2">2 — Extensão anormal</option>
+      <option value="1">1 — Ausente</option>`;
+  } else {
+    gcsV.innerHTML = `
+      <option value="5">5 — Orientado</option>
+      <option value="4">4 — Confuso</option>
+      <option value="3">3 — Palavras</option>
+      <option value="2">2 — Sons</option>
+      <option value="1">1 — Ausente</option>`;
+    gcsM.innerHTML = `
+      <option value="6">6 — Obedece</option>
+      <option value="5">5 — Localiza</option>
+      <option value="4">4 — Retirada</option>
+      <option value="3">3 — Flexão</option>
+      <option value="2">2 — Extensão</option>
+      <option value="1">1 — Ausente</option>`;
+  }
+  if ([...gcsV.options].some(o => o.value === vCur)) gcsV.value = vCur;
+  if ([...gcsM.options].some(o => o.value === mCur)) gcsM.value = mCur;
+  calcGCS();
 }
 
 // ── O2 ────────────────────────────────────────────────────────────────
-const O2_CAP = { C: 170, D: 415, E: 680, H: 6900 };
-
 function toggleO2Fields() {
   const sim = document.getElementById('o2_uso').value === 'Sim';
   document.getElementById('o2-fields').style.display = sim ? 'block' : 'none';
-  if (sim) calcO2();
+  if (sim) toggleO2Dispositivo();
 }
 
-function calcO2() {
-  const flow = parseFloat(document.getElementById('o2_flow').value) || 0;
-  const tipo = document.getElementById('o2_cilindro').value;
-  const cap  = O2_CAP[tipo] || 0;
-  const el   = document.getElementById('o2-duracao');
-  if (!flow || flow <= 0) { el.textContent = '— min'; return; }
-  const mins = Math.floor(cap / flow);
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  el.textContent = h > 0 ? `${h}h ${m}min` : `${m} min`;
+function toggleO2Dispositivo() {
+  const disp      = document.getElementById('o2-dispositivo').value;
+  const vmParams  = document.getElementById('vm-params');
+  const cpapFlds  = document.getElementById('vm-cpap-fields');
+  const ventFlds  = document.getElementById('vm-vent-fields');
+  const volField  = document.getElementById('vm-volume-field');
+  const usesVM    = ['CPAP', 'VMI', 'VNI'].includes(disp);
+
+  vmParams.style.display  = usesVM ? 'block' : 'none';
+  cpapFlds.style.display  = disp === 'CPAP' ? 'block' : 'none';
+  ventFlds.style.display  = ['VMI', 'VNI'].includes(disp) ? 'block' : 'none';
+  if (volField) volField.style.display = disp === 'VMI' ? 'flex' : 'none';
+
+  calcO2Necessario();
+}
+
+function calcO2Necessario() {
+  const flow     = parseFloat(document.getElementById('o2-flow').value) || 0;
+  const tempoMin = parseInt(document.getElementById('tempo-total-hidden').value) || 0;
+  const resultado = document.getElementById('o2-calc-resultado');
+
+  if (!flow || !tempoMin) { resultado.style.display = 'none'; return; }
+
+  const litros = flow * tempoMin * 1.3;
+  const cil = {
+    C: Math.ceil(litros / 170 * 10) / 10,
+    D: Math.ceil(litros / 415 * 10) / 10,
+    E: Math.ceil(litros / 680 * 10) / 10,
+    H: Math.ceil(litros / 6900 * 10) / 10
+  };
+
+  resultado.innerHTML = '<strong>O2 necessário: ' + litros.toFixed(0) + ' L</strong><br>' +
+    'Cilindros: C=' + cil.C + ' | D=' + cil.D + ' | E=' + cil.E + ' | H=' + cil.H;
+  resultado.style.display = 'block';
+
+  document.getElementById('o2-litros-hidden').value   = litros.toFixed(1);
+  document.getElementById('o2-cilindros-hidden').value = cil.E;
+}
+
+// ── Infusão Contínua ──────────────────────────────────────────────────
+function toggleInfusaoFields() {
+  const sim = document.getElementById('infusao-ativo').value === 'Sim';
+  document.getElementById('infusao-fields').style.display = sim ? 'block' : 'none';
+}
+
+function toggleOutra(tipo, n) {
+  const selId   = tipo === 'dva' ? 'dva-droga-' + n : 'droga-nome-' + n;
+  const outraId = tipo === 'dva' ? 'dva-outra-'  + n : 'droga-outra-' + n;
+  const sel     = document.getElementById(selId);
+  const outra   = document.getElementById(outraId);
+  if (outra) outra.style.display = sel?.value === 'Outra' ? 'block' : 'none';
+}
+
+function addDVA() {
+  dvaCont++;
+  const n = dvaCont;
+  const div = document.createElement('div');
+  div.className = 'infusao-linha';
+  div.id = 'dva-linha-' + n;
+  div.setAttribute('data-dva-id', n);
+  div.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:.3rem;">
+      <select class="infusao-select" id="dva-droga-${n}" onchange="toggleOutra('dva',${n})">
+        <option value="">Selecione...</option>
+        <option>Norepinefrina</option><option>Epinefrina</option>
+        <option>Dopamina</option><option>Dobutamina</option>
+        <option>Vasopressina</option><option>Fenilefrina</option>
+        <option>Milrinona</option><option>Levosimendan</option>
+        <option>Prostaglandina E1</option><option>Terlipressina</option>
+        <option>Angiotensina II</option><option value="Outra">Outra</option>
+      </select>
+      <input type="text" class="infusao-input" id="dva-outra-${n}"
+             placeholder="Nome da droga" style="display:none;">
+    </div>
+    <input type="number" class="infusao-input" id="dva-valor-${n}"
+           placeholder="Dose" min="0" step="0.001">
+    <select class="infusao-select" id="dva-unidade-${n}">
+      <option>mcg/kg/min</option><option>mcg/min</option>
+      <option>mg/kg/min</option><option>mg/min</option>
+      <option>UI/min</option><option>UI/h</option>
+      <option>ng/kg/min</option><option>ml/h</option>
+    </select>
+    <button class="btn-remove-linha" onclick="removerLinha('dva-linha-${n}')">✕</button>`;
+  document.getElementById('dva-lista').appendChild(div);
+}
+
+function addDroga() {
+  drogaCont++;
+  const n = drogaCont;
+  const div = document.createElement('div');
+  div.className = 'infusao-linha';
+  div.id = 'droga-linha-' + n;
+  div.setAttribute('data-droga-id', n);
+  div.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:.3rem;">
+      <select class="infusao-select" id="droga-nome-${n}" onchange="toggleOutra('droga',${n})">
+        <option value="">Selecione...</option>
+        <optgroup label="Sedoanalgesia">
+          <option>Midazolam</option><option>Propofol</option><option>Ketamina</option>
+          <option>Fentanil</option><option>Sufentanil</option><option>Remifentanil</option>
+          <option>Morfina</option><option>Dexmedetomidina</option>
+          <option>Precedex</option><option>Clonidina</option>
+        </optgroup>
+        <optgroup label="Bloqueio Neuromuscular">
+          <option>Rocurônio</option><option>Vecurônio</option>
+          <option>Cisatracúrio</option><option>Pancurônio</option>
+        </optgroup>
+        <optgroup label="Outras Infusões">
+          <option>Sulfato de Magnésio</option><option>Terbutalina</option>
+          <option>Nitroglicerina</option><option>Nitroprussiato</option>
+          <option>Amiodarona</option><option>Lidocaína</option>
+          <option>Insulina</option><option>Heparina</option>
+          <option>Ocitocina</option><option>Furosemida</option>
+          <option>Aminofilina</option><option>N-Acetilcisteína</option>
+          <option>Labetalol</option><option>Nicardipina</option>
+          <option value="Outra">Outra</option>
+        </optgroup>
+      </select>
+      <input type="text" class="infusao-input" id="droga-outra-${n}"
+             placeholder="Nome da droga" style="display:none;">
+    </div>
+    <input type="number" class="infusao-input" id="droga-valor-${n}"
+           placeholder="Dose" min="0" step="0.001">
+    <select class="infusao-select" id="droga-unidade-${n}">
+      <option>ml/h</option><option>mcg/kg/min</option><option>mcg/min</option>
+      <option>mg/h</option><option>mg/kg/h</option>
+      <option>UI/h</option><option>UI/min</option><option>mEq/h</option><option>mg/min</option>
+    </select>
+    <button class="btn-remove-linha" onclick="removerLinha('droga-linha-${n}')">✕</button>`;
+  document.getElementById('droga-lista').appendChild(div);
+}
+
+function removerLinha(id) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = 'none';
+}
+
+function coletarDVAs() {
+  return [...document.querySelectorAll('[data-dva-id]')]
+    .filter(l => l.style.display !== 'none')
+    .map(l => {
+      const id = l.dataset.dvaId;
+      const drogaEl = document.getElementById('dva-droga-' + id);
+      let droga = drogaEl?.value;
+      if (droga === 'Outra') droga = document.getElementById('dva-outra-' + id)?.value.trim() || 'Outra';
+      return {
+        droga,
+        valor:   parseFloat(document.getElementById('dva-valor-'   + id)?.value) || null,
+        unidade: document.getElementById('dva-unidade-' + id)?.value
+      };
+    }).filter(d => d.droga && d.droga !== '');
+}
+
+function coletarDrogas() {
+  return [...document.querySelectorAll('[data-droga-id]')]
+    .filter(l => l.style.display !== 'none')
+    .map(l => {
+      const id = l.dataset.drogaId;
+      const drogaEl = document.getElementById('droga-nome-' + id);
+      let droga = drogaEl?.value;
+      if (droga === 'Outra') droga = document.getElementById('droga-outra-' + id)?.value.trim() || 'Outra';
+      return {
+        droga,
+        valor:   parseFloat(document.getElementById('droga-valor-'   + id)?.value) || null,
+        unidade: document.getElementById('droga-unidade-' + id)?.value
+      };
+    }).filter(d => d.droga && d.droga !== '');
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────
@@ -741,90 +1169,115 @@ function toast(msg, erro = false) {
 
 // ── Finalizar ─────────────────────────────────────────────────────────
 async function finalizarRegulacao() {
-  const origem       = document.getElementById('origem').value.trim();
-  const destino      = document.getElementById('destino').value.trim();
+  const origem        = document.getElementById('origem').value.trim();
+  const destino       = document.getElementById('destino').value.trim();
   const paciente_nome = document.getElementById('paciente_nome').value.trim();
-  const naca         = document.getElementById('naca').value;
+  const naca          = document.getElementById('naca').value;
 
-  if (!origem || !destino) {
-    toast('Informe origem e destino.', true); return;
-  }
-  if (!paciente_nome) {
-    toast('Informe o nome do paciente.', true); return;
-  }
-  if (!naca) {
-    toast('Selecione a classificação NACA.', true); return;
-  }
+  if (!origem || !destino) { toast('Informe origem e destino.', true); return; }
+  if (!paciente_nome)      { toast('Informe o nome do paciente.', true); return; }
+  if (!naca)               { toast('Selecione a classificação NACA.', true); return; }
 
   const btn = document.getElementById('btn-finalizar');
   btn.disabled = true; btn.textContent = 'Salvando...';
 
   const codigo = 'AM-' + String(Date.now()).slice(-6);
 
-  const gcsTotal   = parseInt(document.getElementById('gcs-total').textContent) || null;
-  const o2Ativo    = document.getElementById('o2_uso').value === 'Sim';
-  const o2Flow     = o2Ativo ? parseFloat(document.getElementById('o2_flow').value) || null : null;
-  const o2Cilindro = o2Ativo ? document.getElementById('o2_cilindro').value : null;
-  const o2Duracao  = (o2Ativo && o2Flow && o2Cilindro)
-    ? Math.floor((O2_CAP[o2Cilindro] || 0) / o2Flow) : null;
-
-  const paSist  = document.getElementById('pa_sist').value;
-  const paDiast = document.getElementById('pa_diast').value;
-  const pa = (paSist && paDiast) ? `${paSist}/${paDiast}` : null;
-
-  const hVoo    = parseInt(document.getElementById('log-horas').value) || 0;
-  const mVoo    = parseInt(document.getElementById('log-min').value)   || 0;
-  const vooMin  = hVoo * 60 + mVoo;
-  let   totalMin = vooMin + 60;
+  // Logística
+  const hVoo   = parseInt(document.getElementById('log-horas').value) || 0;
+  const mVoo   = parseInt(document.getElementById('log-min').value)   || 0;
+  const vooMin = hVoo * 60 + mVoo;
+  let totalMin = vooMin + 60;
   if (vooMin > 210) totalMin += 60;
+
+  // PA / PAM
+  const pas   = document.getElementById('pas').value;
+  const pad   = document.getElementById('pad').value;
+  const pa    = (pas && pad) ? `${pas}/${pad}` : null;
+  const pam   = parseFloat(document.getElementById('pam-valor').value) || null;
+
+  // GCS
+  const gcsTotal      = parseInt(document.getElementById('gcs-total').textContent) || null;
+  const pupilarVal    = document.getElementById('gcs-pupilar').value;
+  const gcsPupilar    = pupilarVal ? parseInt(pupilarVal) : null;
+  const gcsPediatrico = document.getElementById('badge-pediatrico').style.display !== 'none';
+
+  // O2
+  const o2Ativo    = document.getElementById('o2_uso').value === 'Sim';
+  const o2Disp     = o2Ativo ? document.getElementById('o2-dispositivo').value : null;
+  const o2Flow     = o2Ativo ? parseFloat(document.getElementById('o2-flow').value) || null : null;
+  const o2Litros   = parseFloat(document.getElementById('o2-litros-hidden').value)   || null;
+  const o2Cilindros= parseFloat(document.getElementById('o2-cilindros-hidden').value)|| null;
+  const hasVM      = o2Ativo && ['CPAP', 'VMI', 'VNI'].includes(o2Disp);
+  const isCPAP     = o2Disp === 'CPAP';
+  const isVMI      = o2Disp === 'VMI';
+
+  // Infusão
+  const infusaoContinua = document.getElementById('infusao-ativo').value === 'Sim';
+  const duas        = infusaoContinua ? coletarDVAs()   : [];
+  const outrasDrogas= infusaoContinua ? coletarDrogas() : [];
 
   const regulacaoData = {
     codigo,
-    medico_id:            usuarioAtual.id,
+    medico_id:             usuarioAtual.id,
     origem,
     destino,
-    hospital_origem:      document.getElementById('log-hospital-origem').value.trim() || 'Ignorado',
-    leito_origem:         document.getElementById('log-leito-origem').value.trim()    || 'Ignorado',
-    hospital_destino:     document.getElementById('log-hospital-destino').value.trim() || 'Ignorado',
-    leito_destino:        document.getElementById('log-leito-destino').value.trim()   || 'Ignorado',
-    aeronave:             document.getElementById('aeronave').value,
-    tempo_voo_horas:      hVoo,
-    tempo_voo_minutos:    mVoo,
-    tempo_total_missao:   vooMin > 0 ? totalMin : null,
+    hospital_origem:       document.getElementById('log-hospital-origem').value.trim()  || 'Ignorado',
+    leito_origem:          document.getElementById('log-leito-origem').value.trim()     || 'Ignorado',
+    hospital_destino:      document.getElementById('log-hospital-destino').value.trim() || 'Ignorado',
+    leito_destino:         document.getElementById('log-leito-destino').value.trim()    || 'Ignorado',
+    aeronave:              document.getElementById('aeronave').value,
+    tempo_voo_horas:       hVoo,
+    tempo_voo_minutos:     mVoo,
+    tempo_total_missao:    vooMin > 0 ? totalMin : null,
     paciente_nome,
-    paciente_idade:       parseInt(document.getElementById('paciente_idade').value) || null,
-    paciente_idade_meses: parseInt(document.getElementById('pac-meses').value) || null,
-    paciente_idade_dias:  parseInt(document.getElementById('pac-dias').value)  || null,
-    paciente_peso:        parseFloat(document.getElementById('pac-peso').value) || null,
-    paciente_sexo:        document.getElementById('paciente_sexo').value,
-    diagnostico:      document.getElementById('diagnostico').value.trim(),
+    paciente_idade:        parseInt(document.getElementById('paciente_idade').value)   || null,
+    paciente_idade_meses:  parseInt(document.getElementById('pac-meses').value)        || null,
+    paciente_idade_dias:   parseInt(document.getElementById('pac-dias').value)         || null,
+    paciente_peso:         parseFloat(document.getElementById('pac-peso').value)       || null,
+    paciente_sexo:         document.getElementById('paciente_sexo').value,
+    diagnostico:           document.getElementById('diagnostico').value.trim(),
     naca,
     pa,
-    fc:               parseInt(document.getElementById('fc').value) || null,
-    fr:               parseInt(document.getElementById('fr').value) || null,
-    spo2:             parseInt(document.getElementById('spo2').value) || null,
-    temp:             parseFloat(document.getElementById('temp').value) || null,
-    gcs_o:            parseInt(document.getElementById('gcs_o').value) || null,
-    gcs_v:            parseInt(document.getElementById('gcs_v').value) || null,
-    gcs_m:            parseInt(document.getElementById('gcs_m').value) || null,
-    gcs_total:        gcsTotal,
-    o2_ativo:         o2Ativo,
-    o2_flow:          o2Flow,
-    o2_cilindro:      o2Cilindro,
-    o2_duracao:       o2Duracao,
-    conduta:          document.getElementById('conduta').value.trim(),
-    medicamentos:     document.getElementById('medicamentos').value.trim(),
-    status:           'Em andamento',
-    created_at:       new Date().toISOString(),
+    pam,
+    fc:                    parseInt(document.getElementById('fc').value)   || null,
+    fr:                    parseInt(document.getElementById('fr').value)   || null,
+    spo2:                  parseInt(document.getElementById('spo2').value) || null,
+    temp:                  parseFloat(document.getElementById('temp').value) || null,
+    gcs_o:                 parseInt(document.getElementById('gcs_o').value) || null,
+    gcs_v:                 parseInt(document.getElementById('gcs_v').value) || null,
+    gcs_m:                 parseInt(document.getElementById('gcs_m').value) || null,
+    gcs_total:             gcsTotal,
+    gcs_pupilar:           gcsPupilar,
+    gcs_pediatrico:        gcsPediatrico,
+    o2_ativo:              o2Ativo,
+    o2_dispositivo:        o2Disp,
+    o2_flow:               o2Flow,
+    vm_modo:               hasVM && !isCPAP ? document.getElementById('vm-modo')?.value  || null : null,
+    vm_fio2:               hasVM ? parseInt(isCPAP ? document.getElementById('vm-cpap-fio2')?.value : document.getElementById('vm-fio2')?.value)  || null : null,
+    vm_peep:               hasVM && !isCPAP ? parseInt(document.getElementById('vm-peep')?.value)   || null : null,
+    vm_volume:             isVMI ? parseInt(document.getElementById('vm-volume')?.value) || null : null,
+    vm_freq:               hasVM && !isCPAP ? parseInt(document.getElementById('vm-freq')?.value)   || null : null,
+    vm_ps:                 hasVM && !isCPAP ? parseFloat(document.getElementById('vm-ps')?.value)   || null : null,
+    vm_ti:                 hasVM && !isCPAP ? parseFloat(document.getElementById('vm-ti')?.value)   || null : null,
+    vm_fluxo:              hasVM && !isCPAP ? parseFloat(document.getElementById('vm-fluxo')?.value)|| null : null,
+    vm_obs:                hasVM ? (isCPAP ? document.getElementById('vm-cpap-obs')?.value.trim() || null : document.getElementById('vm-obs')?.value.trim() || null) : null,
+    o2_litros_necessarios: o2Litros,
+    o2_cilindros_necessarios: o2Cilindros,
+    infusao_continua:      infusaoContinua,
+    duas:                  duas.length        ? JSON.stringify(duas)        : null,
+    outras_drogas:         outrasDrogas.length? JSON.stringify(outrasDrogas): null,
+    conduta:               document.getElementById('conduta').value.trim(),
+    medicamentos:          document.getElementById('medicamentos').value.trim(),
+    status:                'Em andamento',
+    created_at:            new Date().toISOString(),
   };
 
   try {
-    // Salva na tabela regulacoes
     const { data: reg, error: regErr } = await db.from('regulacoes')
       .insert(regulacaoData).select('id').single();
     if (regErr) throw regErr;
 
-    // Cria missão
     const { data: missao, error: missErr } = await db.from('missoes').insert({
       codigo,
       medico_id:      usuarioAtual.id,
@@ -843,7 +1296,6 @@ async function finalizarRegulacao() {
     }).select('id').single();
     if (missErr) throw missErr;
 
-    // Atualiza regulacao com missao_id
     if (reg?.id && missao?.id) {
       await db.from('regulacoes').update({ missao_id: missao.id }).eq('id', reg.id);
     }
@@ -863,9 +1315,9 @@ function exportarPDF() {
   if (!regulacaoSalva) { toast('Salve a regulação antes de exportar.', true); return; }
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  const d  = regulacaoSalva;
-  const ml = 20, pw = 210, cw = pw - ml * 2;
-  let y    = 20;
+  const d   = regulacaoSalva;
+  const ml  = 20, pw = 210, cw = pw - ml * 2;
+  let y     = 20;
   const now = new Date().toLocaleString('pt-BR');
 
   function checkPage() {
@@ -873,30 +1325,23 @@ function exportarPDF() {
   }
 
   function secHeader(title) {
-    checkPage();
-    y += 3;
+    checkPage(); y += 3;
     doc.setFillColor(26, 46, 74);
     doc.rect(ml, y, cw, 7, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5);
     doc.setTextColor(255, 255, 255);
     doc.text(title, ml + 3, y + 5);
     y += 10;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
     doc.setTextColor(25, 25, 25);
   }
 
   function row(label, value) {
     if (value === null || value === undefined || value === '') return;
     checkPage();
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(90, 90, 90);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(90, 90, 90);
     doc.text(label, ml, y);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(20, 20, 20);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(20, 20, 20);
     doc.text(String(value), ml + 52, y);
     y += 6;
   }
@@ -904,45 +1349,27 @@ function exportarPDF() {
   function multiRow(label, text) {
     if (!text) return;
     checkPage();
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(90, 90, 90);
-    doc.text(label, ml, y);
-    y += 5;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(20, 20, 20);
-    doc.splitTextToSize(text, cw - 4).forEach(l => {
-      checkPage();
-      doc.text(l, ml + 2, y); y += 5;
-    });
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(90, 90, 90);
+    doc.text(label, ml, y); y += 5;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(20, 20, 20);
+    doc.splitTextToSize(text, cw - 4).forEach(l => { checkPage(); doc.text(l, ml + 2, y); y += 5; });
     y += 2;
   }
 
   // Cabeçalho
-  doc.setFillColor(15, 30, 53);
-  doc.rect(0, 0, pw, 28, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(20);
-  doc.setTextColor(120, 190, 32);
+  doc.setFillColor(15, 30, 53); doc.rect(0, 0, pw, 28, 'F');
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(20); doc.setTextColor(120, 190, 32);
   doc.text('ALTUSMED', ml, 13);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  doc.setTextColor(180, 200, 220);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(180, 200, 220);
   doc.text('Regulacao Aeromédica', ml, 21);
-  doc.setFontSize(8);
-  doc.setTextColor(120, 140, 160);
+  doc.setFontSize(8); doc.setTextColor(120, 140, 160);
   doc.text('Gerado em: ' + now, pw - ml, 21, { align: 'right' });
-
   y = 36;
 
-  // Código da missão
-  doc.setFillColor(235, 243, 255);
-  doc.setDrawColor(26, 46, 74);
+  // Código
+  doc.setFillColor(235, 243, 255); doc.setDrawColor(26, 46, 74);
   doc.roundedRect(ml, y, cw, 10, 2, 2, 'FD');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.setTextColor(26, 46, 74);
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(26, 46, 74);
   doc.text('Missão: ' + d.codigo, pw / 2, y + 7, { align: 'center' });
   y += 16;
 
@@ -955,12 +1382,11 @@ function exportarPDF() {
   if (d.hospital_destino && d.hospital_destino !== 'Ignorado') row('Hospital Destino', d.hospital_destino);
   if (d.leito_destino    && d.leito_destino    !== 'Ignorado') row('Leito Destino',    d.leito_destino);
   row('Aeronave', d.aeronave);
-  if (d.tempo_voo_horas || d.tempo_voo_minutos) {
+  if (d.tempo_voo_horas || d.tempo_voo_minutos)
     row('Tempo de voo', (d.tempo_voo_horas || 0) + 'h ' + (d.tempo_voo_minutos || 0) + 'min');
-  }
   if (d.tempo_total_missao) {
     const ht = Math.floor(d.tempo_total_missao / 60), mt = d.tempo_total_missao % 60;
-    const nota = d.tempo_voo_horas * 60 + d.tempo_voo_minutos > 210 ? ' (incl. reabastecimento)' : '';
+    const nota = (d.tempo_voo_horas * 60 + d.tempo_voo_minutos) > 210 ? ' (incl. reabastecimento)' : '';
     row('Tempo total missão', ht + 'h ' + mt + 'min' + nota);
   }
 
@@ -968,14 +1394,14 @@ function exportarPDF() {
   secHeader('PACIENTE');
   row('Nome', d.paciente_nome);
   (() => {
-    if (!d.paciente_idade && d.paciente_idade !== 0) return;
-    let idadeStr = d.paciente_idade + ' anos';
+    if (d.paciente_idade == null) return;
+    let s = d.paciente_idade + ' anos';
     if (d.paciente_idade === 0 && d.paciente_idade_meses != null) {
-      idadeStr = d.paciente_idade_meses + ' meses';
+      s = d.paciente_idade_meses + ' meses';
       if (d.paciente_idade_meses === 0 && d.paciente_idade_dias != null)
-        idadeStr = d.paciente_idade_dias + ' dias';
+        s = d.paciente_idade_dias + ' dias';
     }
-    row('Idade', idadeStr);
+    row('Idade', s);
   })();
   if (d.paciente_peso) row('Peso', d.paciente_peso + ' kg');
   row('Sexo', d.paciente_sexo);
@@ -985,23 +1411,53 @@ function exportarPDF() {
   // Sinais Vitais
   secHeader('SINAIS VITAIS');
   row('PA (mmHg)', d.pa);
-  row('FC', d.fc ? d.fc + ' bpm' : null);
-  row('FR', d.fr ? d.fr + ' rpm' : null);
-  row('SpO2', d.spo2 ? d.spo2 + ' %' : null);
-  row('Temperatura', d.temp ? d.temp + ' °C' : null);
+  if (d.pam) row('PAM', d.pam + ' mmHg');
+  row('FC',          d.fc   ? d.fc   + ' bpm' : null);
+  row('FR',          d.fr   ? d.fr   + ' rpm' : null);
+  row('SpO2',        d.spo2 ? d.spo2 + ' %'   : null);
+  row('Temperatura', d.temp ? d.temp + ' °C'  : null);
   if (d.gcs_total) {
-    row('GCS Total', d.gcs_total + ' / 15');
+    const pedStr = d.gcs_pediatrico ? ' (Pediátrico)' : '';
+    row('GCS Total' + pedStr, d.gcs_total + ' / 15');
     row('GCS  O / V / M', d.gcs_o + ' / ' + d.gcs_v + ' / ' + d.gcs_m);
+    if (d.gcs_pupilar != null) {
+      const gcsp = d.gcs_total - d.gcs_pupilar;
+      row('GCS-P', gcsp + ' (Pupilar: ' + d.gcs_pupilar + ')');
+    }
   }
 
   // O2
   if (d.o2_ativo) {
     secHeader('OXIGENIO');
+    row('Dispositivo', d.o2_dispositivo);
     row('Flow', d.o2_flow ? d.o2_flow + ' L/min' : null);
-    row('Cilindro', d.o2_cilindro);
-    if (d.o2_duracao) {
-      const h = Math.floor(d.o2_duracao / 60), m = d.o2_duracao % 60;
-      row('Duração estimada', h > 0 ? h + 'h ' + m + 'min' : m + ' min');
+    if (d.o2_litros_necessarios)
+      row('O2 necessário', d.o2_litros_necessarios + ' L (E=' + d.o2_cilindros_necessarios + ' cil.)');
+    if (d.vm_modo)    row('Modo VM',   d.vm_modo);
+    if (d.vm_fio2)    row('FiO2',      d.vm_fio2 + ' %');
+    if (d.vm_peep)    row('PEEP',      d.vm_peep + ' cmH2O');
+    if (d.vm_volume)  row('Vol. corrente', d.vm_volume + ' ml');
+    if (d.vm_freq)    row('Freq. prog.', d.vm_freq + ' rpm');
+    if (d.vm_ps)      row('Pressão suporte', d.vm_ps + ' cmH2O');
+    if (d.vm_ti)      row('Tempo insp.', d.vm_ti + ' s');
+    if (d.vm_fluxo)   row('Fluxo',     d.vm_fluxo + ' L/min');
+    if (d.vm_obs)     row('Obs. VM',   d.vm_obs);
+  }
+
+  // Infusão Contínua
+  const dvaList   = d.duas        ? JSON.parse(d.duas)        : [];
+  const drogaList = d.outras_drogas ? JSON.parse(d.outras_drogas) : [];
+  if (d.infusao_continua && (dvaList.length || drogaList.length)) {
+    secHeader('MEDICACOES EM INFUSAO CONTINUA');
+    if (dvaList.length) {
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(90, 90, 90);
+      doc.text('DVA:', ml, y); y += 5;
+      dvaList.forEach(item => row('  ' + item.droga, (item.valor || '—') + ' ' + (item.unidade || '')));
+    }
+    if (drogaList.length) {
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(90, 90, 90);
+      doc.text('Outras drogas:', ml, y); y += 5;
+      drogaList.forEach(item => row('  ' + item.droga, (item.valor || '—') + ' ' + (item.unidade || '')));
     }
   }
 
@@ -1014,19 +1470,13 @@ function exportarPDF() {
 
   // Rodapé
   const footY = Math.max(y + 15, 262);
-  doc.setDrawColor(180, 180, 180);
-  doc.line(ml, footY, pw - ml, footY);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.setTextColor(60, 60, 60);
+  doc.setDrawColor(180, 180, 180); doc.line(ml, footY, pw - ml, footY);
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(60, 60, 60);
   const medicoNome = perfilAtual.nome || usuarioAtual?.email || '';
   const crm = perfilAtual.crm ? '  |  CRM-PA ' + perfilAtual.crm : '';
   doc.text('Médico Regulador: ' + medicoNome + crm, ml, footY + 5);
-  doc.setDrawColor(100, 100, 100);
-  doc.line(ml, footY + 14, ml + 72, footY + 14);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7.5);
-  doc.setTextColor(100, 100, 100);
+  doc.setDrawColor(100, 100, 100); doc.line(ml, footY + 14, ml + 72, footY + 14);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(100, 100, 100);
   doc.text('Assinatura do Médico Regulador', ml, footY + 18);
 
   doc.save('AltusMed-' + d.codigo + '.pdf');

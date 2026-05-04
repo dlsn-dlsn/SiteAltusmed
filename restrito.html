@@ -846,9 +846,12 @@ async function carregarApp() {
 }
 
 async function carregarPerfil() {
-  const { data } = await db.from('perfis').select('*')
-    .eq('id', usuarioAtual.id).single();
-  perfilAtual = data || {};
+  try {
+    const { data, error } = await db.from('perfis').select('*')
+      .eq('id', usuarioAtual.id).single();
+    if (error) console.error('Erro carregarPerfil:', JSON.stringify(error));
+    perfilAtual = data || {};
+  } catch(e) { console.error('carregarPerfil catch:', e); }
 
   const tipo = perfilAtual.cargo_tipo || 'medico';
 
@@ -1078,7 +1081,11 @@ async function salvarPerfil() {
 
   btn.disabled = false; btn.textContent = 'Salvar alterações';
 
-  if (error) { toast('Erro ao salvar. Tente novamente.', true); return; }
+  if (error) {
+    console.error('Erro salvarPerfil:', JSON.stringify(error));
+    toast('Erro: ' + (error.message || JSON.stringify(error)), true);
+    return;
+  }
 
   perfilAtual = { ...perfilAtual, ...dados };
 

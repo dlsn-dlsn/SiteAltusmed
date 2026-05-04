@@ -570,7 +570,10 @@
           <div style="font-size:1.3rem;font-weight:700;">Todas as Missões</div>
           <div style="font-size:.85rem;color:var(--text-m);margin-top:.25rem;">Histórico completo de regulações</div>
         </div>
-        <button class="btn-primary" onclick="abrirModalMissao()">+ Nova Missão</button>
+        <div style="display:flex;gap:.75rem;">
+          <button class="btn-primary" onclick="window.location.href='regulacao.html'">🩺 Nova Regulação</button>
+          <button class="btn-primary" onclick="abrirModalMissao()">+ Nova Missão</button>
+        </div>
       </div>
       <div class="card">
         <div class="card-body" style="padding:0;">
@@ -964,8 +967,11 @@ function renderizarTabela(missoes, tbodyId, completo) {
   tb.innerHTML = missoes.map(m => {
     const badgeCls = m.status === 'Em andamento' ? 'badge-green'
                    : m.status === 'Pendente'      ? 'badge-amber' : 'badge-gray';
+    const codigoEl = m.status === 'Em andamento'
+      ? `<span class="mission-code" style="cursor:pointer;" onclick="abrirEncerramento(${m.id}, '${m.codigo}')">${m.codigo}</span>`
+      : `<span class="mission-code">${m.codigo}</span>`;
     return `<tr>
-      <td><span class="mission-code">${m.codigo}</span></td>
+      <td>${codigoEl}</td>
       <td>${m.paciente_nome}</td>
       ${completo ? `<td>${m.paciente_idade || '—'}</td>` : ''}
       <td>${m.origem}</td>
@@ -1225,8 +1231,95 @@ function toast(msg, erro = false) {
   setTimeout(() => t.className = 'toast', 3500);
 }
 
+// ── Encerramento de Missão ────────────────────────────────────────────────
+let missaoEncerrandoId = null;
+
+function abrirEncerramento(id, codigo) {
+  missaoEncerrandoId = id;
+  document.getElementById('enc-codigo').textContent = codigo;
+  document.getElementById('enc-pouso').value = '';
+  document.getElementById('enc-transferencia').value = '';
+  document.getElementById('enc-desfecho').value = '';
+  document.getElementById('enc-obs').value = '';
+  document.getElementById('modal-encerramento').classList.add('show');
+}
+
+function fecharEncerramento() {
+  missaoEncerrandoId = null;
+  document.getElementById('modal-encerramento').classList.remove('show');
+}
+
+async function encerrarMissao() {
+  const pouso    = document.getElementById('enc-pouso').value;
+  const transf   = document.getElementById('enc-transferencia').value;
+  const desfecho = document.getElementById('enc-desfecho').value;
+  const obs      = document.getElementById('enc-obs').value;
+
+  if (!desfecho) { toast('Selecione o desfecho da missão.', true); return; }
+
+  const { error } = await db.from('missoes').update({
+    status:             'Concluída',
+    hora_pouso:         pouso  || null,
+    hora_transferencia: transf || null,
+    desfecho,
+    updated_at:         new Date().toISOString(),
+  }).eq('id', missaoEncerrandoId);
+
+  if (error) { toast('Erro ao encerrar missão.', true); return; }
+
+  await db.from('regulacoes').update({
+    status:             'Concluída',
+    hora_pouso:         pouso  || null,
+    hora_transferencia: transf || null,
+    desfecho,
+    observacao_final:   obs,
+    updated_at:         new Date().toISOString(),
+  }).eq('missao_id', missaoEncerrandoId);
+
+  fecharEncerramento();
+  await carregarMissoes();
+  toast('✓ Missão encerrada com sucesso!');
+}
+
 // ── Start ─────────────────────────────────────────────────────────────────
 init();
 </script>
+
+<div class="modal-overlay" id="modal-encerramento">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-title">Encerrar Missão <span id="enc-codigo" style="color:var(--green);"></span></div>
+    <div class="form-grid">
+      <div class="perfil-field">
+        <label>Hora do Pouso</label>
+        <input type="time" id="enc-pouso">
+      </div>
+      <div class="perfil-field">
+        <label>Hora de Transferência do Paciente</label>
+        <input type="time" id="enc-transferencia">
+      </div>
+      <div class="perfil-field full">
+        <label>Desfecho</label>
+        <select id="enc-desfecho">
+          <option value="">Selecione</option>
+          <option value="Transferido">Transferido com sucesso</option>
+          <option value="Óbito em voo">Óbito em voo</option>
+          <option value="Óbito na origem">Óbito na origem</option>
+          <option value="Recusa">Recusa do paciente/família</option>
+          <option value="Cancelado">Missão cancelada</option>
+          <option value="Outro">Outro</option>
+        </select>
+      </div>
+      <div class="perfil-field full">
+        <label>Observação Final</label>
+        <textarea id="enc-obs" rows="3"
+          placeholder="Intercorrências, observações clínicas..."></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-sm" onclick="fecharEncerramento()">Cancelar</button>
+      <button class="btn-primary" onclick="encerrarMissao()">✓ Encerrar Missão</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

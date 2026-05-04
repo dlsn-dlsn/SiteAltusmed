@@ -849,6 +849,12 @@ function RequestModal({ t, onClose }) {
   const inputStyle = { width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:6, padding:'10px 12px', fontSize:14, outline:'none', fontFamily:'var(--ff)', color:'white' };
 
   const handleSubmit = async () => {
+    const telefone = data.telefone?.trim() || '';
+    const email    = data.email?.trim()    || '';
+    if (!telefone && !email) {
+      alert('Por favor, informe pelo menos um contato: telefone ou e-mail.');
+      return;
+    }
     setLoading(true);
     try {
       const { createClient } = supabase;
@@ -916,6 +922,9 @@ function RequestModal({ t, onClose }) {
                   <div key={key} style={{ marginBottom:14 }}>
                     <label style={{ fontSize:11, fontWeight:600, color:'rgba(255,255,255,0.4)', display:'block', marginBottom:6 }}>{ph}</label>
                     <input type={type} placeholder={ph} value={data[key]||''} onChange={e=>setData(d=>({...d,[key]:e.target.value}))} style={inputStyle}/>
+                    {(key==='telefone'||key==='email') && (
+                      <small style={{ color:'rgba(255,255,255,0.3)', fontSize:'.75rem' }}>* Pelo menos um contato é obrigatório</small>
+                    )}
                   </div>
                 ))}
                 <button onClick={handleSubmit} disabled={loading} style={{ width:'100%', background:'#78BE20', color:'#090E1A', border:'none', borderRadius:8, padding:'13px', fontSize:15, fontWeight:700, cursor:loading?'not-allowed':'pointer', opacity:loading?0.7:1, marginTop:8, fontFamily:'var(--ff)' }}>

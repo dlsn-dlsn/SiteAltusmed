@@ -462,6 +462,8 @@
     </div>
     <span class="topbar-badge" id="topbar-cargo">Carregando...</span>
     <div class="topbar-right">
+      <a href="/" style="display:flex;align-items:center;gap:.4rem;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:7px;padding:.35rem .9rem;font-family:var(--ff);font-size:.8rem;font-weight:600;color:var(--text-m);text-decoration:none;transition:all .2s;"
+        onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-m)'">← Site</a>
       <span class="topbar-user">Olá, <strong id="topbar-nome">...</strong></span>
       <button class="btn-sm" onclick="irPara('perfil')">⚙ Perfil</button>
       <button class="btn-sm" onclick="fazerLogout()">Sair</button>
@@ -835,8 +837,9 @@ async function carregarApp() {
   await carregarPerfil();
   atualizarUI();
   await carregarMissoes();
-  if (perfilAtual.is_admin) {
-    document.getElementById('nav-usuarios').style.display = 'block';
+  const navUsuarios = document.getElementById('nav-usuarios');
+  if (navUsuarios) {
+    navUsuarios.style.display = perfilAtual.is_admin === true ? 'block' : 'none';
   }
   mostrarApp();
 }
@@ -859,11 +862,13 @@ async function carregarPerfil() {
   document.getElementById('pf-telefone').value      = perfilAtual.telefone || '';
   document.getElementById('pf-email').textContent   = usuarioAtual.email || '';
 
-  // Banner diretor
-  if (tipo === 'diretor') {
-    const banner = document.getElementById('diretor-banner');
+  // Banner diretor — apenas para diretor com is_admin
+  const banner = document.getElementById('diretor-banner');
+  if (perfilAtual.cargo_tipo === 'diretor' && perfilAtual.is_admin === true) {
     banner.style.display = 'flex';
     document.getElementById('diretor-banner-nome').textContent = perfilAtual.nome || 'Diretor';
+  } else {
+    banner.style.display = 'none';
   }
 }
 
@@ -1085,8 +1090,8 @@ async function salvarPerfil() {
 
   perfilAtual = { ...perfilAtual, ...dados };
 
-  // Atualiza banner diretor
-  if (dados.cargo_tipo === 'diretor') {
+  // Atualiza banner diretor — apenas para diretor com is_admin
+  if (dados.cargo_tipo === 'diretor' && perfilAtual.is_admin === true) {
     document.getElementById('diretor-banner').style.display = 'flex';
     document.getElementById('diretor-banner-nome').textContent = dados.nome;
   } else {

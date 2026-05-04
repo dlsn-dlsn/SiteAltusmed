@@ -3,632 +3,905 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AltusMed — Área Restrita</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<title>AltusMed · Área Restrita</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --navy:  #1B3A6B;
-  --navyD: #0F2245;
-  --mid:   #162038;
-  --lime:  #78BE20;
-  --limeD: #5a9018;
-  --black: #090E1A;
-  --bg:    #0C1526;
-  --text:  rgba(255,255,255,0.88);
-  --muted: rgba(255,255,255,0.45);
-  --border: rgba(255,255,255,0.08);
-  --card:  rgba(255,255,255,0.04);
-  --ff:    'Space Grotesk', sans-serif;
-  --ffd:   'DM Sans', sans-serif;
-}
-html, body, #root { height: 100%; }
-body { background: var(--bg); color: var(--text); font-family: var(--ff); -webkit-font-smoothing: antialiased; }
-input, select, textarea, button { font-family: var(--ff); }
-::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
-@media print {
-  .no-print { display: none !important; }
-  body { background: white; color: black; }
-  .print-report { display: block !important; }
-}
+  :root {
+    --navy:    #0f1e35;
+    --navy2:   #162844;
+    --navy3:   #1e3a5f;
+    --green:   #78be20;
+    --green2:  #5a9a10;
+    --amber:   #f59e0b;
+    --red:     #ef4444;
+    --text:    #e2e8f0;
+    --text-m:  #94a3b8;
+    --text-l:  #64748b;
+    --border:  rgba(255,255,255,0.08);
+    --card:    rgba(255,255,255,0.04);
+    --ff:      'DM Sans', sans-serif;
+    --radius:  10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--ff); background: var(--navy); color: var(--text); min-height: 100vh; }
+
+  /* ── LOGIN ── */
+  .login-wrap {
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--navy) 0%, #0a1628 100%);
+    padding: 1.5rem;
+  }
+  .login-card {
+    background: var(--navy2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2.5rem;
+    width: 100%; max-width: 400px;
+    box-shadow: 0 24px 64px rgba(0,0,0,.4);
+  }
+  .login-logo {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 2rem;
+  }
+  .login-logo-icon {
+    width: 40px; height: 40px; border-radius: 9px;
+    background: var(--green);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .login-logo-text { font-size: 1.3rem; font-weight: 700; letter-spacing: -.02em; }
+  .login-logo-sub  { font-size: .75rem; color: var(--text-m); letter-spacing: .06em; text-transform: uppercase; }
+  .login-title { font-size: 1.4rem; font-weight: 700; margin-bottom: .4rem; }
+  .login-sub   { font-size: .87rem; color: var(--text-m); margin-bottom: 1.75rem; }
+
+  .field { display: flex; flex-direction: column; gap: .4rem; margin-bottom: 1rem; }
+  .field label { font-size: .78rem; font-weight: 600; color: var(--text-m); text-transform: uppercase; letter-spacing: .05em; }
+  .field input {
+    background: rgba(255,255,255,.05);
+    border: 1px solid var(--border);
+    border-radius: 8px; padding: .7rem 1rem;
+    color: var(--text); font-family: var(--ff); font-size: .92rem;
+    outline: none; transition: border-color .2s;
+  }
+  .field input:focus { border-color: var(--green); }
+
+  .btn-login {
+    width: 100%; background: var(--green); color: #0f1e35;
+    border: none; border-radius: 8px; padding: .8rem;
+    font-family: var(--ff); font-size: .95rem; font-weight: 700;
+    cursor: pointer; transition: background .2s; margin-top: .5rem;
+  }
+  .btn-login:hover { background: var(--green2); color: white; }
+  .btn-login:disabled { opacity: .6; cursor: not-allowed; }
+
+  .login-error {
+    background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.3);
+    border-radius: 8px; padding: .7rem 1rem;
+    font-size: .85rem; color: #fca5a5; margin-bottom: 1rem;
+    display: none;
+  }
+  .login-error.show { display: block; }
+
+  /* ── APP LAYOUT ── */
+  .app { display: none; min-height: 100vh; }
+  .app.show { display: flex; flex-direction: column; }
+
+  /* Topbar */
+  .topbar {
+    background: var(--navy2); border-bottom: 1px solid var(--border);
+    padding: 0 2rem; height: 56px;
+    display: flex; align-items: center; gap: 1rem;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topbar-brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: .95rem; }
+  .topbar-brand-icon {
+    width: 28px; height: 28px; border-radius: 6px;
+    background: var(--green);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .topbar-badge {
+    background: rgba(120,190,32,.15); color: var(--green);
+    border: 1px solid rgba(120,190,32,.25);
+    border-radius: 20px; padding: 2px 10px;
+    font-size: .72rem; font-weight: 600; letter-spacing: .04em;
+  }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 1rem; }
+  .topbar-user { font-size: .85rem; color: var(--text-m); }
+  .topbar-user strong { color: var(--text); }
+
+  .btn-sm {
+    background: rgba(255,255,255,.06); border: 1px solid var(--border);
+    border-radius: 7px; padding: .35rem .9rem;
+    font-family: var(--ff); font-size: .8rem; font-weight: 600;
+    color: var(--text-m); cursor: pointer; transition: all .2s;
+  }
+  .btn-sm:hover { background: rgba(255,255,255,.1); color: var(--text); }
+
+  .btn-primary {
+    background: var(--green); color: #0f1e35;
+    border: none; border-radius: 7px; padding: .4rem 1rem;
+    font-family: var(--ff); font-size: .82rem; font-weight: 700;
+    cursor: pointer; transition: background .2s;
+  }
+  .btn-primary:hover { background: var(--green2); color: white; }
+
+  /* Main */
+  .main { flex: 1; padding: 2rem; max-width: 1280px; margin: 0 auto; width: 100%; }
+
+  /* Page tabs */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── DASHBOARD ── */
+  .dash-header { margin-bottom: 1.75rem; }
+  .dash-saudacao { font-size: 1.6rem; font-weight: 700; letter-spacing: -.02em; line-height: 1.2; }
+  .dash-saudacao span { color: var(--green); }
+  .dash-sub { font-size: .87rem; color: var(--text-m); margin-top: .35rem; }
+
+  /* KPI Cards */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem; margin-bottom: 1.75rem;
+  }
+  .kpi-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.25rem 1.5rem;
+    transition: border-color .2s;
+  }
+  .kpi-card:hover { border-color: rgba(120,190,32,.3); }
+  .kpi-valor { font-size: 2.2rem; font-weight: 700; line-height: 1; margin-bottom: .3rem; }
+  .kpi-label { font-size: .8rem; color: var(--text-m); font-weight: 500; }
+  .kpi-card.verde .kpi-valor { color: var(--green); }
+  .kpi-card.amber .kpi-valor { color: var(--amber); }
+
+  /* Grid 2 col */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+  @media (max-width: 768px) { .grid2 { grid-template-columns: 1fr; } }
+
+  /* Card genérico */
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+  }
+  .card-head {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-head h3 { font-size: .92rem; font-weight: 600; }
+  .card-body { padding: 1.25rem; }
+
+  /* Tabela missões */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .83rem; }
+  th {
+    text-align: left; font-size: .72rem; font-weight: 600;
+    color: var(--text-l); text-transform: uppercase; letter-spacing: .06em;
+    padding: .6rem 1rem; border-bottom: 1px solid var(--border);
+  }
+  td { padding: .75rem 1rem; border-bottom: 1px solid rgba(255,255,255,.04); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+
+  .badge {
+    display: inline-block; padding: 2px 10px; border-radius: 20px;
+    font-size: .72rem; font-weight: 600;
+  }
+  .badge-green  { background: rgba(120,190,32,.15); color: var(--green); }
+  .badge-amber  { background: rgba(245,158,11,.15); color: var(--amber); }
+  .badge-gray   { background: rgba(100,116,139,.15); color: var(--text-m); }
+
+  .mission-code { color: var(--green); font-weight: 600; font-size: .82rem; }
+
+  /* Central despacho */
+  .despacho-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; }
+  @media (max-width: 600px) { .despacho-grid { grid-template-columns: 1fr; } }
+  .despacho-item {
+    background: rgba(255,255,255,.03); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1rem;
+  }
+  .despacho-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    display: inline-block; margin-right: 6px;
+  }
+  .despacho-titulo { font-size: .85rem; font-weight: 600; margin-bottom: 4px; }
+  .despacho-sub { font-size: .75rem; color: var(--text-m); }
+
+  /* ── PERFIL ── */
+  .perfil-wrap { max-width: 600px; }
+  .perfil-titulo { font-size: 1.3rem; font-weight: 700; margin-bottom: .4rem; }
+  .perfil-sub { font-size: .87rem; color: var(--text-m); margin-bottom: 1.75rem; }
+
+  .perfil-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.75rem; margin-bottom: 1.25rem;
+  }
+  .perfil-section-title {
+    font-size: .75rem; font-weight: 700; color: var(--text-l);
+    text-transform: uppercase; letter-spacing: .07em;
+    margin-bottom: 1rem; padding-bottom: .5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 500px) { .form-grid { grid-template-columns: 1fr; } }
+  .form-grid .full { grid-column: 1 / -1; }
+
+  .perfil-field { display: flex; flex-direction: column; gap: .4rem; }
+  .perfil-field label { font-size: .75rem; font-weight: 600; color: var(--text-m); text-transform: uppercase; letter-spacing: .05em; }
+  .perfil-field input, .perfil-field select {
+    background: rgba(255,255,255,.05); border: 1px solid var(--border);
+    border-radius: 8px; padding: .65rem .9rem;
+    color: var(--text); font-family: var(--ff); font-size: .9rem;
+    outline: none; transition: border-color .2s;
+  }
+  .perfil-field input:focus, .perfil-field select:focus { border-color: var(--green); }
+
+  .btn-salvar {
+    background: var(--green); color: #0f1e35;
+    border: none; border-radius: 8px; padding: .7rem 1.75rem;
+    font-family: var(--ff); font-size: .9rem; font-weight: 700;
+    cursor: pointer; transition: background .2s;
+  }
+  .btn-salvar:hover { background: var(--green2); color: white; }
+  .btn-salvar:disabled { opacity: .6; cursor: not-allowed; }
+
+  .save-msg {
+    display: inline-flex; align-items: center; gap: .4rem;
+    font-size: .83rem; color: var(--green); margin-left: 1rem;
+    opacity: 0; transition: opacity .3s;
+  }
+  .save-msg.show { opacity: 1; }
+
+  /* Senha */
+  .pwd-field { position: relative; }
+  .pwd-toggle {
+    position: absolute; right: .75rem; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: var(--text-m);
+    cursor: pointer; font-size: .8rem; padding: 2px;
+  }
+
+  /* Nav lateral interna */
+  .page-nav {
+    display: flex; gap: .5rem; margin-bottom: 1.75rem;
+    border-bottom: 1px solid var(--border); padding-bottom: 0;
+  }
+  .page-nav-item {
+    padding: .55rem 1rem; font-size: .87rem; font-weight: 500;
+    color: var(--text-m); cursor: pointer; border-bottom: 2px solid transparent;
+    margin-bottom: -1px; transition: all .2s;
+  }
+  .page-nav-item:hover { color: var(--text); }
+  .page-nav-item.active { color: var(--green); border-bottom-color: var(--green); }
+
+  /* Loading overlay */
+  .loading {
+    position: fixed; inset: 0;
+    background: var(--navy);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 999; transition: opacity .4s;
+  }
+  .loading.hide { opacity: 0; pointer-events: none; }
+  .loading-spinner {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 3px solid rgba(120,190,32,.2);
+    border-top-color: var(--green);
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 1.5rem; right: 1.5rem;
+    background: #1e3a5f; border: 1px solid rgba(120,190,32,.3);
+    border-radius: 8px; padding: .7rem 1.1rem;
+    font-size: .85rem; font-weight: 500;
+    transform: translateY(60px); opacity: 0;
+    transition: all .3s; z-index: 999;
+  }
+  .toast.show { transform: none; opacity: 1; }
+  .toast.erro { border-color: rgba(239,68,68,.3); background: #2d1515; color: #fca5a5; }
+
+  /* Nova missão modal */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.6); backdrop-filter: blur(4px);
+    display: none; align-items: center; justify-content: center;
+    z-index: 200; padding: 1rem;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--navy2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1.75rem;
+    width: 100%; max-width: 480px;
+    box-shadow: 0 24px 64px rgba(0,0,0,.5);
+  }
+  .modal-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem; }
+  .modal-actions { display: flex; gap: .75rem; justify-content: flex-end; margin-top: 1.25rem; }
 </style>
 </head>
 <body>
-<div id="root"></div>
-<script type="text/babel">
 
-const { useState, useEffect, useRef } = React;
+<!-- Loading -->
+<div class="loading" id="loading">
+  <div class="loading-spinner"></div>
+</div>
 
-// ── Brand ────────────────────────────────────────────────────────────
-const B = { navy:'#1B3A6B', navyD:'#0F2245', lime:'#78BE20', black:'#090E1A', bg:'#0C1526' };
+<!-- Toast -->
+<div class="toast" id="toast"></div>
 
-const ROLES = {
-  DIR: { label:'Diretor Aeromédico', labelEn:'Aeromedical Director', color:'#D4A820', dash:'director' },
-  MED: { label:'Médico Aeromédico',  labelEn:'Aeromedical Physician', color:'#78BE20', dash:'medico' },
-  ENF: { label:'Enfermeiro Aeromédico', labelEn:'Aeromedical Nurse', color:'#29B6C8', dash:'enfermeiro' },
-  REG: { label:'Regulador de Missão', labelEn:'Mission Regulator', color:'#E07820', dash:'regulador' },
-};
-
-// Demo users
-const USERS = [
-  { id:'AM-0001', pin:'000001', name:'Dr. Davi Lucas S. Nunes', role:'DIR', crm:'CRM-PA XXXXX' },
-  { id:'AM-0012', pin:'000012', name:'Dr. João Silva',           role:'MED', crm:'CRM-PA YYYYY' },
-  { id:'AM-0023', pin:'000023', name:'Enf. Maria Santos',        role:'ENF', crm:'COREN-PA ZZZZZ' },
-  { id:'AM-0034', pin:'000034', name:'Carlos Regulação',         role:'REG', crm:'' },
-];
-
-// ── ECG ──────────────────────────────────────────────────────────────
-function ECG({ color='#78BE20', w=100, h=24 }) {
-  return (
-    <svg width={w} height={h} viewBox="0 0 100 24" fill="none">
-      <polyline points="0,12 18,12 24,4 30,20 36,2 42,22 48,12 72,12 82,12 100,12"
-        stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-
-// ── Logo ─────────────────────────────────────────────────────────────
-function Logo({ size=18 }) {
-  return (
-    <div style={{ display:'flex', alignItems:'center', gap:7 }}>
-      <svg width={size} height={size} viewBox="0 0 40 40" fill="none">
-        <path d="M4 22l9-13 3.5 5L27 7l-4 14 7 3-2 5-9-2-3.5 7-5-2 2-7L4 22z" fill="#78BE20"/>
-      </svg>
-      <span style={{ fontWeight:700, fontSize:size*0.9, color:'white', letterSpacing:'-0.02em' }}>
-        ALTUS<span style={{ color:'#78BE20' }}>MED</span>
-      </span>
+<!-- ── LOGIN ─────────────────────────────────────────────────────────────── -->
+<div class="login-wrap" id="login-wrap" style="display:none;">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">
+        <svg width="22" height="22" viewBox="0 0 20 20" fill="none">
+          <path d="M2 12l5-7 2 3 6-4-2 7 4 2-1 3-5-1-2 4-3-1 1-4-4-2z" fill="#0f1e35" opacity="0.9"/>
+        </svg>
+      </div>
+      <div>
+        <div class="login-logo-text">AltusMed</div>
+        <div class="login-logo-sub">Área Restrita</div>
+      </div>
     </div>
-  );
+    <div class="login-title">Bem-vindo de volta</div>
+    <div class="login-sub">Acesso exclusivo para equipe médica autorizada</div>
+    <div class="login-error" id="login-error"></div>
+    <div class="field">
+      <label>E-mail</label>
+      <input type="email" id="login-email" placeholder="seu@email.com" autocomplete="email">
+    </div>
+    <div class="field">
+      <label>Senha</label>
+      <div class="pwd-field">
+        <input type="password" id="login-senha" placeholder="••••••••" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter') fazerLogin()">
+        <button class="pwd-toggle" onclick="toggleSenha('login-senha', this)">mostrar</button>
+      </div>
+    </div>
+    <button class="btn-login" id="btn-login" onclick="fazerLogin()">Entrar</button>
+  </div>
+</div>
+
+<!-- ── APP ───────────────────────────────────────────────────────────────── -->
+<div class="app" id="app">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-brand">
+      <div class="topbar-brand-icon">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+          <path d="M2 12l5-7 2 3 6-4-2 7 4 2-1 3-5-1-2 4-3-1 1-4-4-2z" fill="#0f1e35"/>
+        </svg>
+      </div>
+      ALTUSMED
+    </div>
+    <span class="topbar-badge" id="topbar-cargo">Carregando...</span>
+    <div class="topbar-right">
+      <span class="topbar-user">Olá, <strong id="topbar-nome">...</strong></span>
+      <button class="btn-sm" onclick="irPara('perfil')">⚙ Perfil</button>
+      <button class="btn-sm" onclick="fazerLogout()">Sair</button>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Nav de páginas -->
+    <div class="page-nav">
+      <div class="page-nav-item active" id="nav-dashboard" onclick="irPara('dashboard')">Dashboard</div>
+      <div class="page-nav-item" id="nav-missoes" onclick="irPara('missoes')">Missões</div>
+      <div class="page-nav-item" id="nav-perfil" onclick="irPara('perfil')">Meu Perfil</div>
+    </div>
+
+    <!-- ── DASHBOARD ── -->
+    <div class="page active" id="page-dashboard">
+      <div class="dash-header">
+        <div class="dash-saudacao">Olá, <span id="dash-nome">Dr.</span> · <span id="dash-cargo">Médico</span></div>
+        <div class="dash-sub" id="dash-data"></div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-grid">
+        <div class="kpi-card verde">
+          <div class="kpi-valor" id="kpi-missoes">—</div>
+          <div class="kpi-label">Missões Este Mês</div>
+        </div>
+        <div class="kpi-card amber">
+          <div class="kpi-valor" id="kpi-andamento">—</div>
+          <div class="kpi-label">Em Andamento</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-valor" id="kpi-pendentes">—</div>
+          <div class="kpi-label">Relatórios Pendentes</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-valor" id="kpi-km">—</div>
+          <div class="kpi-label">Km Este Mês</div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <!-- Missões recentes -->
+        <div class="card" style="grid-column: 1 / -1;">
+          <div class="card-head">
+            <h3>Missões Recentes</h3>
+            <button class="btn-primary" onclick="abrirModalMissao()">+ Nova Missão</button>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Missão</th><th>Paciente</th><th>Origem</th>
+                    <th>Destino</th><th>Tipo</th><th>Equipe</th><th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="tabela-missoes">
+                  <tr><td colspan="7" style="text-align:center;color:var(--text-m);padding:2rem;">
+                    Carregando missões...
+                  </td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Central despacho -->
+      <div class="card">
+        <div class="card-head"><h3>Central de Regulação — Despacho Rápido</h3></div>
+        <div class="card-body">
+          <div class="despacho-grid">
+            <div class="despacho-item">
+              <div><span class="despacho-dot" style="background:#78be20;box-shadow:0 0 6px #78be20;"></span>
+              <span class="despacho-titulo">UTI Aérea Disponível</span></div>
+              <div class="despacho-sub">1 aeronave · Belém</div>
+            </div>
+            <div class="despacho-item">
+              <div><span class="despacho-dot" style="background:#64748b;"></span>
+              <span class="despacho-titulo">Aeromédico Comercial</span></div>
+              <div class="despacho-sub">Sob consulta</div>
+            </div>
+            <div class="despacho-item">
+              <div><span class="despacho-dot" style="background:#64748b;"></span>
+              <span class="despacho-titulo">Transporte Terrestre</span></div>
+              <div class="despacho-sub">Sob consulta</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MISSÕES (página completa) ── -->
+    <div class="page" id="page-missoes">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+        <div>
+          <div style="font-size:1.3rem;font-weight:700;">Todas as Missões</div>
+          <div style="font-size:.85rem;color:var(--text-m);margin-top:.25rem;">Histórico completo de regulações</div>
+        </div>
+        <button class="btn-primary" onclick="abrirModalMissao()">+ Nova Missão</button>
+      </div>
+      <div class="card">
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Missão</th><th>Paciente</th><th>Idade</th><th>Origem</th>
+                  <th>Destino</th><th>Tipo</th><th>Equipe</th><th>Km</th><th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-missoes-full">
+                <tr><td colspan="9" style="text-align:center;color:var(--text-m);padding:2rem;">
+                  Carregando...
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PERFIL ── -->
+    <div class="page" id="page-perfil">
+      <div class="perfil-wrap">
+        <div class="perfil-titulo">Meu Perfil</div>
+        <div class="perfil-sub">Suas informações aparecem no dashboard e nos relatórios de missão</div>
+
+        <!-- Dados pessoais -->
+        <div class="perfil-card">
+          <div class="perfil-section-title">Dados Profissionais</div>
+          <div class="form-grid">
+            <div class="perfil-field full">
+              <label>Nome Completo</label>
+              <input type="text" id="pf-nome" placeholder="Dr. Nome Sobrenome">
+            </div>
+            <div class="perfil-field">
+              <label>Cargo / Função</label>
+              <input type="text" id="pf-cargo" placeholder="Diretor Aeromédico">
+            </div>
+            <div class="perfil-field">
+              <label>CRM</label>
+              <input type="text" id="pf-crm" placeholder="PA 12345">
+            </div>
+            <div class="perfil-field full">
+              <label>Especialidade</label>
+              <input type="text" id="pf-especialidade" placeholder="Medicina Intensiva / Anestesiologia">
+            </div>
+            <div class="perfil-field full">
+              <label>Telefone / WhatsApp</label>
+              <input type="text" id="pf-telefone" placeholder="(91) 9xxxx-xxxx">
+            </div>
+          </div>
+          <div style="margin-top:1.25rem;display:flex;align-items:center;">
+            <button class="btn-salvar" id="btn-salvar-perfil" onclick="salvarPerfil()">Salvar alterações</button>
+            <span class="save-msg" id="save-msg">✓ Salvo com sucesso</span>
+          </div>
+        </div>
+
+        <!-- Alterar senha -->
+        <div class="perfil-card">
+          <div class="perfil-section-title">Alterar Senha</div>
+          <div class="form-grid">
+            <div class="perfil-field full">
+              <label>Nova Senha</label>
+              <div class="pwd-field">
+                <input type="password" id="pf-nova-senha" placeholder="mínimo 6 caracteres">
+                <button class="pwd-toggle" onclick="toggleSenha('pf-nova-senha', this)">mostrar</button>
+              </div>
+            </div>
+            <div class="perfil-field full">
+              <label>Confirmar Nova Senha</label>
+              <div class="pwd-field">
+                <input type="password" id="pf-conf-senha" placeholder="repita a nova senha">
+                <button class="pwd-toggle" onclick="toggleSenha('pf-conf-senha', this)">mostrar</button>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:1.25rem;">
+            <button class="btn-salvar" onclick="alterarSenha()">Alterar Senha</button>
+          </div>
+        </div>
+
+        <!-- Info conta -->
+        <div class="perfil-card">
+          <div class="perfil-section-title">Informações da Conta</div>
+          <div style="font-size:.85rem;color:var(--text-m);line-height:1.8;">
+            <div>E-mail: <strong id="pf-email" style="color:var(--text);">—</strong></div>
+            <div>Versão do sistema: <strong style="color:var(--text);">v0.01b</strong></div>
+            <div>Plataforma: <strong style="color:var(--text);">AltusMed Transporte Aeromédico</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ── MODAL NOVA MISSÃO ── -->
+<div class="modal-overlay" id="modal-missao">
+  <div class="modal">
+    <div class="modal-title">+ Nova Missão</div>
+    <div class="form-grid">
+      <div class="perfil-field full">
+        <label>Nome do Paciente</label>
+        <input type="text" id="m-paciente" placeholder="Nome, idade">
+      </div>
+      <div class="perfil-field">
+        <label>Idade</label>
+        <input type="number" id="m-idade" placeholder="anos">
+      </div>
+      <div class="perfil-field">
+        <label>Tipo</label>
+        <select id="m-tipo">
+          <option>UTI Aérea</option>
+          <option>Aeromédico Comercial</option>
+          <option>Terrestre</option>
+          <option>Helicóptero</option>
+        </select>
+      </div>
+      <div class="perfil-field">
+        <label>Origem</label>
+        <input type="text" id="m-origem" placeholder="Cidade/UF">
+      </div>
+      <div class="perfil-field">
+        <label>Destino</label>
+        <input type="text" id="m-destino" placeholder="Cidade/UF">
+      </div>
+      <div class="perfil-field">
+        <label>Equipe</label>
+        <input type="text" id="m-equipe" placeholder="Dr. Nome">
+      </div>
+      <div class="perfil-field">
+        <label>Km estimado</label>
+        <input type="number" id="m-km" placeholder="0">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-sm" onclick="fecharModalMissao()">Cancelar</button>
+      <button class="btn-primary" onclick="salvarMissao()">Registrar Missão</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Supabase ──────────────────────────────────────────────────────────────
+const SUPA_URL = 'https://hdovkmuwofvwpcyfkiih.supabase.co';
+const SUPA_KEY = 'sb_publishable_GetcnIgIEe6owbOQea2HOg_0MuxtLdP';
+const { createClient } = supabase;
+const db = createClient(SUPA_URL, SUPA_KEY);
+
+// ── Estado ────────────────────────────────────────────────────────────────
+let usuarioAtual = null;
+let perfilAtual  = {};
+
+// ── Init ──────────────────────────────────────────────────────────────────
+async function init() {
+  const { data: { session } } = await db.auth.getSession();
+  if (session) {
+    usuarioAtual = session.user;
+    await carregarApp();
+  } else {
+    mostrarLogin();
+  }
+  esconderLoading();
+
+  db.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+      usuarioAtual = session.user;
+      await carregarApp();
+    } else if (event === 'SIGNED_OUT') {
+      usuarioAtual = null;
+      mostrarLogin();
+    }
+  });
 }
 
-// ══════════════════════════════════════════════════════════════════════
-// LOGIN SCREEN
-// ══════════════════════════════════════════════════════════════════════
-function LoginScreen({ onLogin }) {
-  const [id, setId] = useState('');
-  const [pin, setPin] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const pinRef = useRef();
+// ── Auth ──────────────────────────────────────────────────────────────────
+async function fazerLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const senha  = document.getElementById('login-senha').value;
+  const btn    = document.getElementById('btn-login');
+  const err    = document.getElementById('login-error');
 
-  const handleLogin = () => {
-    setError('');
-    const user = USERS.find(u => u.id === id.toUpperCase() && u.pin === pin);
-    if (!user) { setError('ID ou PIN inválido. / Invalid ID or PIN.'); return; }
-    setLoading(true);
-    setTimeout(() => onLogin(user), 800);
+  if (!email || !senha) { mostrarErroLogin('Preencha e-mail e senha.'); return; }
+
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  err.classList.remove('show');
+
+  const { error } = await db.auth.signInWithPassword({ email, password: senha });
+
+  if (error) {
+    mostrarErroLogin('E-mail ou senha incorretos.');
+    btn.disabled = false; btn.textContent = 'Entrar';
+  }
+}
+
+async function fazerLogout() {
+  await db.auth.signOut();
+}
+
+function mostrarErroLogin(msg) {
+  const err = document.getElementById('login-error');
+  err.textContent = msg; err.classList.add('show');
+}
+
+// ── Carregar app ──────────────────────────────────────────────────────────
+async function carregarApp() {
+  await carregarPerfil();
+  atualizarUI();
+  await carregarMissoes();
+  mostrarApp();
+}
+
+async function carregarPerfil() {
+  const { data } = await db.from('perfis').select('*')
+    .eq('id', usuarioAtual.id).single();
+  perfilAtual = data || {};
+
+  // Preencher campos de perfil
+  document.getElementById('pf-nome').value         = perfilAtual.nome || '';
+  document.getElementById('pf-cargo').value        = perfilAtual.cargo || '';
+  document.getElementById('pf-crm').value          = perfilAtual.crm || '';
+  document.getElementById('pf-especialidade').value= perfilAtual.especialidade || '';
+  document.getElementById('pf-telefone').value     = perfilAtual.telefone || '';
+  document.getElementById('pf-email').textContent  = usuarioAtual.email || '';
+}
+
+function atualizarUI() {
+  const nome  = perfilAtual.nome  || 'Médico';
+  const cargo = perfilAtual.cargo || 'Médico';
+
+  document.getElementById('topbar-nome').textContent  = nome;
+  document.getElementById('topbar-cargo').textContent = cargo;
+  document.getElementById('dash-nome').textContent    = nome;
+  document.getElementById('dash-cargo').textContent   = cargo;
+
+  // Data formatada com maiúscula
+  const agora = new Date();
+  const data  = agora.toLocaleDateString('pt-BR', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  });
+  const dataFormatada = data.charAt(0).toUpperCase() + data.slice(1);
+  document.getElementById('dash-data').textContent =
+    `${dataFormatada} · Sistema AltusMed v0.01b`;
+}
+
+async function carregarMissoes() {
+  const agora   = new Date();
+  const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString();
+
+  const { data: todas }    = await db.from('missoes').select('*')
+    .eq('medico_id', usuarioAtual.id).order('created_at', { ascending: false });
+
+  const { data: doMes }    = await db.from('missoes').select('*')
+    .eq('medico_id', usuarioAtual.id).gte('created_at', inicioMes);
+
+  const { data: andamento } = await db.from('missoes').select('*')
+    .eq('medico_id', usuarioAtual.id).eq('status', 'Em andamento');
+
+  const missoes = todas || [];
+  const mes     = doMes || [];
+  const and     = andamento || [];
+
+  const kmTotal = mes.reduce((s, m) => s + (m.km || 0), 0);
+  const pendentes = missoes.filter(m => m.status === 'Pendente').length;
+
+  document.getElementById('kpi-missoes').textContent   = mes.length;
+  document.getElementById('kpi-andamento').textContent = and.length;
+  document.getElementById('kpi-pendentes').textContent = pendentes;
+  document.getElementById('kpi-km').textContent        = kmTotal.toLocaleString('pt-BR');
+
+  renderizarTabela(missoes.slice(0, 5), 'tabela-missoes', false);
+  renderizarTabela(missoes, 'tabela-missoes-full', true);
+}
+
+function renderizarTabela(missoes, tbodyId, completo) {
+  const tb = document.getElementById(tbodyId);
+  if (!missoes.length) {
+    tb.innerHTML = `<tr><td colspan="${completo?9:7}" style="text-align:center;color:var(--text-m);padding:2rem;">
+      Nenhuma missão registrada ainda.</td></tr>`;
+    return;
+  }
+  tb.innerHTML = missoes.map(m => {
+    const badgeCls = m.status === 'Em andamento' ? 'badge-green'
+                   : m.status === 'Pendente'      ? 'badge-amber' : 'badge-gray';
+    return `<tr>
+      <td><span class="mission-code">${m.codigo}</span></td>
+      <td>${m.paciente_nome}</td>
+      ${completo ? `<td>${m.paciente_idade || '—'}</td>` : ''}
+      <td>${m.origem}</td>
+      <td>${m.destino}</td>
+      <td>${m.tipo}</td>
+      <td>${m.equipe || '—'}</td>
+      ${completo ? `<td>${m.km || 0}</td>` : ''}
+      <td><span class="badge ${badgeCls}">${m.status}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Perfil ────────────────────────────────────────────────────────────────
+async function salvarPerfil() {
+  const btn = document.getElementById('btn-salvar-perfil');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+
+  const dados = {
+    nome:          document.getElementById('pf-nome').value.trim(),
+    cargo:         document.getElementById('pf-cargo').value.trim(),
+    crm:           document.getElementById('pf-crm').value.trim(),
+    especialidade: document.getElementById('pf-especialidade').value.trim(),
+    telefone:      document.getElementById('pf-telefone').value.trim(),
+    updated_at:    new Date().toISOString(),
   };
 
-  const inp = (extra={}) => ({
-    style: {
-      width:'100%', background:'rgba(255,255,255,0.06)',
-      border:`1px solid ${error?'rgba(220,80,60,0.4)':'rgba(255,255,255,0.12)'}`,
-      borderRadius:8, padding:'12px 16px', fontSize:15, color:'white', outline:'none',
-      transition:'border-color 0.2s', fontFamily:'var(--ff)', letterSpacing:'0.04em',
-      ...extra,
-    },
-    onFocus: e => { e.target.style.borderColor='rgba(120,190,32,0.5)'; e.target.style.background='rgba(255,255,255,0.08)'; },
-    onBlur:  e => { e.target.style.borderColor=error?'rgba(220,80,60,0.4)':'rgba(255,255,255,0.12)'; e.target.style.background='rgba(255,255,255,0.06)'; },
+  const { error } = await db.from('perfis')
+    .upsert({ id: usuarioAtual.id, ...dados });
+
+  btn.disabled = false; btn.textContent = 'Salvar alterações';
+
+  if (error) { toast('Erro ao salvar. Tente novamente.', true); return; }
+
+  perfilAtual = { ...perfilAtual, ...dados };
+  atualizarUI();
+
+  const msg = document.getElementById('save-msg');
+  msg.classList.add('show');
+  setTimeout(() => msg.classList.remove('show'), 3000);
+}
+
+async function alterarSenha() {
+  const nova = document.getElementById('pf-nova-senha').value;
+  const conf = document.getElementById('pf-conf-senha').value;
+
+  if (nova.length < 6)   { toast('A senha deve ter pelo menos 6 caracteres.', true); return; }
+  if (nova !== conf)     { toast('As senhas não coincidem.', true); return; }
+
+  const { error } = await db.auth.updateUser({ password: nova });
+  if (error) { toast('Erro ao alterar senha.', true); return; }
+
+  document.getElementById('pf-nova-senha').value = '';
+  document.getElementById('pf-conf-senha').value = '';
+  toast('✓ Senha alterada com sucesso!');
+}
+
+// ── Missões ───────────────────────────────────────────────────────────────
+function abrirModalMissao()  { document.getElementById('modal-missao').classList.add('show'); }
+function fecharModalMissao() { document.getElementById('modal-missao').classList.remove('show'); }
+
+async function salvarMissao() {
+  const paciente = document.getElementById('m-paciente').value.trim();
+  const origem   = document.getElementById('m-origem').value.trim();
+  const destino  = document.getElementById('m-destino').value.trim();
+  const tipo     = document.getElementById('m-tipo').value;
+
+  if (!paciente || !origem || !destino) {
+    toast('Preencha paciente, origem e destino.', true); return;
+  }
+
+  const codigo = 'AM-' + String(Date.now()).slice(-6);
+
+  const { error } = await db.from('missoes').insert({
+    codigo,
+    medico_id:     usuarioAtual.id,
+    paciente_nome: paciente,
+    paciente_idade: parseInt(document.getElementById('m-idade').value) || null,
+    origem, destino, tipo,
+    equipe: document.getElementById('m-equipe').value.trim(),
+    km:     parseInt(document.getElementById('m-km').value) || 0,
+    status: 'Em andamento',
   });
 
-  return (
-    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:`linear-gradient(160deg, ${B.navyD} 0%, ${B.bg} 100%)`, padding:20, position:'relative', overflow:'hidden' }}>
-      {/* Background grid */}
-      <div style={{ position:'absolute', inset:0, opacity:0.03 }}>
-        <svg width="100%" height="100%"><defs><pattern id="g" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0L0 0 0 40" fill="none" stroke="white" strokeWidth="0.8"/></pattern></defs><rect width="100%" height="100%" fill="url(#g)"/></svg>
-      </div>
-      {/* Glow */}
-      <div style={{ position:'absolute', top:'30%', left:'50%', transform:'translateX(-50%)', width:400, height:400, borderRadius:'50%', background:'#78BE20', opacity:0.04, filter:'blur(80px)', pointerEvents:'none' }}/>
+  if (error) { toast('Erro ao registrar missão.', true); return; }
 
-      <div style={{ width:'100%', maxWidth:420, position:'relative' }}>
-        {/* Header */}
-        <div style={{ textAlign:'center', marginBottom:36 }}>
-          <Logo size={24}/>
-          <div style={{ marginTop:16, marginBottom:6 }}>
-            <h1 style={{ fontSize:22, fontWeight:700, color:'white', letterSpacing:'-0.02em' }}>Área Restrita</h1>
-            <p style={{ fontSize:13, color:'rgba(255,255,255,0.4)', marginTop:4, fontFamily:'var(--ffd)' }}>Acesso exclusivo para equipes AltusMed</p>
-          </div>
-          <div style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(120,190,32,0.1)', border:'1px solid rgba(120,190,32,0.2)', borderRadius:20, padding:'4px 12px', marginTop:8 }}>
-            <div style={{ width:6, height:6, borderRadius:'50%', background:'#78BE20', boxShadow:'0 0 6px #78BE20' }}/>
-            <span style={{ fontSize:11, color:'rgba(255,255,255,0.6)', letterSpacing:'0.04em' }}>Sistema operacional</span>
-          </div>
-        </div>
+  fecharModalMissao();
+  ['m-paciente','m-idade','m-origem','m-destino','m-equipe','m-km']
+    .forEach(id => document.getElementById(id).value = '');
 
-        {/* Card */}
-        <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:16, padding:'32px 28px', backdropFilter:'blur(12px)' }}>
-          <div style={{ marginBottom:18 }}>
-            <label style={{ fontSize:11, fontWeight:600, color:'rgba(255,255,255,0.4)', display:'block', marginBottom:7, textTransform:'uppercase', letterSpacing:'0.08em' }}>ID de Colaborador</label>
-            <input {...inp()} value={id} onChange={e=>setId(e.target.value)} placeholder="AM-0001"
-              onKeyDown={e=>{ if(e.key==='Enter') pinRef.current?.focus(); }}/>
-          </div>
-          <div style={{ marginBottom:24 }}>
-            <label style={{ fontSize:11, fontWeight:600, color:'rgba(255,255,255,0.4)', display:'block', marginBottom:7, textTransform:'uppercase', letterSpacing:'0.08em' }}>PIN</label>
-            <input {...inp()} type="password" ref={pinRef} value={pin} onChange={e=>setPin(e.target.value)} placeholder="••••••" maxLength={6}
-              onKeyDown={e=>{ if(e.key==='Enter') handleLogin(); }}/>
-          </div>
-          {error && <div style={{ fontSize:12, color:'rgba(220,100,80,0.9)', marginBottom:16, textAlign:'center', fontFamily:'var(--ffd)', background:'rgba(220,80,60,0.08)', borderRadius:6, padding:'8px' }}>{error}</div>}
-          <button onClick={handleLogin} disabled={loading} style={{
-            width:'100%', background:loading?'rgba(120,190,32,0.5)':'#78BE20', color:'#090E1A',
-            border:'none', borderRadius:8, padding:'13px', fontSize:15, fontWeight:700,
-            cursor:loading?'default':'pointer', transition:'opacity 0.2s', display:'flex', alignItems:'center', justifyContent:'center', gap:8,
-          }}>
-            {loading ? <><ECG color="#090E1A" w={60} h={18}/> Entrando...</> : 'Entrar →'}
-          </button>
-          <div style={{ marginTop:16, display:'flex', justifyContent:'space-between' }}>
-            <a href="AltusMed Website.html" style={{ fontSize:12, color:'rgba(255,255,255,0.3)', fontFamily:'var(--ffd)' }}>← Voltar ao site</a>
-            <span style={{ fontSize:12, color:'rgba(255,255,255,0.3)', fontFamily:'var(--ffd)', cursor:'pointer' }}>Esqueci o acesso</span>
-          </div>
-        </div>
-
-        {/* Demo hint */}
-        <div style={{ marginTop:16, background:'rgba(120,190,32,0.07)', border:'1px solid rgba(120,190,32,0.15)', borderRadius:10, padding:'10px 14px' }}>
-          <div style={{ fontSize:10, color:'rgba(120,190,32,0.7)', fontWeight:700, letterSpacing:'0.08em', marginBottom:4 }}>DEMO — IDs DE TESTE</div>
-          {USERS.map(u=>(
-            <div key={u.id} style={{ fontSize:11, color:'rgba(255,255,255,0.4)', fontFamily:'monospace', marginBottom:2 }}>
-              {u.id} / {u.pin} → {ROLES[u.role].label}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+  await carregarMissoes();
+  toast('✓ Missão registrada com sucesso!');
 }
 
-// ══════════════════════════════════════════════════════════════════════
-// MISSION REPORT FORM
-// ══════════════════════════════════════════════════════════════════════
-const VITALS_TEMPLATE = () => ({ time: new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}), hr:'', spo2:'', sbp:'', dbp:'', rr:'', temp:'', gcs:'' });
-
-function MissionReport({ user, mission, onClose, onSave }) {
-  const roleColor = ROLES[user.role].color;
-  const [tab, setTab] = useState('patient');
-  const [form, setForm] = useState({
-    // Patient
-    patName:'', patAge:'', patSex:'M', patWeight:'', patBlood:'',
-    patDiagnosis:'', patHistory:'',
-    // Mission
-    missionId: mission?.id || `AM-${Date.now().toString().slice(-6)}`,
-    origin:'', destination:'', departure:'', arrival:'',
-    aircraft:'', crew: user.name,
-    transportType:'UTI Aérea',
-    // Vitals series
-    vitals: [VITALS_TEMPLATE()],
-    // GCS
-    gcsE:'', gcsV:'', gcsM:'',
-    // Meds
-    medications:[{ time:'', drug:'', dose:'', route:'', note:'' }],
-    // Procedures
-    procedures:[{ time:'', proc:'', obs:'' }],
-    // Notes
-    clinicalNotes:'',
-    // Outcome
-    outcome:'Estável', handoverTo:'', handoverTime:'',
-    handoverNotes:'',
-  });
-
-  const set = (k,v) => setForm(f=>({...f,[k]:v}));
-
-  const addVital = () => set('vitals',[...form.vitals, VITALS_TEMPLATE()]);
-  const setVital = (i,k,v) => set('vitals', form.vitals.map((x,idx)=>idx===i?{...x,[k]:v}:x));
-  const removeVital = i => set('vitals', form.vitals.filter((_,idx)=>idx!==i));
-
-  const addMed = () => set('medications',[...form.medications,{time:'',drug:'',dose:'',route:'',note:''}]);
-  const setMed = (i,k,v) => set('medications', form.medications.map((x,idx)=>idx===i?{...x,[k]:v}:x));
-
-  const addProc = () => set('procedures',[...form.procedures,{time:'',proc:'',obs:''}]);
-  const setProc = (i,k,v) => set('procedures', form.procedures.map((x,idx)=>idx===i?{...x,[k]:v}:x));
-
-  const inputStyle = {
-    background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)',
-    borderRadius:6, padding:'8px 12px', fontSize:13, color:'white', outline:'none',
-    fontFamily:'var(--ff)', width:'100%', transition:'border-color 0.15s',
-  };
-  const inp = { style:inputStyle, onFocus:e=>e.target.style.borderColor=roleColor+'80', onBlur:e=>e.target.style.borderColor='rgba(255,255,255,0.1)' };
-
-  const labelStyle = { fontSize:11, fontWeight:600, color:'rgba(255,255,255,0.4)', display:'block', marginBottom:5, letterSpacing:'0.06em', textTransform:'uppercase' };
-
-  const tabs = [
-    { id:'patient', label:'Paciente' },
-    { id:'vitals',  label:'Sinais Vitais' },
-    { id:'meds',    label:'Medicamentos' },
-    { id:'procs',   label:'Procedimentos' },
-    { id:'notes',   label:'Notas Clínicas' },
-    { id:'outcome', label:'Desfecho' },
-  ];
-
-  const handlePrint = () => window.print();
-
-  return (
-    <div style={{ position:'fixed', inset:0, zIndex:200, background:'rgba(0,0,0,0.7)', backdropFilter:'blur(6px)', display:'flex', alignItems:'center', justifyContent:'center', padding:16 }} className="no-print">
-      <div style={{ background:'#0F1E3A', border:'1px solid rgba(255,255,255,0.1)', borderRadius:18, width:'100%', maxWidth:820, maxHeight:'92vh', display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 32px 80px rgba(0,0,0,0.6)' }}>
-        {/* Header */}
-        <div style={{ padding:'18px 24px', borderBottom:'1px solid rgba(255,255,255,0.08)', display:'flex', alignItems:'center', justifyContent:'space-between', background:'rgba(0,0,0,0.2)', flexShrink:0 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-            <div style={{ width:40, height:40, borderRadius:10, background:roleColor, display:'flex', alignItems:'center', justifyContent:'center', color:B.black, fontWeight:800, fontSize:13, flexShrink:0 }}>{user.role}</div>
-            <div>
-              <div style={{ fontWeight:700, fontSize:15, color:'white' }}>Relatório de Missão</div>
-              <div style={{ fontSize:11, color:'rgba(255,255,255,0.4)', fontFamily:'var(--ffd)' }}>{form.missionId} · {new Date().toLocaleDateString('pt-BR')} · {user.name}</div>
-            </div>
-          </div>
-          <div style={{ display:'flex', gap:8 }}>
-            <button onClick={handlePrint} style={{ background:`${roleColor}20`, border:`1px solid ${roleColor}40`, borderRadius:7, padding:'7px 14px', fontSize:12, fontWeight:600, color:roleColor, cursor:'pointer' }}>Imprimir / PDF</button>
-            <button onClick={()=>{ onSave(form); onClose(); }} style={{ background:roleColor, border:'none', borderRadius:7, padding:'7px 16px', fontSize:12, fontWeight:700, color:B.black, cursor:'pointer' }}>Salvar</button>
-            <button onClick={onClose} style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:7, width:32, height:32, cursor:'pointer', color:'rgba(255,255,255,0.5)', fontSize:18 }}>×</button>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div style={{ display:'flex', gap:2, padding:'10px 24px 0', borderBottom:'1px solid rgba(255,255,255,0.07)', flexShrink:0, overflowX:'auto' }}>
-          {tabs.map(t => (
-            <button key={t.id} onClick={()=>setTab(t.id)} style={{
-              background:'none', border:'none', borderBottom:`2px solid ${tab===t.id?roleColor:'transparent'}`,
-              color:tab===t.id?'white':'rgba(255,255,255,0.4)', padding:'6px 14px 10px',
-              fontSize:12, fontWeight:tab===t.id?700:400, cursor:'pointer', whiteSpace:'nowrap',
-              transition:'color 0.15s',
-            }}>{t.label}</button>
-          ))}
-        </div>
-
-        {/* Content */}
-        <div style={{ flex:1, overflowY:'auto', padding:24 }}>
-
-          {/* ── TAB: PATIENT ── */}
-          {tab==='patient' && (
-            <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12 }}>
-                {[['patName','Nome completo'],['patAge','Idade'],['patWeight','Peso (kg)']].map(([k,l])=>(
-                  <div key={k}><label style={labelStyle}>{l}</label><input {...inp} value={form[k]} onChange={e=>set(k,e.target.value)} placeholder={l}/></div>
-                ))}
-              </div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12 }}>
-                <div><label style={labelStyle}>Sexo</label>
-                  <select value={form.patSex} onChange={e=>set('patSex',e.target.value)} style={{...inputStyle}}>
-                    <option value="M">Masculino</option><option value="F">Feminino</option><option value="O">Outro</option>
-                  </select>
-                </div>
-                <div><label style={labelStyle}>Tipo Sanguíneo</label><input {...inp} value={form.patBlood} onChange={e=>set('patBlood',e.target.value)} placeholder="A+"/></div>
-                <div><label style={labelStyle}>Tipo de Transporte</label>
-                  <select value={form.transportType} onChange={e=>set('transportType',e.target.value)} style={{...inputStyle}}>
-                    {['UTI Aérea','Aeromédico Comercial','Transporte Terrestre','Regulação'].map(t=><option key={t}>{t}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div><label style={labelStyle}>Diagnóstico Principal</label><input {...inp} value={form.patDiagnosis} onChange={e=>set('patDiagnosis',e.target.value)} placeholder="CID / Diagnóstico"/></div>
-              <div><label style={labelStyle}>Histórico Clínico Relevante</label>
-                <textarea value={form.patHistory} onChange={e=>set('patHistory',e.target.value)} rows={3} placeholder="Comorbidades, medicamentos em uso, alergias..." style={{...inputStyle, resize:'vertical'}}
-                  onFocus={e=>e.target.style.borderColor=roleColor+'80'} onBlur={e=>e.target.style.borderColor='rgba(255,255,255,0.1)'}/>
-              </div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-                <div><label style={labelStyle}>Origem</label><input {...inp} value={form.origin} onChange={e=>set('origin',e.target.value)} placeholder="Hospital / Cidade de origem"/></div>
-                <div><label style={labelStyle}>Destino</label><input {...inp} value={form.destination} onChange={e=>set('destination',e.target.value)} placeholder="Hospital / Cidade de destino"/></div>
-              </div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12 }}>
-                <div><label style={labelStyle}>Partida</label><input {...inp} type="datetime-local" value={form.departure} onChange={e=>set('departure',e.target.value)}/></div>
-                <div><label style={labelStyle}>Chegada Prevista</label><input {...inp} type="datetime-local" value={form.arrival} onChange={e=>set('arrival',e.target.value)}/></div>
-                <div><label style={labelStyle}>Aeronave / Veículo</label><input {...inp} value={form.aircraft} onChange={e=>set('aircraft',e.target.value)} placeholder="PT-XXX / Modelo"/></div>
-              </div>
-            </div>
-          )}
-
-          {/* ── TAB: VITALS ── */}
-          {tab==='vitals' && (
-            <div>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
-                <div style={{ fontSize:13, color:'rgba(255,255,255,0.5)', fontFamily:'var(--ffd)' }}>Registre os sinais vitais ao longo do transporte</div>
-                <button onClick={addVital} style={{ background:`${roleColor}20`, border:`1px solid ${roleColor}40`, borderRadius:7, padding:'7px 14px', fontSize:12, fontWeight:600, color:roleColor, cursor:'pointer' }}>+ Adicionar Registro</button>
-              </div>
-              {/* Table header */}
-              <div style={{ display:'grid', gridTemplateColumns:'80px 70px 70px 90px 70px 80px 70px 1fr 32px', gap:6, marginBottom:8 }}>
-                {['Horário','FC (bpm)','SpO2 (%)','PA (mmHg)','FR /min','Temp °C','Glasgow','',''].map((h,i)=>(
-                  <div key={i} style={{ fontSize:9, fontWeight:700, color:'rgba(255,255,255,0.3)', letterSpacing:'0.06em', textTransform:'uppercase', padding:'0 4px' }}>{h}</div>
-                ))}
-              </div>
-              {form.vitals.map((v,i)=>(
-                <div key={i} style={{ display:'grid', gridTemplateColumns:'80px 70px 70px 90px 70px 80px 70px 1fr 32px', gap:6, marginBottom:8, padding:8, background:'rgba(255,255,255,0.03)', borderRadius:8, borderLeft:`2px solid ${roleColor}40` }}>
-                  <input {...inp} value={v.time} onChange={e=>setVital(i,'time',e.target.value)} placeholder="HH:MM" style={{...inputStyle, fontSize:12}}/>
-                  <input {...inp} value={v.hr}   onChange={e=>setVital(i,'hr',e.target.value)}   placeholder="72" style={{...inputStyle, fontSize:12}}/>
-                  <input {...inp} value={v.spo2} onChange={e=>setVital(i,'spo2',e.target.value)} placeholder="98" style={{...inputStyle, fontSize:12}}/>
-                  <input {...inp} value={v.sbp+'/'+v.dbp} onChange={e=>{const[s,d]=(e.target.value||'/').split('/');setVital(i,'sbp',s);setVital(i,'dbp',d||'');}} placeholder="120/80" style={{...inputStyle, fontSize:12}}/>
-                  <input {...inp} value={v.rr}   onChange={e=>setVital(i,'rr',e.target.value)}   placeholder="16" style={{...inputStyle, fontSize:12}}/>
-                  <input {...inp} value={v.temp} onChange={e=>setVital(i,'temp',e.target.value)} placeholder="36.5" style={{...inputStyle, fontSize:12}}/>
-                  <input {...inp} value={v.gcs}  onChange={e=>setVital(i,'gcs',e.target.value)}  placeholder="15" style={{...inputStyle, fontSize:12}}/>
-                  <div/>
-                  {form.vitals.length>1 && <button onClick={()=>removeVital(i)} style={{ background:'rgba(220,80,60,0.15)', border:'none', borderRadius:5, color:'rgba(220,100,80,0.7)', cursor:'pointer', fontSize:14 }}>×</button>}
-                </div>
-              ))}
-              {/* GCS detail */}
-              <div style={{ marginTop:20, padding:'16px', background:'rgba(255,255,255,0.03)', borderRadius:10, border:'1px solid rgba(255,255,255,0.07)' }}>
-                <div style={{ fontSize:11, fontWeight:700, color:roleColor, letterSpacing:'0.08em', marginBottom:12 }}>ESCALA DE GLASGOW DETALHADA</div>
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12 }}>
-                  <div><label style={labelStyle}>Abertura Ocular (E) 1–4</label>
-                    <select value={form.gcsE} onChange={e=>set('gcsE',e.target.value)} style={{...inputStyle}}>
-                      <option value="">—</option>
-                      {[['4','4 — Espontânea'],['3','3 — Ao Som'],['2','2 — À Dor'],['1','1 — Ausente']].map(([v,l])=><option key={v} value={v}>{l}</option>)}
-                    </select>
-                  </div>
-                  <div><label style={labelStyle}>Resposta Verbal (V) 1–5</label>
-                    <select value={form.gcsV} onChange={e=>set('gcsV',e.target.value)} style={{...inputStyle}}>
-                      <option value="">—</option>
-                      {[['5','5 — Orientado'],['4','4 — Confuso'],['3','3 — Palavras'],['2','2 — Sons'],['1','1 — Ausente']].map(([v,l])=><option key={v} value={v}>{l}</option>)}
-                    </select>
-                  </div>
-                  <div><label style={labelStyle}>Resposta Motora (M) 1–6</label>
-                    <select value={form.gcsM} onChange={e=>set('gcsM',e.target.value)} style={{...inputStyle}}>
-                      <option value="">—</option>
-                      {[['6','6 — Obedece'],['5','5 — Localiza'],['4','4 — Retira'],['3','3 — Flexão'],['2','2 — Extensão'],['1','1 — Ausente']].map(([v,l])=><option key={v} value={v}>{l}</option>)}
-                    </select>
-                  </div>
-                </div>
-                {(form.gcsE && form.gcsV && form.gcsM) && (
-                  <div style={{ marginTop:10, fontSize:14, fontWeight:700, color:'white' }}>
-                    Total GCS: <span style={{ color:roleColor }}>{(+form.gcsE||0)+(+form.gcsV||0)+(+form.gcsM||0)}/15</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* ── TAB: MEDS ── */}
-          {tab==='meds' && (
-            <div>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
-                <div style={{ fontSize:13, color:'rgba(255,255,255,0.5)', fontFamily:'var(--ffd)' }}>Medicamentos administrados durante o transporte</div>
-                <button onClick={addMed} style={{ background:`${roleColor}20`, border:`1px solid ${roleColor}40`, borderRadius:7, padding:'7px 14px', fontSize:12, fontWeight:600, color:roleColor, cursor:'pointer' }}>+ Adicionar</button>
-              </div>
-              <div style={{ display:'grid', gridTemplateColumns:'80px 1fr 100px 100px 1fr', gap:6, marginBottom:8 }}>
-                {['Horário','Medicamento','Dose','Via','Observação'].map(h=>(
-                  <div key={h} style={{ fontSize:9, fontWeight:700, color:'rgba(255,255,255,0.3)', letterSpacing:'0.06em', textTransform:'uppercase', padding:'0 4px' }}>{h}</div>
-                ))}
-              </div>
-              {form.medications.map((m,i)=>(
-                <div key={i} style={{ display:'grid', gridTemplateColumns:'80px 1fr 100px 100px 1fr', gap:6, marginBottom:8, padding:8, background:'rgba(255,255,255,0.03)', borderRadius:8, borderLeft:`2px solid ${roleColor}40` }}>
-                  <input {...inp} value={m.time} onChange={e=>setMed(i,'time',e.target.value)} placeholder="HH:MM" style={{...inputStyle,fontSize:12}}/>
-                  <input {...inp} value={m.drug} onChange={e=>setMed(i,'drug',e.target.value)} placeholder="Fármaco" style={{...inputStyle,fontSize:12}}/>
-                  <input {...inp} value={m.dose} onChange={e=>setMed(i,'dose',e.target.value)} placeholder="mg/mL" style={{...inputStyle,fontSize:12}}/>
-                  <select value={m.route} onChange={e=>setMed(i,'route',e.target.value)} style={{...inputStyle,fontSize:12}}>
-                    <option value="">Via</option>
-                    {['IV','IM','SC','VO','SL','IN','Inalatória'].map(r=><option key={r}>{r}</option>)}
-                  </select>
-                  <input {...inp} value={m.note} onChange={e=>setMed(i,'note',e.target.value)} placeholder="Obs." style={{...inputStyle,fontSize:12}}/>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* ── TAB: PROCEDURES ── */}
-          {tab==='procs' && (
-            <div>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
-                <div style={{ fontSize:13, color:'rgba(255,255,255,0.5)', fontFamily:'var(--ffd)' }}>Procedimentos realizados durante o transporte</div>
-                <button onClick={addProc} style={{ background:`${roleColor}20`, border:`1px solid ${roleColor}40`, borderRadius:7, padding:'7px 14px', fontSize:12, fontWeight:600, color:roleColor, cursor:'pointer' }}>+ Adicionar</button>
-              </div>
-              {form.procedures.map((p,i)=>(
-                <div key={i} style={{ display:'grid', gridTemplateColumns:'80px 1fr 1fr', gap:12, marginBottom:10, padding:12, background:'rgba(255,255,255,0.03)', borderRadius:8, borderLeft:`2px solid ${roleColor}40` }}>
-                  <div><label style={labelStyle}>Horário</label><input {...inp} value={p.time} onChange={e=>setProc(i,'time',e.target.value)} placeholder="HH:MM" style={{...inputStyle,fontSize:12}}/></div>
-                  <div><label style={labelStyle}>Procedimento</label>
-                    <select value={p.proc} onChange={e=>setProc(i,'proc',e.target.value)} style={{...inputStyle,fontSize:12}}>
-                      <option value="">Selecionar...</option>
-                      {['IOT / Intubação','Acesso Venoso Central','Acesso Venoso Periférico','Sondagem Vesical','Sondagem Nasogástrica','Cardioversão','Desfibrilação','RCP','Cricotireoidotomia','Drenagem Torácica','Cateter Nasal O2','Máscara O2','VNI','Outro'].map(x=><option key={x}>{x}</option>)}
-                    </select>
-                  </div>
-                  <div><label style={labelStyle}>Observações</label><input {...inp} value={p.obs} onChange={e=>setProc(i,'obs',e.target.value)} placeholder="Notas do procedimento" style={{...inputStyle,fontSize:12}}/></div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* ── TAB: NOTES ── */}
-          {tab==='notes' && (
-            <div>
-              <label style={labelStyle}>Narrativa Clínica / Clinical Notes</label>
-              <textarea value={form.clinicalNotes} onChange={e=>set('clinicalNotes',e.target.value)} rows={16}
-                placeholder="Descreva cronologicamente a evolução do paciente durante o transporte. Include estado ao embarque, intercorrências, respostas a intervenções e estado ao desembarque.
-
-Describe chronologically the patient's evolution during transport. Include boarding status, complications, responses to interventions and disembarkation status."
-                style={{...inputStyle, resize:'vertical', lineHeight:1.65, fontFamily:'var(--ffd)'}}
-                onFocus={e=>e.target.style.borderColor=roleColor+'80'} onBlur={e=>e.target.style.borderColor='rgba(255,255,255,0.1)'}/>
-            </div>
-          )}
-
-          {/* ── TAB: OUTCOME ── */}
-          {tab==='outcome' && (
-            <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-                <div><label style={labelStyle}>Estado Final do Paciente</label>
-                  <select value={form.outcome} onChange={e=>set('outcome',e.target.value)} style={{...inputStyle}}>
-                    {['Estável','Crítico Estabilizado','Crítico','Piora durante transporte','PCR durante transporte','Óbito durante transporte'].map(o=><option key={o}>{o}</option>)}
-                  </select>
-                </div>
-                <div><label style={labelStyle}>Horário de Passagem</label><input {...inp} type="time" value={form.handoverTime} onChange={e=>set('handoverTime',e.target.value)}/></div>
-              </div>
-              <div><label style={labelStyle}>Passagem para (médico / equipe receptora)</label><input {...inp} value={form.handoverTo} onChange={e=>set('handoverTo',e.target.value)} placeholder="Nome / função do profissional receptor"/></div>
-              <div><label style={labelStyle}>Resumo da Passagem de Plantão</label>
-                <textarea value={form.handoverNotes} onChange={e=>set('handoverNotes',e.target.value)} rows={6}
-                  placeholder="SBAR: Situation / Background / Assessment / Recommendation..."
-                  style={{...inputStyle, resize:'vertical', fontFamily:'var(--ffd)'}}
-                  onFocus={e=>e.target.style.borderColor=roleColor+'80'} onBlur={e=>e.target.style.borderColor='rgba(255,255,255,0.1)'}/>
-              </div>
-              {/* Signature area */}
-              <div style={{ padding:16, background:'rgba(255,255,255,0.03)', borderRadius:10, border:'1px solid rgba(255,255,255,0.07)', marginTop:8 }}>
-                <div style={{ fontSize:11, fontWeight:700, color:roleColor, letterSpacing:'0.08em', marginBottom:10 }}>ASSINATURA / SIGNATURE</div>
-                <div style={{ display:'flex', gap:24, flexWrap:'wrap' }}>
-                  {[['Responsável pela Missão', user.name, user.crm || ROLES[user.role].label]].map(([t,n,c])=>(
-                    <div key={t}>
-                      <div style={{ borderTop:'1px solid rgba(255,255,255,0.2)', paddingTop:6, marginTop:24, minWidth:200 }}>
-                        <div style={{ fontSize:12, fontWeight:600, color:'white' }}>{n}</div>
-                        <div style={{ fontSize:10, color:'rgba(255,255,255,0.4)', fontFamily:'var(--ffd)' }}>{c}</div>
-                        <div style={{ fontSize:10, color:'rgba(255,255,255,0.3)', fontFamily:'var(--ffd)' }}>{t}</div>
-                        <div style={{ fontSize:10, color:'rgba(255,255,255,0.3)', fontFamily:'var(--ffd)', marginTop:2 }}>{new Date().toLocaleDateString('pt-BR')}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+// ── Navegação ─────────────────────────────────────────────────────────────
+function irPara(pagina) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.page-nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + pagina).classList.add('active');
+  document.getElementById('nav-' + pagina).classList.add('active');
 }
 
-// ══════════════════════════════════════════════════════════════════════
-// DASHBOARD
-// ══════════════════════════════════════════════════════════════════════
-function Dashboard({ user, onLogout }) {
-  const role = ROLES[user.role];
-  const [showReport, setShowReport] = useState(false);
-  const [reports, setReports] = useState([]);
-  const [activeMission, setActiveMission] = useState(null);
-
-  // Demo missions
-  const missions = [
-    { id:'AM-241801', patient:'J. Costa, 67a', origin:'Belém', destination:'São Paulo', type:'UTI Aérea', status:'Em andamento', crew: user.name, time:'14:32' },
-    { id:'AM-241800', patient:'M. Silva, 45a', origin:'Manaus', destination:'Brasília', type:'Aeromédico Comercial', status:'Concluída', crew:'Dr. João Silva', time:'09:15' },
-    { id:'AM-241799', patient:'A. Souza, 82a', origin:'Fortaleza', destination:'Recife', type:'Terrestre', status:'Concluída', crew:'Enf. Maria Santos', time:'06:48' },
-  ];
-
-  const statusColor = s => s==='Em andamento'?'#78BE20':s==='Concluída'?'rgba(255,255,255,0.3)':'#E07820';
-
-  return (
-    <div style={{ minHeight:'100vh', background:B.bg, display:'flex', flexDirection:'column' }}>
-      {/* Top nav */}
-      <nav style={{ background:'rgba(15,34,69,0.95)', backdropFilter:'blur(12px)', borderBottom:'1px solid rgba(255,255,255,0.07)', padding:'0 28px', height:60, display:'flex', alignItems:'center', gap:20, position:'sticky', top:0, zIndex:50 }} className="no-print">
-        <Logo size={18}/>
-        <div style={{ height:18, width:1, background:'rgba(255,255,255,0.1)' }}/>
-        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          <div style={{ width:8, height:8, borderRadius:'50%', background:role.color, boxShadow:`0 0 6px ${role.color}` }}/>
-          <span style={{ fontSize:12, color:'rgba(255,255,255,0.6)', fontFamily:'var(--ffd)' }}>{role.label}</span>
-        </div>
-        <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:12 }}>
-          <span style={{ fontSize:13, fontWeight:600, color:'white' }}>{user.name}</span>
-          <button onClick={()=>setShowReport(true)} style={{ background:role.color, color:B.black, border:'none', borderRadius:7, padding:'7px 16px', fontSize:12, fontWeight:700, cursor:'pointer' }}>+ Nova Missão</button>
-          <button onClick={onLogout} style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:7, padding:'7px 14px', fontSize:12, color:'rgba(255,255,255,0.5)', cursor:'pointer' }}>Sair</button>
-        </div>
-      </nav>
-
-      <div style={{ flex:1, padding:'28px 28px', maxWidth:1200, margin:'0 auto', width:'100%' }}>
-        {/* Welcome */}
-        <div style={{ marginBottom:28 }}>
-          <h1 style={{ fontSize:22, fontWeight:700, color:'white', letterSpacing:'-0.02em' }}>
-            Olá, {user.name.split(' ')[0]} <span style={{ color:role.color }}>·</span> {role.label}
-          </h1>
-          <p style={{ fontSize:13, color:'rgba(255,255,255,0.4)', marginTop:4, fontFamily:'var(--ffd)' }}>
-            {new Date().toLocaleDateString('pt-BR', { weekday:'long', year:'numeric', month:'long', day:'numeric' })} · Sistema AltusMed v2.0
-          </p>
-        </div>
-
-        {/* Stats row */}
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:16, marginBottom:28 }}>
-          {[
-            ['Missões Este Mês','18', role.color],
-            ['Em Andamento','1','#29B6C8'],
-            ['Relatórios Pendentes', reports.length.toString(), '#E07820'],
-            ['Km Este Mês','12.400','rgba(255,255,255,0.6)'],
-          ].map(([l,v,c])=>(
-            <div key={l} style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:12, padding:'18px 20px', borderTop:`2px solid ${c}` }}>
-              <div style={{ fontSize:26, fontWeight:700, color:'white', lineHeight:1 }}>{v}</div>
-              <div style={{ fontSize:12, color:'rgba(255,255,255,0.4)', marginTop:6, fontFamily:'var(--ffd)' }}>{l}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Missions table */}
-        <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:14, overflow:'hidden', marginBottom:28 }}>
-          <div style={{ padding:'16px 20px', borderBottom:'1px solid rgba(255,255,255,0.07)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-            <div style={{ fontSize:14, fontWeight:700, color:'white' }}>Missões Recentes</div>
-            <button onClick={()=>setShowReport(true)} style={{ background:`${role.color}15`, border:`1px solid ${role.color}30`, borderRadius:6, padding:'6px 12px', fontSize:11, fontWeight:600, color:role.color, cursor:'pointer' }}>+ Nova Missão</button>
-          </div>
-          <div style={{ padding:'0 20px' }}>
-            {/* Header */}
-            <div style={{ display:'grid', gridTemplateColumns:'100px 1fr 1fr 1fr 140px 100px 80px', gap:12, padding:'10px 0', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
-              {['Missão','Paciente','Origem','Destino','Tipo','Equipe','Status'].map(h=>(
-                <div key={h} style={{ fontSize:9, fontWeight:700, color:'rgba(255,255,255,0.3)', letterSpacing:'0.08em', textTransform:'uppercase' }}>{h}</div>
-              ))}
-            </div>
-            {missions.map(m=>(
-              <div key={m.id} onClick={()=>{ setActiveMission(m); setShowReport(true); }} style={{ display:'grid', gridTemplateColumns:'100px 1fr 1fr 1fr 140px 100px 80px', gap:12, padding:'12px 0', borderBottom:'1px solid rgba(255,255,255,0.04)', cursor:'pointer', transition:'background 0.15s', borderRadius:4 }}
-                onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}
-                onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                <div style={{ fontSize:11, fontFamily:'monospace', color:role.color }}>{m.id}</div>
-                <div style={{ fontSize:12, color:'white', fontWeight:500 }}>{m.patient}</div>
-                <div style={{ fontSize:12, color:'rgba(255,255,255,0.55)' }}>{m.origin}</div>
-                <div style={{ fontSize:12, color:'rgba(255,255,255,0.55)' }}>{m.destination}</div>
-                <div style={{ fontSize:11, color:'rgba(255,255,255,0.45)' }}>{m.type}</div>
-                <div style={{ fontSize:11, color:'rgba(255,255,255,0.4)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{m.crew.split(' ').slice(0,2).join(' ')}</div>
-                <div style={{ fontSize:10, fontWeight:600, color:statusColor(m.status) }}>{m.status}</div>
-              </div>
-            ))}
-            {reports.map((r,i)=>(
-              <div key={i} style={{ display:'grid', gridTemplateColumns:'100px 1fr 1fr 1fr 140px 100px 80px', gap:12, padding:'12px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ fontSize:11, fontFamily:'monospace', color:role.color }}>{r.missionId}</div>
-                <div style={{ fontSize:12, color:'white', fontWeight:500 }}>{r.patName||'—'}</div>
-                <div style={{ fontSize:12, color:'rgba(255,255,255,0.55)' }}>{r.origin||'—'}</div>
-                <div style={{ fontSize:12, color:'rgba(255,255,255,0.55)' }}>{r.destination||'—'}</div>
-                <div style={{ fontSize:11, color:'rgba(255,255,255,0.45)' }}>{r.transportType}</div>
-                <div style={{ fontSize:11, color:'rgba(255,255,255,0.4)' }}>{user.name.split(' ').slice(0,2).join(' ')}</div>
-                <div style={{ fontSize:10, fontWeight:600, color:'rgba(255,255,255,0.5)' }}>Salvo</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Quick dispatch — only for REG and DIR */}
-        {(user.role==='REG'||user.role==='DIR') && (
-          <div style={{ background:'rgba(255,255,255,0.03)', border:`1px solid ${role.color}25`, borderRadius:14, padding:20 }}>
-            <div style={{ fontSize:13, fontWeight:700, color:'white', marginBottom:12 }}>Central de Regulação — Despacho Rápido</div>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12 }}>
-              {['UTI Aérea Disponível','Aeromédico Comercial','Transporte Terrestre'].map((t,i)=>(
-                <div key={t} style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:10, padding:'14px 16px', display:'flex', alignItems:'center', gap:10 }}>
-                  <div style={{ width:8, height:8, borderRadius:'50%', background:i===0?'#78BE20':'rgba(255,255,255,0.2)', boxShadow:i===0?'0 0 6px #78BE20':'none', flexShrink:0 }}/>
-                  <div>
-                    <div style={{ fontSize:12, fontWeight:600, color:'white' }}>{t}</div>
-                    <div style={{ fontSize:10, color:'rgba(255,255,255,0.35)', marginTop:2 }}>{i===0?'1 aeronave · Belém':'Sob consulta'}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {showReport && (
-        <MissionReport
-          user={user}
-          mission={activeMission}
-          onClose={()=>{ setShowReport(false); setActiveMission(null); }}
-          onSave={r=>setReports(rs=>[...rs,r])}
-        />
-      )}
-    </div>
-  );
+// ── UI helpers ────────────────────────────────────────────────────────────
+function mostrarLogin() {
+  document.getElementById('login-wrap').style.display = 'flex';
+  document.getElementById('app').classList.remove('show');
+}
+function mostrarApp() {
+  document.getElementById('login-wrap').style.display = 'none';
+  document.getElementById('app').classList.add('show');
+}
+function esconderLoading() {
+  const l = document.getElementById('loading');
+  l.classList.add('hide');
+  setTimeout(() => l.style.display = 'none', 400);
 }
 
-// ══════════════════════════════════════════════════════════════════════
-// APP ROOT
-// ══════════════════════════════════════════════════════════════════════
-function App() {
-  const [user, setUser] = useState(() => {
-    try { const s = localStorage.getItem('altusmed-user'); return s ? JSON.parse(s) : null; } catch { return null; }
-  });
-
-  const handleLogin = u => {
-    setUser(u);
-    localStorage.setItem('altusmed-user', JSON.stringify(u));
-  };
-  const handleLogout = () => {
-    setUser(null);
-    localStorage.removeItem('altusmed-user');
-  };
-
-  if (!user) return <LoginScreen onLogin={handleLogin}/>;
-  return <Dashboard user={user} onLogout={handleLogout}/>;
+function toggleSenha(id, btn) {
+  const input = document.getElementById(id);
+  const mostrar = input.type === 'password';
+  input.type = mostrar ? 'text' : 'password';
+  btn.textContent = mostrar ? 'ocultar' : 'mostrar';
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+function toast(msg, erro = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (erro ? ' erro' : '');
+  setTimeout(() => t.className = 'toast', 3500);
+}
+
+// ── Start ─────────────────────────────────────────────────────────────────
+init();
 </script>
 </body>
 </html>

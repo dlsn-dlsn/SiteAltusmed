@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AltusMed · Nova Regulação</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:    #0f1e35;
+    --navy2:   #162844;
+    --navy3:   #1e3a5f;
+    --green:   #78be20;
+    --green2:  #5a9a10;
+    --amber:   #f59e0b;
+    --red:     #ef4444;
+    --text:    #e2e8f0;
+    --text-m:  #94a3b8;
+    --text-l:  #64748b;
+    --border:  rgba(255,255,255,0.08);
+    --card:    rgba(255,255,255,0.04);
+    --ff:      'DM Sans', sans-serif;
+    --radius:  10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--ff); background: var(--navy); color: var(--text); min-height: 100vh; }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    background: var(--navy2); border-bottom: 1px solid var(--border);
+    padding: 0 2rem; height: 56px;
+    display: flex; align-items: center; gap: 1rem;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topbar-brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: .95rem; }
+  .topbar-brand-icon {
+    width: 28px; height: 28px; border-radius: 6px;
+    background: #0f1e35; border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .topbar-title {
+    font-size: .92rem; font-weight: 600; color: var(--text-m);
+    padding-left: 1rem; border-left: 1px solid var(--border);
+  }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 1rem; }
+  .topbar-user { font-size: .85rem; color: var(--text-m); }
+  .topbar-user strong { color: var(--text); }
+
+  .btn-sm {
+    background: rgba(255,255,255,.06); border: 1px solid var(--border);
+    border-radius: 7px; padding: .35rem .9rem;
+    font-family: var(--ff); font-size: .8rem; font-weight: 600;
+    color: var(--text-m); cursor: pointer; transition: all .2s;
+    text-decoration: none; display: inline-flex; align-items: center;
+  }
+  .btn-sm:hover { background: rgba(255,255,255,.1); color: var(--text); }
+
+  /* ── MAIN ── */
+  .main { max-width: 800px; margin: 0 auto; padding: 2rem; }
+
+  /* ── SEÇÃO COLAPSÁVEL ── */
+  .section {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 1rem; overflow: hidden;
+  }
+  .section-header {
+    padding: 1rem 1.25rem;
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; user-select: none; transition: background .2s;
+  }
+  .section-header:hover { background: rgba(255,255,255,.03); }
+  .section-title { font-size: .95rem; font-weight: 600; display: flex; align-items: center; gap: .5rem; }
+  .section-toggle { font-size: .7rem; color: var(--text-l); transition: transform .2s; }
+  .section-toggle.open { transform: rotate(180deg); }
+  .section-body { padding: 1.25rem; border-top: 1px solid var(--border); }
+  .section-body.hidden { display: none; }
+
+  /* ── CAMPOS ── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; }
+  .form-grid.cols3 { grid-template-columns: 1fr 1fr 1fr; }
+  .form-grid.full { grid-template-columns: 1fr; }
+  @media (max-width: 600px) {
+    .form-grid, .form-grid.cols3 { grid-template-columns: 1fr; }
+  }
+  .field { display: flex; flex-direction: column; gap: .35rem; }
+  .field.full { grid-column: 1 / -1; }
+  .field label {
+    font-size: .75rem; font-weight: 600; color: var(--text-m);
+    text-transform: uppercase; letter-spacing: .05em;
+  }
+  .field input, .field select, .field textarea {
+    background: rgba(255,255,255,.05); border: 1px solid var(--border);
+    border-radius: 8px; padding: .6rem .9rem;
+    color: var(--text); font-family: var(--ff); font-size: .9rem;
+    outline: none; transition: border-color .2s;
+    -webkit-appearance: none;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    border-color: var(--green);
+  }
+  .field select option { background: var(--navy2); }
+  .field textarea { resize: vertical; }
+
+  /* ── PA lado a lado ── */
+  .pa-group { display: flex; align-items: center; gap: .5rem; }
+  .pa-group input { flex: 1; }
+  .pa-sep { color: var(--text-l); font-size: 1.2rem; font-weight: 300; }
+
+  /* ── GCS ── */
+  .gcs-group { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .85rem; }
+  .gcs-total {
+    margin-top: .75rem; padding: .75rem 1rem;
+    background: rgba(120,190,32,.1); border: 1px solid rgba(120,190,32,.25);
+    border-radius: 8px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .gcs-total-label { font-size: .85rem; color: var(--text-m); font-weight: 500; }
+  .gcs-total-value { font-size: 1.6rem; font-weight: 700; color: var(--green); }
+
+  /* ── O2 Duração ── */
+  .o2-duracao {
+    margin-top: .75rem; padding: .75rem 1rem;
+    background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.2);
+    border-radius: 8px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .o2-duracao-label { font-size: .85rem; color: var(--text-m); font-weight: 500; }
+  .o2-duracao-value { font-size: 1rem; font-weight: 700; color: var(--amber); }
+
+  /* ── BOTÃO FINALIZAR ── */
+  .btn-finalizar {
+    width: 100%; background: var(--green); color: #0f1e35;
+    border: none; border-radius: var(--radius); padding: 1rem;
+    font-family: var(--ff); font-size: 1rem; font-weight: 700;
+    cursor: pointer; transition: background .2s; margin-top: 1.5rem;
+  }
+  .btn-finalizar:hover { background: var(--green2); color: white; }
+  .btn-finalizar:disabled { opacity: .6; cursor: not-allowed; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+    background: var(--navy2); border: 1px solid var(--border);
+    border-radius: 8px; padding: .75rem 1.5rem;
+    font-size: .9rem; font-weight: 500;
+    opacity: 0; pointer-events: none; transition: opacity .3s;
+    z-index: 999; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+  .toast.erro { border-color: rgba(239,68,68,.4); color: #fca5a5; background: rgba(239,68,68,.1); }
+
+  /* ── LOADING ── */
+  .loading {
+    position: fixed; inset: 0; background: rgba(9,14,26,.85);
+    display: flex; align-items: center; justify-content: center; z-index: 200;
+  }
+  .loading-spinner {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 3px solid rgba(255,255,255,.1);
+    border-top-color: var(--green);
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="loading" id="loading">
+  <div class="loading-spinner"></div>
+</div>
+
+<div id="app" style="display:none;">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-brand">
+      <div class="topbar-brand-icon">
+        <img src="assets/logo-altusmed.png" style="width:22px;height:22px;object-fit:contain;" alt="AltusMed">
+      </div>
+      ALTUSMED
+    </div>
+    <span class="topbar-title">Nova Regulação Aeromédica</span>
+    <div class="topbar-right">
+      <span class="topbar-user">Dr. <strong id="topbar-nome">...</strong></span>
+      <a href="restrito.html" class="btn-sm">← Voltar</a>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- SEÇÃO 1: LOGÍSTICA -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection('logistica')">
+        <span class="section-title">✈ Logística</span>
+        <span class="section-toggle open" id="toggle-logistica">▼</span>
+      </div>
+      <div class="section-body" id="body-logistica">
+        <div class="form-grid">
+          <div class="field">
+            <label>Origem *</label>
+            <input type="text" id="origem" placeholder="Cidade/Aeroporto">
+          </div>
+          <div class="field">
+            <label>Destino *</label>
+            <input type="text" id="destino" placeholder="Cidade/Aeroporto">
+          </div>
+          <div class="field">
+            <label>Tipo de Aeronave</label>
+            <select id="aeronave">
+              <option value="UTI Aérea">UTI Aérea</option>
+              <option value="Aeromédico Comercial">Aeromédico Comercial</option>
+              <option value="Helicóptero">Helicóptero</option>
+              <option value="Transporte Terrestre">Transporte Terrestre</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Tempo estimado de voo</label>
+            <input type="text" id="tempo_voo" placeholder="Ex: 2h30">
+          </div>
+          <div class="field">
+            <label>Hora de decolagem</label>
+            <input type="time" id="hora_decolagem">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO 2: PACIENTE -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection('paciente')">
+        <span class="section-title">🧑‍⚕️ Paciente</span>
+        <span class="section-toggle open" id="toggle-paciente">▼</span>
+      </div>
+      <div class="section-body" id="body-paciente">
+        <div class="form-grid">
+          <div class="field">
+            <label>Nome do Paciente *</label>
+            <input type="text" id="paciente_nome" placeholder="Nome completo">
+          </div>
+          <div class="field">
+            <label>Idade</label>
+            <input type="number" id="paciente_idade" placeholder="anos" min="0" max="130">
+          </div>
+          <div class="field">
+            <label>Sexo</label>
+            <select id="paciente_sexo">
+              <option value="Masculino">Masculino</option>
+              <option value="Feminino">Feminino</option>
+              <option value="Não informado">Não informado</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Classificação NACA *</label>
+            <select id="naca">
+              <option value="">Selecione...</option>
+              <option value="NACA I">NACA I — Leve, sem prejuízo</option>
+              <option value="NACA II">NACA II — Moderado, sem risco de vida</option>
+              <option value="NACA III">NACA III — Severo, sem risco de vida imediato</option>
+              <option value="NACA IV">NACA IV — Risco de vida potencial</option>
+              <option value="NACA V">NACA V — Risco de vida agudo</option>
+              <option value="NACA VI">NACA VI — Parada cardiorrespiratória</option>
+              <option value="NACA VII">NACA VII — Óbito</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label>Diagnóstico principal</label>
+            <textarea id="diagnostico" rows="2" placeholder="CID / diagnóstico..."></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO 3: SINAIS VITAIS -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection('sinais')">
+        <span class="section-title">📊 Sinais Vitais</span>
+        <span class="section-toggle open" id="toggle-sinais">▼</span>
+      </div>
+      <div class="section-body" id="body-sinais">
+        <div class="form-grid">
+          <div class="field">
+            <label>Pressão Arterial (mmHg)</label>
+            <div class="pa-group">
+              <input type="number" id="pa_sist" placeholder="Sist." min="0" max="300">
+              <span class="pa-sep">/</span>
+              <input type="number" id="pa_diast" placeholder="Diast." min="0" max="200">
+            </div>
+          </div>
+          <div class="field">
+            <label>FC (bpm)</label>
+            <input type="number" id="fc" placeholder="bpm" min="0" max="300">
+          </div>
+          <div class="field">
+            <label>FR (rpm)</label>
+            <input type="number" id="fr" placeholder="rpm" min="0" max="60">
+          </div>
+          <div class="field">
+            <label>SpO₂ (%)</label>
+            <input type="number" id="spo2" placeholder="%" min="0" max="100">
+          </div>
+          <div class="field">
+            <label>Temperatura (°C)</label>
+            <input type="number" id="temp" placeholder="°C" min="30" max="43" step="0.1">
+          </div>
+        </div>
+
+        <!-- GCS -->
+        <div style="margin-top:1rem;">
+          <label style="font-size:.75rem;font-weight:600;color:var(--text-m);text-transform:uppercase;letter-spacing:.05em;">Glasgow Coma Scale (GCS)</label>
+          <div class="gcs-group" style="margin-top:.5rem;">
+            <div class="field">
+              <label>Ocular (O)</label>
+              <select id="gcs_o" onchange="calcGCS()">
+                <option value="4">4 — Espontânea</option>
+                <option value="3">3 — À voz</option>
+                <option value="2">2 — À dor</option>
+                <option value="1">1 — Ausente</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Verbal (V)</label>
+              <select id="gcs_v" onchange="calcGCS()">
+                <option value="5">5 — Orientado</option>
+                <option value="4">4 — Confuso</option>
+                <option value="3">3 — Palavras</option>
+                <option value="2">2 — Sons</option>
+                <option value="1">1 — Ausente</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Motor (M)</label>
+              <select id="gcs_m" onchange="calcGCS()">
+                <option value="6">6 — Obedece</option>
+                <option value="5">5 — Localiza</option>
+                <option value="4">4 — Retirada</option>
+                <option value="3">3 — Flexão</option>
+                <option value="2">2 — Extensão</option>
+                <option value="1">1 — Ausente</option>
+              </select>
+            </div>
+          </div>
+          <div class="gcs-total">
+            <span class="gcs-total-label">Total GCS</span>
+            <span class="gcs-total-value" id="gcs-total">15</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO 4: OXIGÊNIO -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection('o2')">
+        <span class="section-title">🫁 Oxigênio</span>
+        <span class="section-toggle open" id="toggle-o2">▼</span>
+      </div>
+      <div class="section-body" id="body-o2">
+        <div class="form-grid">
+          <div class="field">
+            <label>O₂ em uso?</label>
+            <select id="o2_uso" onchange="toggleO2Fields()">
+              <option value="Não">Não</option>
+              <option value="Sim">Sim</option>
+            </select>
+          </div>
+        </div>
+        <div id="o2-fields" style="display:none; margin-top:.85rem;">
+          <div class="form-grid">
+            <div class="field">
+              <label>Flow (L/min)</label>
+              <input type="number" id="o2_flow" placeholder="L/min" min="0" max="15" step="0.5" oninput="calcO2()">
+            </div>
+            <div class="field">
+              <label>Tipo de Cilindro</label>
+              <select id="o2_cilindro" onchange="calcO2()">
+                <option value="C">C (170 L)</option>
+                <option value="D">D (415 L)</option>
+                <option value="E">E (680 L)</option>
+                <option value="H">H (6900 L)</option>
+              </select>
+            </div>
+          </div>
+          <div class="o2-duracao">
+            <span class="o2-duracao-label">Duração estimada</span>
+            <span class="o2-duracao-value" id="o2-duracao">— min</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO 5: CONDUTA E MEDICAMENTOS -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection('conduta')">
+        <span class="section-title">💊 Conduta e Medicamentos</span>
+        <span class="section-toggle open" id="toggle-conduta">▼</span>
+      </div>
+      <div class="section-body" id="body-conduta">
+        <div class="form-grid full">
+          <div class="field">
+            <label>Conduta</label>
+            <textarea id="conduta" rows="3" placeholder="Procedimentos realizados, intervenções..."></textarea>
+          </div>
+          <div class="field">
+            <label>Medicamentos em uso</label>
+            <textarea id="medicamentos" rows="3" placeholder="Medicações em curso, doses..."></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botão finalizar -->
+    <button class="btn-finalizar" id="btn-finalizar" onclick="finalizarRegulacao()">
+      ✓ Finalizar e Criar Missão
+    </button>
+
+    <div style="height:3rem;"></div>
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPA_URL = 'https://hdovkmuwofvwpcyfkiih.supabase.co';
+const SUPA_KEY = 'sb_publishable_GetcnIgIEe6owbOQea2HOg_0MuxtLdP';
+const { createClient } = supabase;
+const db = createClient(SUPA_URL, SUPA_KEY);
+
+let usuarioAtual = null;
+let perfilAtual  = {};
+
+// ── Auth ──────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    if (!session) {
+      window.location.href = 'restrito.html';
+      return;
+    }
+    usuarioAtual = session.user;
+    await carregarPerfil();
+    document.getElementById('app').style.display = 'block';
+  } catch(e) {
+    console.error('Erro na inicialização:', e);
+    window.location.href = 'restrito.html';
+  } finally {
+    document.getElementById('loading').style.display = 'none';
+  }
+}
+
+async function carregarPerfil() {
+  try {
+    const { data } = await db.from('perfis').select('*')
+      .eq('id', usuarioAtual.id).single();
+    perfilAtual = data || {};
+    document.getElementById('topbar-nome').textContent = perfilAtual.nome || usuarioAtual.email;
+  } catch(e) {}
+}
+
+// ── Seções colapsáveis ────────────────────────────────────────────────
+function toggleSection(id) {
+  const body   = document.getElementById('body-' + id);
+  const toggle = document.getElementById('toggle-' + id);
+  const hidden = body.classList.toggle('hidden');
+  toggle.classList.toggle('open', !hidden);
+}
+
+// ── GCS ───────────────────────────────────────────────────────────────
+function calcGCS() {
+  const o = parseInt(document.getElementById('gcs_o').value) || 0;
+  const v = parseInt(document.getElementById('gcs_v').value) || 0;
+  const m = parseInt(document.getElementById('gcs_m').value) || 0;
+  document.getElementById('gcs-total').textContent = o + v + m;
+}
+
+// ── O2 ────────────────────────────────────────────────────────────────
+const O2_CAP = { C: 170, D: 415, E: 680, H: 6900 };
+
+function toggleO2Fields() {
+  const sim = document.getElementById('o2_uso').value === 'Sim';
+  document.getElementById('o2-fields').style.display = sim ? 'block' : 'none';
+  if (sim) calcO2();
+}
+
+function calcO2() {
+  const flow = parseFloat(document.getElementById('o2_flow').value) || 0;
+  const tipo = document.getElementById('o2_cilindro').value;
+  const cap  = O2_CAP[tipo] || 0;
+  const el   = document.getElementById('o2-duracao');
+  if (!flow || flow <= 0) { el.textContent = '— min'; return; }
+  const mins = Math.floor(cap / flow);
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  el.textContent = h > 0 ? `${h}h ${m}min` : `${m} min`;
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────
+function toast(msg, erro = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (erro ? ' erro' : '');
+  setTimeout(() => t.className = 'toast', 3500);
+}
+
+// ── Finalizar ─────────────────────────────────────────────────────────
+async function finalizarRegulacao() {
+  const origem       = document.getElementById('origem').value.trim();
+  const destino      = document.getElementById('destino').value.trim();
+  const paciente_nome = document.getElementById('paciente_nome').value.trim();
+  const naca         = document.getElementById('naca').value;
+
+  if (!origem || !destino) {
+    toast('Informe origem e destino.', true); return;
+  }
+  if (!paciente_nome) {
+    toast('Informe o nome do paciente.', true); return;
+  }
+  if (!naca) {
+    toast('Selecione a classificação NACA.', true); return;
+  }
+
+  const btn = document.getElementById('btn-finalizar');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+
+  const codigo = 'AM-' + String(Date.now()).slice(-6);
+
+  const gcsTotal = parseInt(document.getElementById('gcs-total').textContent) || null;
+  const o2Uso    = document.getElementById('o2_uso').value;
+
+  const regulacaoData = {
+    codigo,
+    medico_id:        usuarioAtual.id,
+    origem,
+    destino,
+    aeronave:         document.getElementById('aeronave').value,
+    tempo_voo:        document.getElementById('tempo_voo').value.trim(),
+    hora_decolagem:   document.getElementById('hora_decolagem').value || null,
+    paciente_nome,
+    paciente_idade:   parseInt(document.getElementById('paciente_idade').value) || null,
+    paciente_sexo:    document.getElementById('paciente_sexo').value,
+    diagnostico:      document.getElementById('diagnostico').value.trim(),
+    naca,
+    pa_sist:          parseInt(document.getElementById('pa_sist').value) || null,
+    pa_diast:         parseInt(document.getElementById('pa_diast').value) || null,
+    fc:               parseInt(document.getElementById('fc').value) || null,
+    fr:               parseInt(document.getElementById('fr').value) || null,
+    spo2:             parseInt(document.getElementById('spo2').value) || null,
+    temperatura:      parseFloat(document.getElementById('temp').value) || null,
+    gcs_o:            parseInt(document.getElementById('gcs_o').value) || null,
+    gcs_v:            parseInt(document.getElementById('gcs_v').value) || null,
+    gcs_m:            parseInt(document.getElementById('gcs_m').value) || null,
+    gcs_total:        gcsTotal,
+    o2_uso:           o2Uso,
+    o2_flow:          o2Uso === 'Sim' ? parseFloat(document.getElementById('o2_flow').value) || null : null,
+    o2_cilindro:      o2Uso === 'Sim' ? document.getElementById('o2_cilindro').value : null,
+    conduta:          document.getElementById('conduta').value.trim(),
+    medicamentos:     document.getElementById('medicamentos').value.trim(),
+    status:           'Em andamento',
+    created_at:       new Date().toISOString(),
+  };
+
+  try {
+    // Salva na tabela regulacoes
+    const { data: reg, error: regErr } = await db.from('regulacoes')
+      .insert(regulacaoData).select('id').single();
+    if (regErr) throw regErr;
+
+    // Cria missão
+    const { data: missao, error: missErr } = await db.from('missoes').insert({
+      codigo,
+      medico_id:      usuarioAtual.id,
+      paciente_nome,
+      paciente_idade: regulacaoData.paciente_idade,
+      origem,
+      destino,
+      tipo:           regulacaoData.aeronave,
+      equipe:         perfilAtual.nome || '',
+      status:         'Em andamento',
+      naca,
+      diagnostico:    regulacaoData.diagnostico,
+      hora_pouso:     '',
+      hora_transferencia: '',
+      desfecho:       '',
+    }).select('id').single();
+    if (missErr) throw missErr;
+
+    // Atualiza regulacao com missao_id
+    if (reg?.id && missao?.id) {
+      await db.from('regulacoes').update({ missao_id: missao.id }).eq('id', reg.id);
+    }
+
+    toast('✓ Regulação e missão criadas com sucesso!');
+    setTimeout(() => { window.location.href = 'restrito.html#missoes'; }, 2000);
+  } catch(e) {
+    console.error('Erro ao finalizar regulação:', e);
+    toast('Erro ao salvar. Verifique os dados e tente novamente.', true);
+    btn.disabled = false; btn.textContent = '✓ Finalizar e Criar Missão';
+  }
+}
+
+// ── Start ─────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>

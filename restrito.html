@@ -479,6 +479,7 @@
     <div class="page-nav">
       <div class="page-nav-item active" id="nav-dashboard" onclick="irPara('dashboard')">Dashboard</div>
       <div class="page-nav-item" id="nav-missoes" onclick="irPara('missoes')">Missões</div>
+      <div class="page-nav-item" id="nav-regulacao" onclick="irPara('regulacao')" style="display:none;">🩺 Regulação</div>
       <div class="page-nav-item" id="nav-perfil" onclick="irPara('perfil')">Meu Perfil</div>
       <div class="page-nav-item" id="nav-usuarios" onclick="irPara('usuarios')" style="display:none;">👥 Usuários</div>
     </div>
@@ -625,7 +626,7 @@
                 <option value="diretor">Diretor Aeromédico</option>
                 <option value="medico">Médico Aeromédico</option>
                 <option value="enfermeiro">Enfermeiro Aeromédico</option>
-                <option value="regulador">Regulador de Missão</option>
+                <option value="regulador">Regulador(a)</option>
                 <option value="administrativo">Administrativo</option>
                 <option value="piloto">Piloto</option>
               </select>
@@ -700,6 +701,23 @@
       </div>
       <div class="usuarios-grid" id="usuarios-grid">
         <div style="color:var(--text-m);font-size:.9rem;">Carregando usuários...</div>
+      </div>
+    </div>
+
+    <!-- Página: Regulação -->
+    <div class="page" id="page-regulacao">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+        <div>
+          <div style="font-size:1.3rem;font-weight:700;">Gerar Regulação</div>
+          <div style="font-size:.85rem;color:var(--text-m);margin-top:.25rem;">Formulário de regulação aeromédica — AltusMed</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body" style="padding:2rem;text-align:center;">
+          <div style="font-size:2rem;margin-bottom:1rem;">🩺</div>
+          <div style="font-size:1rem;font-weight:600;margin-bottom:.5rem;">Módulo em integração</div>
+          <div style="font-size:.87rem;color:var(--text-m);margin-bottom:1.5rem;">O formulário completo de regulação aeromédica será integrado aqui em breve.</div>
+        </div>
       </div>
     </div>
 
@@ -843,6 +861,11 @@ async function carregarApp() {
   if (navUsuarios) {
     navUsuarios.style.display = perfilAtual.is_admin === true ? 'block' : 'none';
   }
+  const navReg = document.getElementById('nav-regulacao');
+  if (navReg) {
+    const temAcesso = perfilAtual.is_admin || perfilAtual.cargo_tipo === 'regulador';
+    navReg.style.display = temAcesso ? 'block' : 'none';
+  }
   mostrarApp();
 }
 
@@ -863,6 +886,15 @@ async function carregarPerfil() {
   document.getElementById('pf-especialidade').value = perfilAtual.especialidade || '';
   document.getElementById('pf-telefone').value      = perfilAtual.telefone || '';
   document.getElementById('pf-email').textContent   = usuarioAtual.email || '';
+
+  // Select tipo de cargo — apenas admin pode alterar
+  const selectTipo = document.getElementById('pf-cargo-tipo');
+  if (!perfilAtual.is_admin) {
+    selectTipo.disabled     = true;
+    selectTipo.style.opacity = '0.5';
+    selectTipo.style.cursor  = 'not-allowed';
+    selectTipo.title         = 'Apenas o administrador pode alterar o tipo de cargo';
+  }
 
   // Banner diretor — apenas para diretor com is_admin
   const banner = document.getElementById('diretor-banner');
@@ -1009,7 +1041,7 @@ async function carregarUsuarios() {
           <option value="diretor"        ${tipo==='diretor'?'selected':''}>Diretor Aeromédico</option>
           <option value="medico"         ${tipo==='medico'?'selected':''}>Médico Aeromédico</option>
           <option value="enfermeiro"     ${tipo==='enfermeiro'?'selected':''}>Enfermeiro Aeromédico</option>
-          <option value="regulador"      ${tipo==='regulador'?'selected':''}>Regulador de Missão</option>
+          <option value="regulador"      ${tipo==='regulador'?'selected':''}>Regulador(a)</option>
           <option value="administrativo" ${tipo==='administrativo'?'selected':''}>Administrativo</option>
           <option value="piloto"         ${tipo==='piloto'?'selected':''}>Piloto</option>
         </select>
@@ -1078,6 +1110,10 @@ async function salvarPerfil() {
     telefone:      document.getElementById('pf-telefone').value.trim(),
     updated_at:    new Date().toISOString(),
   };
+
+  if (!perfilAtual.is_admin) {
+    delete dados.cargo_tipo;
+  }
 
   const { error } = await db.from('perfis')
     .upsert({ id: usuarioAtual.id, ...dados });

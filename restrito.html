@@ -779,14 +779,20 @@ function infoCargo(tipo) {
 
 // ── Init ──────────────────────────────────────────────────────────────────
 async function init() {
-  const { data: { session } } = await db.auth.getSession();
-  if (session) {
-    usuarioAtual = session.user;
-    await carregarApp();
-  } else {
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    if (session) {
+      usuarioAtual = session.user;
+      await carregarApp();
+    } else {
+      mostrarLogin();
+    }
+  } catch (err) {
+    console.error('Erro na inicialização:', err);
     mostrarLogin();
+  } finally {
+    esconderLoading();
   }
-  esconderLoading();
 
   db.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session) {
@@ -1369,21 +1375,6 @@ function irPara(pagina) {
   document.querySelectorAll('.page-nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + pagina).classList.add('active');
   document.getElementById('nav-' + pagina).classList.add('active');
-}
-
-// ── UI helpers ────────────────────────────────────────────────────────────
-function mostrarLogin() {
-  document.getElementById('login-wrap').style.display = 'flex';
-  document.getElementById('app').classList.remove('show');
-}
-function mostrarApp() {
-  document.getElementById('login-wrap').style.display = 'none';
-  document.getElementById('app').classList.add('show');
-}
-function esconderLoading() {
-  const l = document.getElementById('loading');
-  l.classList.add('hide');
-  setTimeout(() => l.style.display = 'none', 400);
 }
 
 function toggleSenha(id, btn) {

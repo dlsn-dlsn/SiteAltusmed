@@ -275,6 +275,93 @@
   .page-nav-item:hover { color: var(--text); }
   .page-nav-item.active { color: var(--green); border-bottom-color: var(--green); }
 
+  /* ── CORES DE CARGO ── */
+  .cargo-diretor   { color: #D4A820; }
+  .cargo-medico    { color: #78BE20; }
+  .cargo-enfermeiro{ color: #29B6C8; }
+  .cargo-regulador { color: #E07820; }
+  .cargo-admin     { color: #7C3AED; }
+
+  .badge-diretor   { background: rgba(212,168,32,.15);  border-color: rgba(212,168,32,.3);  color: #D4A820; }
+  .badge-medico    { background: rgba(120,190,32,.15);  border-color: rgba(120,190,32,.3);  color: #78BE20; }
+  .badge-enfermeiro{ background: rgba(41,182,200,.15);  border-color: rgba(41,182,200,.3);  color: #29B6C8; }
+  .badge-regulador { background: rgba(224,120,32,.15);  border-color: rgba(224,120,32,.3);  color: #E07820; }
+  .badge-admin     { background: rgba(124,58,237,.15);  border-color: rgba(124,58,237,.3);  color: #7C3AED; }
+
+  /* ── PERFIL DIRETOR ── */
+  .diretor-banner {
+    background: linear-gradient(135deg, rgba(212,168,32,.12) 0%, rgba(154,122,24,.06) 100%);
+    border: 1px solid rgba(212,168,32,.25);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    display: flex; align-items: center; gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .diretor-icon {
+    width: 48px; height: 48px; border-radius: 10px;
+    background: rgba(212,168,32,.15);
+    border: 1px solid rgba(212,168,32,.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; flex-shrink: 0;
+  }
+  .diretor-nome  { font-size: 1.1rem; font-weight: 700; color: #D4A820; }
+  .diretor-cargo { font-size: .8rem; color: rgba(212,168,32,.7); margin-top: 2px; letter-spacing: .04em; text-transform: uppercase; }
+
+  /* ── ADMIN: TABELA USUÁRIOS ── */
+  .usuarios-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
+  }
+  .usuario-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.25rem;
+    transition: border-color .2s;
+  }
+  .usuario-card:hover { border-color: rgba(255,255,255,.15); }
+  .usuario-card-header {
+    display: flex; align-items: center; gap: .75rem;
+    margin-bottom: 1rem;
+  }
+  .usuario-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; font-weight: 700; flex-shrink: 0;
+    border: 2px solid;
+  }
+  .usuario-info-nome  { font-size: .92rem; font-weight: 600; }
+  .usuario-info-email { font-size: .75rem; color: var(--text-m); margin-top: 2px; }
+
+  .edit-field { display: flex; flex-direction: column; gap: .3rem; margin-bottom: .75rem; }
+  .edit-field label { font-size: .7rem; font-weight: 600; color: var(--text-l); text-transform: uppercase; letter-spacing: .05em; }
+  .edit-field input, .edit-field select {
+    background: rgba(255,255,255,.05); border: 1px solid var(--border);
+    border-radius: 6px; padding: .5rem .75rem;
+    color: var(--text); font-family: var(--ff); font-size: .85rem;
+    outline: none; transition: border-color .2s;
+  }
+  .edit-field input:focus, .edit-field select:focus { border-color: rgba(255,255,255,.25); }
+
+  .btn-salvar-user {
+    width: 100%; background: rgba(255,255,255,.06);
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: .5rem; font-family: var(--ff); font-size: .82rem;
+    font-weight: 600; color: var(--text-m); cursor: pointer;
+    transition: all .2s; margin-top: .25rem;
+  }
+  .btn-salvar-user:hover { background: rgba(255,255,255,.1); color: var(--text); border-color: rgba(255,255,255,.2); }
+
+  .admin-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: .75rem; margin-bottom: 1.5rem;
+  }
+  .admin-stat {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: .9rem 1rem; text-align: center;
+  }
+  .admin-stat-val { font-size: 1.6rem; font-weight: 700; }
+  .admin-stat-lbl { font-size: .72rem; color: var(--text-m); margin-top: 2px; }
+
   /* Loading overlay */
   .loading {
     position: fixed; inset: 0;
@@ -336,7 +423,9 @@
   <div class="login-card">
     <div class="login-logo">
       <div class="login-logo-icon">
-        <img src="../assets/altusmed-logo.png" style="width:28px;height:28px;object-fit:contain;" alt="AltusMed">
+        <svg width="22" height="22" viewBox="0 0 20 20" fill="none">
+          <path d="M2 12l5-7 2 3 6-4-2 7 4 2-1 3-5-1-2 4-3-1 1-4-4-2z" fill="#0f1e35" opacity="0.9"/>
+        </svg>
       </div>
       <div>
         <div class="login-logo-text">AltusMed</div>
@@ -369,7 +458,9 @@
   <div class="topbar">
     <div class="topbar-brand">
       <div class="topbar-brand-icon">
-        <img src="../assets/altusmed-logo.png" style="width:28px;height:28px;object-fit:contain;" alt="AltusMed">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+          <path d="M2 12l5-7 2 3 6-4-2 7 4 2-1 3-5-1-2 4-3-1 1-4-4-2z" fill="#0f1e35"/>
+        </svg>
       </div>
       ALTUSMED
     </div>
@@ -389,6 +480,7 @@
       <div class="page-nav-item active" id="nav-dashboard" onclick="irPara('dashboard')">Dashboard</div>
       <div class="page-nav-item" id="nav-missoes" onclick="irPara('missoes')">Missões</div>
       <div class="page-nav-item" id="nav-perfil" onclick="irPara('perfil')">Meu Perfil</div>
+      <div class="page-nav-item" id="nav-usuarios" onclick="irPara('usuarios')" style="display:none;">👥 Usuários</div>
     </div>
 
     <!-- ── DASHBOARD ── -->
@@ -506,6 +598,15 @@
         <div class="perfil-titulo">Meu Perfil</div>
         <div class="perfil-sub">Suas informações aparecem no dashboard e nos relatórios de missão</div>
 
+        <!-- Banner diretor (visível só para diretor) -->
+        <div class="diretor-banner" id="diretor-banner" style="display:none;">
+          <div class="diretor-icon">✦</div>
+          <div>
+            <div class="diretor-nome" id="diretor-banner-nome">Dr. Davi Nunes</div>
+            <div class="diretor-cargo">Diretor Aeromédico · AltusMed · Administrador Master</div>
+          </div>
+        </div>
+
         <!-- Dados pessoais -->
         <div class="perfil-card">
           <div class="perfil-section-title">Dados Profissionais</div>
@@ -517,6 +618,17 @@
             <div class="perfil-field">
               <label>Cargo / Função</label>
               <input type="text" id="pf-cargo" placeholder="Diretor Aeromédico">
+            </div>
+            <div class="perfil-field">
+              <label>Tipo de Cargo</label>
+              <select id="pf-cargo-tipo">
+                <option value="diretor">Diretor Aeromédico</option>
+                <option value="medico">Médico Aeromédico</option>
+                <option value="enfermeiro">Enfermeiro Aeromédico</option>
+                <option value="regulador">Regulador de Missão</option>
+                <option value="administrativo">Administrativo</option>
+                <option value="piloto">Piloto</option>
+              </select>
             </div>
             <div class="perfil-field">
               <label>CRM</label>
@@ -570,6 +682,24 @@
             <div>Plataforma: <strong style="color:var(--text);">AltusMed Transporte Aeromédico</strong></div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- ── USUÁRIOS (admin only) ── -->
+    <div class="page" id="page-usuarios">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+        <div>
+          <div style="font-size:1.3rem;font-weight:700;">Gerenciar Usuários</div>
+          <div style="font-size:.85rem;color:var(--text-m);margin-top:.25rem;">Edite nome, CRM e função de cada membro da equipe</div>
+        </div>
+      </div>
+      <div class="admin-stats" id="admin-stats">
+        <div class="admin-stat"><div class="admin-stat-val" id="stat-total">—</div><div class="admin-stat-lbl">Total de Usuários</div></div>
+        <div class="admin-stat"><div class="admin-stat-val cargo-diretor" id="stat-medicos">—</div><div class="admin-stat-lbl">Médicos</div></div>
+        <div class="admin-stat"><div class="admin-stat-val cargo-enfermeiro" id="stat-outros">—</div><div class="admin-stat-lbl">Outros Cargos</div></div>
+      </div>
+      <div class="usuarios-grid" id="usuarios-grid">
+        <div style="color:var(--text-m);font-size:.9rem;">Carregando usuários...</div>
       </div>
     </div>
 
@@ -633,6 +763,20 @@ const db = createClient(SUPA_URL, SUPA_KEY);
 let usuarioAtual = null;
 let perfilAtual  = {};
 
+// ── Cores por cargo ───────────────────────────────────────────────────────
+const CARGO_CORES = {
+  diretor:       { cor: '#D4A820', cls: 'badge-diretor',    emoji: '✦' },
+  medico:        { cor: '#78BE20', cls: 'badge-medico',     emoji: '⚕' },
+  enfermeiro:    { cor: '#29B6C8', cls: 'badge-enfermeiro', emoji: '🩺' },
+  regulador:     { cor: '#E07820', cls: 'badge-regulador',  emoji: '📡' },
+  administrativo:{ cor: '#7C3AED', cls: 'badge-admin',      emoji: '🗂' },
+  piloto:        { cor: '#94a3b8', cls: 'badge-gray',       emoji: '✈' },
+};
+
+function infoCargo(tipo) {
+  return CARGO_CORES[tipo] || CARGO_CORES.medico;
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────
 async function init() {
   const { data: { session } } = await db.auth.getSession();
@@ -689,6 +833,367 @@ async function carregarApp() {
   await carregarPerfil();
   atualizarUI();
   await carregarMissoes();
+  if (perfilAtual.is_admin) {
+    document.getElementById('nav-usuarios').style.display = 'block';
+  }
+  mostrarApp();
+}
+
+async function carregarPerfil() {
+  const { data } = await db.from('perfis').select('*')
+    .eq('id', usuarioAtual.id).single();
+  perfilAtual = data || {};
+
+  const tipo = perfilAtual.cargo_tipo || 'medico';
+
+  document.getElementById('pf-nome').value          = perfilAtual.nome || '';
+  document.getElementById('pf-cargo').value         = perfilAtual.cargo || '';
+  document.getElementById('pf-cargo-tipo').value    = tipo;
+  document.getElementById('pf-crm').value           = perfilAtual.crm || '';
+  document.getElementById('pf-especialidade').value = perfilAtual.especialidade || '';
+  document.getElementById('pf-telefone').value      = perfilAtual.telefone || '';
+  document.getElementById('pf-email').textContent   = usuarioAtual.email || '';
+
+  // Banner diretor
+  if (tipo === 'diretor') {
+    const banner = document.getElementById('diretor-banner');
+    banner.style.display = 'flex';
+    document.getElementById('diretor-banner-nome').textContent = perfilAtual.nome || 'Diretor';
+  }
+}
+
+function atualizarUI() {
+  const nome  = perfilAtual.nome  || 'Usuário';
+  const cargo = perfilAtual.cargo || 'Médico';
+  const tipo  = perfilAtual.cargo_tipo || 'medico';
+  const info  = infoCargo(tipo);
+
+  document.getElementById('topbar-nome').textContent  = nome;
+  document.getElementById('dash-nome').textContent    = nome;
+  document.getElementById('dash-cargo').textContent   = cargo;
+  document.getElementById('dash-cargo').style.color   = info.cor;
+
+  // Badge topbar com cor do cargo
+  const badge = document.getElementById('topbar-cargo');
+  badge.textContent = cargo;
+  badge.className = 'topbar-badge ' + info.cls;
+
+  // KPI missões com cor do cargo
+  document.getElementById('kpi-missoes').style.color = info.cor;
+
+  // Data formatada
+  const agora = new Date();
+  const data  = agora.toLocaleDateString('pt-BR', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  });
+  const dataFormatada = data.charAt(0).toUpperCase() + data.slice(1);
+  document.getElementById('dash-data').textContent =
+    `${dataFormatada} · Sistema AltusMed v0.01b`;
+}
+
+async function carregarMissoes() {
+  const agora     = new Date();
+  const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString();
+
+  const { data: todas }     = await db.from('missoes').select('*')
+    .eq('medico_id', usuarioAtual.id).order('created_at', { ascending: false });
+  const { data: doMes }     = await db.from('missoes').select('*')
+    .eq('medico_id', usuarioAtual.id).gte('created_at', inicioMes);
+  const { data: andamento } = await db.from('missoes').select('*')
+    .eq('medico_id', usuarioAtual.id).eq('status', 'Em andamento');
+
+  const missoes   = todas    || [];
+  const mes       = doMes    || [];
+  const and       = andamento|| [];
+  const kmTotal   = mes.reduce((s, m) => s + (m.km || 0), 0);
+  const pendentes = missoes.filter(m => m.status === 'Pendente').length;
+
+  document.getElementById('kpi-missoes').textContent   = mes.length;
+  document.getElementById('kpi-andamento').textContent = and.length;
+  document.getElementById('kpi-pendentes').textContent = pendentes;
+  document.getElementById('kpi-km').textContent        = kmTotal.toLocaleString('pt-BR');
+
+  renderizarTabela(missoes.slice(0, 5), 'tabela-missoes', false);
+  renderizarTabela(missoes, 'tabela-missoes-full', true);
+}
+
+function renderizarTabela(missoes, tbodyId, completo) {
+  const tb = document.getElementById(tbodyId);
+  if (!missoes.length) {
+    tb.innerHTML = `<tr><td colspan="${completo?9:7}" style="text-align:center;color:var(--text-m);padding:2rem;">
+      Nenhuma missão registrada ainda.</td></tr>`;
+    return;
+  }
+  tb.innerHTML = missoes.map(m => {
+    const badgeCls = m.status === 'Em andamento' ? 'badge-green'
+                   : m.status === 'Pendente'      ? 'badge-amber' : 'badge-gray';
+    return `<tr>
+      <td><span class="mission-code">${m.codigo}</span></td>
+      <td>${m.paciente_nome}</td>
+      ${completo ? `<td>${m.paciente_idade || '—'}</td>` : ''}
+      <td>${m.origem}</td>
+      <td>${m.destino}</td>
+      <td>${m.tipo}</td>
+      <td>${m.equipe || '—'}</td>
+      ${completo ? `<td>${m.km || 0}</td>` : ''}
+      <td><span class="badge ${badgeCls}">${m.status}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Admin: Usuários ───────────────────────────────────────────────────────
+async function carregarUsuarios() {
+  if (!perfilAtual.is_admin) return;
+
+  const { data: perfis } = await db.from('perfis').select('*');
+  const { data: authUsers } = await db.auth.admin?.listUsers?.() || { data: null };
+
+  const lista = perfis || [];
+
+  // Stats
+  const medicos = lista.filter(p => ['medico','diretor'].includes(p.cargo_tipo)).length;
+  document.getElementById('stat-total').textContent   = lista.length;
+  document.getElementById('stat-medicos').textContent = medicos;
+  document.getElementById('stat-outros').textContent  = lista.length - medicos;
+
+  // Cards
+  const grid = document.getElementById('usuarios-grid');
+  if (!lista.length) {
+    grid.innerHTML = '<div style="color:var(--text-m);">Nenhum usuário encontrado.</div>';
+    return;
+  }
+
+  grid.innerHTML = lista.map(p => {
+    const tipo  = p.cargo_tipo || 'medico';
+    const info  = infoCargo(tipo);
+    const ini   = (p.nome || 'U').charAt(0).toUpperCase();
+    const ehVoce = p.id === usuarioAtual.id;
+
+    return `
+    <div class="usuario-card" id="ucard-${p.id}">
+      <div class="usuario-card-header">
+        <div class="usuario-avatar ${info.cls}" 
+             style="color:${info.cor};border-color:${info.cor}40;background:${info.cor}15;">
+          ${ini}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div class="usuario-info-nome">${p.nome || 'Sem nome'} ${ehVoce ? '<span style="font-size:.7rem;color:var(--text-m);">(você)</span>' : ''}</div>
+          <div class="usuario-info-email">${p.especialidade || 'Sem especialidade'}</div>
+        </div>
+        <span class="badge ${info.cls}" style="font-size:.7rem;">${tipo.toUpperCase()}</span>
+      </div>
+
+      <div class="edit-field">
+        <label>Nome Completo</label>
+        <input type="text" id="u-nome-${p.id}" value="${p.nome || ''}" placeholder="Nome do profissional">
+      </div>
+      <div class="edit-field">
+        <label>Cargo / Título</label>
+        <input type="text" id="u-cargo-${p.id}" value="${p.cargo || ''}" placeholder="Ex: Médico Aeromédico">
+      </div>
+      <div class="edit-field">
+        <label>Função</label>
+        <select id="u-tipo-${p.id}" onchange="atualizarCardCor('${p.id}', this.value)">
+          <option value="diretor"        ${tipo==='diretor'?'selected':''}>Diretor Aeromédico</option>
+          <option value="medico"         ${tipo==='medico'?'selected':''}>Médico Aeromédico</option>
+          <option value="enfermeiro"     ${tipo==='enfermeiro'?'selected':''}>Enfermeiro Aeromédico</option>
+          <option value="regulador"      ${tipo==='regulador'?'selected':''}>Regulador de Missão</option>
+          <option value="administrativo" ${tipo==='administrativo'?'selected':''}>Administrativo</option>
+          <option value="piloto"         ${tipo==='piloto'?'selected':''}>Piloto</option>
+        </select>
+      </div>
+      <div class="edit-field">
+        <label>CRM / Registro</label>
+        <input type="text" id="u-crm-${p.id}" value="${p.crm || ''}" placeholder="PA 12345">
+      </div>
+      <button class="btn-salvar-user" onclick="salvarUsuario('${p.id}')">
+        ✓ Salvar alterações
+      </button>
+    </div>`;
+  }).join('');
+}
+
+function atualizarCardCor(id, tipo) {
+  const info  = infoCargo(tipo);
+  const card  = document.getElementById('ucard-' + id);
+  const avatar = card?.querySelector('.usuario-avatar');
+  const badge  = card?.querySelector('.badge');
+  if (avatar) {
+    avatar.style.color       = info.cor;
+    avatar.style.borderColor = info.cor + '40';
+    avatar.style.background  = info.cor + '15';
+    avatar.className = 'usuario-avatar ' + info.cls;
+  }
+  if (badge) {
+    badge.textContent = tipo.toUpperCase();
+    badge.className   = 'badge ' + info.cls;
+  }
+}
+
+async function salvarUsuario(uid) {
+  const nome  = document.getElementById('u-nome-'  + uid)?.value.trim();
+  const cargo = document.getElementById('u-cargo-' + uid)?.value.trim();
+  const tipo  = document.getElementById('u-tipo-'  + uid)?.value;
+  const crm   = document.getElementById('u-crm-'   + uid)?.value.trim();
+
+  const { error } = await db.from('perfis').update({
+    nome, cargo, cargo_tipo: tipo, crm, updated_at: new Date().toISOString()
+  }).eq('id', uid);
+
+  if (error) { toast('Erro ao salvar usuário.', true); return; }
+
+  atualizarCardCor(uid, tipo);
+  toast('✓ Perfil atualizado com sucesso!');
+
+  // Se editou o próprio perfil, recarrega UI
+  if (uid === usuarioAtual.id) {
+    perfilAtual = { ...perfilAtual, nome, cargo, cargo_tipo: tipo, crm };
+    atualizarUI();
+  }
+}
+
+// ── Perfil ────────────────────────────────────────────────────────────────
+async function salvarPerfil() {
+  const btn = document.getElementById('btn-salvar-perfil');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+
+  const dados = {
+    nome:          document.getElementById('pf-nome').value.trim(),
+    cargo:         document.getElementById('pf-cargo').value.trim(),
+    cargo_tipo:    document.getElementById('pf-cargo-tipo').value,
+    crm:           document.getElementById('pf-crm').value.trim(),
+    especialidade: document.getElementById('pf-especialidade').value.trim(),
+    telefone:      document.getElementById('pf-telefone').value.trim(),
+    updated_at:    new Date().toISOString(),
+  };
+
+  const { error } = await db.from('perfis')
+    .upsert({ id: usuarioAtual.id, ...dados });
+
+  btn.disabled = false; btn.textContent = 'Salvar alterações';
+
+  if (error) { toast('Erro ao salvar. Tente novamente.', true); return; }
+
+  perfilAtual = { ...perfilAtual, ...dados };
+
+  // Atualiza banner diretor
+  if (dados.cargo_tipo === 'diretor') {
+    document.getElementById('diretor-banner').style.display = 'flex';
+    document.getElementById('diretor-banner-nome').textContent = dados.nome;
+  } else {
+    document.getElementById('diretor-banner').style.display = 'none';
+  }
+
+  atualizarUI();
+  const msg = document.getElementById('save-msg');
+  msg.classList.add('show');
+  setTimeout(() => msg.classList.remove('show'), 3000);
+}
+
+async function alterarSenha() {
+  const nova = document.getElementById('pf-nova-senha').value;
+  const conf = document.getElementById('pf-conf-senha').value;
+
+  if (nova.length < 6)  { toast('A senha deve ter pelo menos 6 caracteres.', true); return; }
+  if (nova !== conf)    { toast('As senhas não coincidem.', true); return; }
+
+  const { error } = await db.auth.updateUser({ password: nova });
+  if (error) { toast('Erro ao alterar senha.', true); return; }
+
+  document.getElementById('pf-nova-senha').value = '';
+  document.getElementById('pf-conf-senha').value = '';
+  toast('✓ Senha alterada com sucesso!');
+}
+
+// ── Missões ───────────────────────────────────────────────────────────────
+function abrirModalMissao()  { document.getElementById('modal-missao').classList.add('show'); }
+function fecharModalMissao() { document.getElementById('modal-missao').classList.remove('show'); }
+
+async function salvarMissao() {
+  const paciente = document.getElementById('m-paciente').value.trim();
+  const origem   = document.getElementById('m-origem').value.trim();
+  const destino  = document.getElementById('m-destino').value.trim();
+  const tipo     = document.getElementById('m-tipo').value;
+
+  if (!paciente || !origem || !destino) {
+    toast('Preencha paciente, origem e destino.', true); return;
+  }
+
+  const codigo = 'AM-' + String(Date.now()).slice(-6);
+
+  const { error } = await db.from('missoes').insert({
+    codigo,
+    medico_id:      usuarioAtual.id,
+    paciente_nome:  paciente,
+    paciente_idade: parseInt(document.getElementById('m-idade').value) || null,
+    origem, destino, tipo,
+    equipe: document.getElementById('m-equipe').value.trim(),
+    km:     parseInt(document.getElementById('m-km').value) || 0,
+    status: 'Em andamento',
+  });
+
+  if (error) { toast('Erro ao registrar missão.', true); return; }
+
+  fecharModalMissao();
+  ['m-paciente','m-idade','m-origem','m-destino','m-equipe','m-km']
+    .forEach(id => document.getElementById(id).value = '');
+
+  await carregarMissoes();
+  toast('✓ Missão registrada com sucesso!');
+}
+
+// ── Navegação ─────────────────────────────────────────────────────────────
+function irPara(pagina) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.page-nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + pagina).classList.add('active');
+  document.getElementById('nav-'  + pagina).classList.add('active');
+  if (pagina === 'usuarios') carregarUsuarios();
+}
+
+// ── UI helpers ────────────────────────────────────────────────────────────
+function mostrarLogin() {
+  document.getElementById('login-wrap').style.display = 'flex';
+  document.getElementById('app').classList.remove('show');
+}
+function mostrarApp() {
+  document.getElementById('login-wrap').style.display = 'none';
+  document.getElementById('app').classList.add('show');
+}
+function esconderLoading() {
+  const l = document.getElementById('loading');
+  l.classList.add('hide');
+  setTimeout(() => l.style.display = 'none', 400);
+}
+
+function toggleSenha(id, btn) {
+  const input  = document.getElementById(id);
+  const mostrar = input.type === 'password';
+  input.type   = mostrar ? 'text' : 'password';
+  btn.textContent = mostrar ? 'ocultar' : 'mostrar';
+}
+
+function toast(msg, erro = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (erro ? ' erro' : '');
+  setTimeout(() => t.className = 'toast', 3500);
+}
+
+// ── Start ─────────────────────────────────────────────────────────────────
+init();
+}
+
+function mostrarErroLogin(msg) {
+  const err = document.getElementById('login-error');
+  err.textContent = msg; err.classList.add('show');
+}
+
+// ── Carregar app ──────────────────────────────────────────────────────────
+async function carregarApp() {
+  await carregarPerfil();
+  atualizarUI();
+  await carregarMissoes();
   mostrarApp();
 }
 
@@ -706,17 +1211,6 @@ async function carregarPerfil() {
   document.getElementById('pf-email').textContent  = usuarioAtual.email || '';
 }
 
-function corDoCargo(cargo) {
-  const c = (cargo || '').toLowerCase();
-  if (c.includes('diretor'))                                     return '#D4A820';
-  if (c.includes('médico') || c.includes('medico') || c.includes('dr')) return '#78BE20';
-  if (c.includes('enfermeiro') || c.includes('enf'))            return '#29B6C8';
-  if (c.includes('regulador'))                                   return '#E07820';
-  if (c.includes('administrativo') || c.includes('adm'))        return '#7C3AED';
-  if (c.includes('piloto'))                                      return '#94a3b8';
-  return '#78BE20';
-}
-
 function atualizarUI() {
   const nome  = perfilAtual.nome  || 'Médico';
   const cargo = perfilAtual.cargo || 'Médico';
@@ -725,16 +1219,6 @@ function atualizarUI() {
   document.getElementById('topbar-cargo').textContent = cargo;
   document.getElementById('dash-nome').textContent    = nome;
   document.getElementById('dash-cargo').textContent   = cargo;
-
-  const cor = corDoCargo(cargo);
-
-  const badge = document.getElementById('topbar-cargo');
-  badge.style.background  = cor + '20';
-  badge.style.borderColor = cor + '40';
-  badge.style.color       = cor;
-
-  document.getElementById('dash-cargo').style.color = cor;
-  document.getElementById('kpi-missoes').style.color = cor;
 
   // Data formatada com maiúscula
   const agora = new Date();

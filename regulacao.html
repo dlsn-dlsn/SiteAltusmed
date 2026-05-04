@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AltusMed · Nova Regulação</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -126,15 +127,24 @@
   .o2-duracao-label { font-size: .85rem; color: var(--text-m); font-weight: 500; }
   .o2-duracao-value { font-size: 1rem; font-weight: 700; color: var(--amber); }
 
-  /* ── BOTÃO FINALIZAR ── */
+  /* ── BOTÕES AÇÃO ── */
+  .btn-area { display: flex; gap: .75rem; margin-top: 1.5rem; }
   .btn-finalizar {
-    width: 100%; background: var(--green); color: #0f1e35;
+    flex: 1; background: var(--green); color: #0f1e35;
     border: none; border-radius: var(--radius); padding: 1rem;
     font-family: var(--ff); font-size: 1rem; font-weight: 700;
-    cursor: pointer; transition: background .2s; margin-top: 1.5rem;
+    cursor: pointer; transition: background .2s;
   }
   .btn-finalizar:hover { background: var(--green2); color: white; }
   .btn-finalizar:disabled { opacity: .6; cursor: not-allowed; }
+  .btn-pdf {
+    background: var(--navy2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1rem 1.25rem;
+    font-family: var(--ff); font-size: .95rem; font-weight: 700;
+    color: var(--text); cursor: pointer; transition: all .2s;
+    display: none; align-items: center; gap: .5rem; white-space: nowrap;
+  }
+  .btn-pdf:hover { border-color: var(--green); color: var(--green); }
 
   /* ── TOAST ── */
   .toast {
@@ -407,10 +417,15 @@
       </div>
     </div>
 
-    <!-- Botão finalizar -->
-    <button class="btn-finalizar" id="btn-finalizar" onclick="finalizarRegulacao()">
-      ✓ Finalizar e Criar Missão
-    </button>
+    <!-- Botões de ação -->
+    <div class="btn-area">
+      <button class="btn-finalizar" id="btn-finalizar" onclick="finalizarRegulacao()">
+        ✓ Finalizar e Criar Missão
+      </button>
+      <button class="btn-pdf" id="btn-pdf" onclick="exportarPDF()">
+        ⬇ Exportar PDF
+      </button>
+    </div>
 
     <div style="height:3rem;"></div>
   </div><!-- /main -->
@@ -424,8 +439,9 @@ const SUPA_KEY = 'sb_publishable_GetcnIgIEe6owbOQea2HOg_0MuxtLdP';
 const { createClient } = supabase;
 const db = createClient(SUPA_URL, SUPA_KEY);
 
-let usuarioAtual = null;
-let perfilAtual  = {};
+let usuarioAtual   = null;
+let perfilAtual    = {};
+let regulacaoSalva = null;
 
 // ── Auth ──────────────────────────────────────────────────────────────
 async function init() {
@@ -601,12 +617,168 @@ async function finalizarRegulacao() {
       await db.from('regulacoes').update({ missao_id: missao.id }).eq('id', reg.id);
     }
 
+    regulacaoSalva = regulacaoData;
     toast('✓ Regulação e missão criadas com sucesso!');
-    setTimeout(() => { window.location.href = 'restrito.html#missoes'; }, 2000);
+    btn.textContent = '✓ Salvo — volte ao painel ou exporte o PDF';
+    document.getElementById('btn-pdf').style.display = 'inline-flex';
   } catch(e) {
     toast('Erro ao salvar: ' + (e.message || 'verifique os dados e tente novamente.'), true);
     btn.disabled = false; btn.textContent = '✓ Finalizar e Criar Missão';
   }
+}
+
+// ── Exportar PDF ──────────────────────────────────────────────────────
+function exportarPDF() {
+  if (!regulacaoSalva) { toast('Salve a regulação antes de exportar.', true); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const d  = regulacaoSalva;
+  const ml = 20, pw = 210, cw = pw - ml * 2;
+  let y    = 20;
+  const now = new Date().toLocaleString('pt-BR');
+
+  function checkPage() {
+    if (y > 270) { doc.addPage(); y = 20; }
+  }
+
+  function secHeader(title) {
+    checkPage();
+    y += 3;
+    doc.setFillColor(26, 46, 74);
+    doc.rect(ml, y, cw, 7, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(255, 255, 255);
+    doc.text(title, ml + 3, y + 5);
+    y += 10;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(25, 25, 25);
+  }
+
+  function row(label, value) {
+    if (value === null || value === undefined || value === '') return;
+    checkPage();
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(90, 90, 90);
+    doc.text(label, ml, y);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(20, 20, 20);
+    doc.text(String(value), ml + 52, y);
+    y += 6;
+  }
+
+  function multiRow(label, text) {
+    if (!text) return;
+    checkPage();
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(90, 90, 90);
+    doc.text(label, ml, y);
+    y += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(20, 20, 20);
+    doc.splitTextToSize(text, cw - 4).forEach(l => {
+      checkPage();
+      doc.text(l, ml + 2, y); y += 5;
+    });
+    y += 2;
+  }
+
+  // Cabeçalho
+  doc.setFillColor(15, 30, 53);
+  doc.rect(0, 0, pw, 28, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(20);
+  doc.setTextColor(120, 190, 32);
+  doc.text('ALTUSMED', ml, 13);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(180, 200, 220);
+  doc.text('Regulacao Aeromédica', ml, 21);
+  doc.setFontSize(8);
+  doc.setTextColor(120, 140, 160);
+  doc.text('Gerado em: ' + now, pw - ml, 21, { align: 'right' });
+
+  y = 36;
+
+  // Código da missão
+  doc.setFillColor(235, 243, 255);
+  doc.setDrawColor(26, 46, 74);
+  doc.roundedRect(ml, y, cw, 10, 2, 2, 'FD');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.setTextColor(26, 46, 74);
+  doc.text('Missão: ' + d.codigo, pw / 2, y + 7, { align: 'center' });
+  y += 16;
+
+  // Logística
+  secHeader('LOGISTICA');
+  row('Origem', d.origem);
+  row('Destino', d.destino);
+  row('Aeronave', d.aeronave);
+  row('Tempo de voo', d.tempo_voo);
+  row('Hora de decolagem', d.hora_decolagem);
+
+  // Paciente
+  secHeader('PACIENTE');
+  row('Nome', d.paciente_nome);
+  row('Idade', d.paciente_idade ? d.paciente_idade + ' anos' : null);
+  row('Sexo', d.paciente_sexo);
+  row('NACA', d.naca);
+  multiRow('Diagnóstico', d.diagnostico);
+
+  // Sinais Vitais
+  secHeader('SINAIS VITAIS');
+  row('PA (mmHg)', d.pa);
+  row('FC', d.fc ? d.fc + ' bpm' : null);
+  row('FR', d.fr ? d.fr + ' rpm' : null);
+  row('SpO2', d.spo2 ? d.spo2 + ' %' : null);
+  row('Temperatura', d.temp ? d.temp + ' °C' : null);
+  if (d.gcs_total) {
+    row('GCS Total', d.gcs_total + ' / 15');
+    row('GCS  O / V / M', d.gcs_o + ' / ' + d.gcs_v + ' / ' + d.gcs_m);
+  }
+
+  // O2
+  if (d.o2_ativo) {
+    secHeader('OXIGENIO');
+    row('Flow', d.o2_flow ? d.o2_flow + ' L/min' : null);
+    row('Cilindro', d.o2_cilindro);
+    if (d.o2_duracao) {
+      const h = Math.floor(d.o2_duracao / 60), m = d.o2_duracao % 60;
+      row('Duração estimada', h > 0 ? h + 'h ' + m + 'min' : m + ' min');
+    }
+  }
+
+  // Conduta
+  if (d.conduta || d.medicamentos) {
+    secHeader('CONDUTA E MEDICAMENTOS');
+    multiRow('Conduta', d.conduta);
+    multiRow('Medicamentos', d.medicamentos);
+  }
+
+  // Rodapé
+  const footY = Math.max(y + 15, 262);
+  doc.setDrawColor(180, 180, 180);
+  doc.line(ml, footY, pw - ml, footY);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(60, 60, 60);
+  const medicoNome = perfilAtual.nome || usuarioAtual?.email || '';
+  const crm = perfilAtual.crm ? '  |  CRM-PA ' + perfilAtual.crm : '';
+  doc.text('Médico Regulador: ' + medicoNome + crm, ml, footY + 5);
+  doc.setDrawColor(100, 100, 100);
+  doc.line(ml, footY + 14, ml + 72, footY + 14);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(100, 100, 100);
+  doc.text('Assinatura do Médico Regulador', ml, footY + 18);
+
+  doc.save('AltusMed-' + d.codigo + '.pdf');
 }
 
 // ── Start ─────────────────────────────────────────────────────────────

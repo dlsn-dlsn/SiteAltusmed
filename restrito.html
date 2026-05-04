@@ -710,6 +710,17 @@ async function carregarPerfil() {
   document.getElementById('pf-email').textContent  = usuarioAtual.email || '';
 }
 
+function corDoCargo(cargo) {
+  const c = (cargo || '').toLowerCase();
+  if (c.includes('diretor'))                                     return '#D4A820';
+  if (c.includes('médico') || c.includes('medico') || c.includes('dr')) return '#78BE20';
+  if (c.includes('enfermeiro') || c.includes('enf'))            return '#29B6C8';
+  if (c.includes('regulador'))                                   return '#E07820';
+  if (c.includes('administrativo') || c.includes('adm'))        return '#7C3AED';
+  if (c.includes('piloto'))                                      return '#94a3b8';
+  return '#78BE20';
+}
+
 function atualizarUI() {
   const nome  = perfilAtual.nome  || 'Médico';
   const cargo = perfilAtual.cargo || 'Médico';
@@ -718,6 +729,16 @@ function atualizarUI() {
   document.getElementById('topbar-cargo').textContent = cargo;
   document.getElementById('dash-nome').textContent    = nome;
   document.getElementById('dash-cargo').textContent   = cargo;
+
+  const cor = corDoCargo(cargo);
+
+  const badge = document.getElementById('topbar-cargo');
+  badge.style.background  = cor + '20';
+  badge.style.borderColor = cor + '40';
+  badge.style.color       = cor;
+
+  document.getElementById('dash-cargo').style.color = cor;
+  document.getElementById('kpi-missoes').style.color = cor;
 
   // Data formatada com maiúscula
   const agora = new Date();

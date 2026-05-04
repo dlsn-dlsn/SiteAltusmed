@@ -40,6 +40,7 @@ const ROLES = {
   medico:    { pt: 'Médico Aeromédico',     en: 'Aeromedical Physician',  color: '#78BE20', colorD: '#5a9018', badge: 'MED' },
   enfermeiro:{ pt: 'Enfermeiro Aeromédico', en: 'Aeromedical Nurse',      color: '#29B6C8', colorD: '#1a7f8c', badge: 'ENF' },
   regulador: { pt: 'Regulador de Missão',   en: 'Mission Regulator',      color: '#E07820', colorD: '#a05510', badge: 'REG' },
+  administrativo: { pt: 'Administrativo', en: 'Administrative Staff', color: '#7C3AED', colorD: '#5b21b6', badge: 'ADM' },
 };
 
 // ECG svg
@@ -441,7 +442,8 @@ function App() {
     { role: 'diretor',    name: 'Dr. Davi Lucas S. Nunes', crm: 'CRM-PA XXXXX', blood: 'B+', phone: '+55 (91) 9XXXX-XXXX', email: 'davi@altusmed.com.br', id: '#0001' },
     { role: 'medico',     name: 'Dr. [Nome do Médico]',     crm: 'CRM-PA XXXXX', blood: 'O+', phone: '+55 (91) 9XXXX-XXXX', email: 'medico@altusmed.com.br', id: '#0012' },
     { role: 'enfermeiro', name: 'Enf. [Nome do Enfermeiro]',crm: 'COREN-PA XXXXX',blood: 'A+',phone: '+55 (91) 9XXXX-XXXX', email: 'enf@altusmed.com.br', id: '#0023' },
-    { role: 'regulador',  name: '[Nome do Regulador]',       crm: '',             blood: 'AB+',phone: '+55 (91) 9XXXX-XXXX', email: 'regulacao@altusmed.com.br', id: '#0034' },
+    { role: 'regulador',     name: '[Nome do Regulador]',       crm: '',             blood: 'AB+',phone: '+55 (91) 9XXXX-XXXX', email: 'regulacao@altusmed.com.br', id: '#0034' },
+    { role: 'administrativo', name: '[Nome do Administrativo]',  crm: '',             blood: 'O+', phone: '+55 (91) 9XXXX-XXXX', email: 'adm@altusmed.com.br',       id: '#0045' },
   ];
 
   return (

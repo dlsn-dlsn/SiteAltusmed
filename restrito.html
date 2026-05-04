@@ -238,6 +238,21 @@
   }
   .perfil-field input:focus, .perfil-field select:focus { border-color: var(--green); }
 
+  #modal-encerramento .perfil-field input,
+  #modal-encerramento .perfil-field select,
+  #modal-encerramento .perfil-field textarea {
+    background: rgba(255,255,255,.05); border: 1px solid var(--border);
+    border-radius: 8px; padding: .65rem .9rem;
+    color: var(--green); font-family: var(--ff); font-size: .9rem;
+    outline: none; transition: border-color .2s; width: 100%;
+    -webkit-appearance: none;
+  }
+  #modal-encerramento .perfil-field input:focus,
+  #modal-encerramento .perfil-field select:focus,
+  #modal-encerramento .perfil-field textarea:focus { border-color: var(--green); }
+  #modal-encerramento .perfil-field select option { background: var(--navy2); }
+  #modal-encerramento .perfil-field textarea { resize: vertical; }
+
   .btn-salvar {
     background: var(--green); color: #0f1e35;
     border: none; border-radius: 8px; padding: .7rem 1.75rem;

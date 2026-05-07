@@ -497,6 +497,7 @@
       <div class="page-nav-item" id="nav-regulacao" onclick="window.location.href='regulacao.html'" style="display:none;">🩺 Regulação</div>
       <div class="page-nav-item" id="nav-perfil" onclick="irPara('perfil')">Meu Perfil</div>
       <div class="page-nav-item" id="nav-usuarios" onclick="irPara('usuarios')" style="display:none;">👥 Usuários</div>
+      <div class="page-nav-item" id="nav-financeiro" onclick="irPara('financeiro')" style="display:none;">💰 Financeiro</div>
     </div>
 
     <!-- ── DASHBOARD ── -->
@@ -548,6 +549,31 @@
                   </td></tr>
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Widget Meus Voos (prestadores) -->
+      <div class="card" id="widget-meus-voos" style="display:none;">
+        <div class="card-head"><h3>Meus Voos</h3></div>
+        <div class="card-body">
+          <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);gap:.75rem;">
+            <div class="kpi-card verde">
+              <div class="kpi-valor" id="mv-km-mes">—</div>
+              <div class="kpi-label">Km Este Mês</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-valor" id="mv-km-3m">—</div>
+              <div class="kpi-label">Km Últimos 3 Meses</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-valor" id="mv-km-ano">—</div>
+              <div class="kpi-label">Km Este Ano</div>
+            </div>
+            <div class="kpi-card amber">
+              <div class="kpi-valor" id="mv-missoes-mes">—</div>
+              <div class="kpi-label">Missões Este Mês</div>
             </div>
           </div>
         </div>
@@ -725,6 +751,126 @@
     <!-- Página: Regulação (redireciona para página standalone) -->
     <div class="page" id="page-regulacao" style="height:calc(100vh - 120px);"></div>
 
+    <!-- ── FINANCEIRO (admin / administrativo) ── -->
+    <div class="page" id="page-financeiro">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+        <div>
+          <div style="font-size:1.3rem;font-weight:700;">Financeiro</div>
+          <div style="font-size:.85rem;color:var(--text-m);margin-top:.25rem;">Gestão de pagamentos e configurações</div>
+        </div>
+        <div style="display:flex;gap:.5rem;align-items:center;">
+          <select id="fin-mes" style="background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:6px;padding:.4rem .75rem;color:var(--text);font-family:var(--ff);font-size:.85rem;">
+            <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+            <option value="3">Março</option><option value="4">Abril</option>
+            <option value="5">Maio</option><option value="6">Junho</option>
+            <option value="7">Julho</option><option value="8">Agosto</option>
+            <option value="9">Setembro</option><option value="10">Outubro</option>
+            <option value="11">Novembro</option><option value="12">Dezembro</option>
+          </select>
+          <input type="number" id="fin-ano" value="" min="2020" max="2099"
+            style="width:80px;background:rgba(255,255,255,.05);border:1px solid var(--border);
+            border-radius:6px;padding:.4rem .75rem;color:var(--text);font-family:var(--ff);font-size:.85rem;">
+          <button class="btn-primary" onclick="gerarFechamento()">Gerar Fechamento</button>
+        </div>
+      </div>
+
+      <!-- Sub-abas -->
+      <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:1.5rem;">
+        <button id="fin-tab-resumo" onclick="finTab('resumo')"
+          style="background:none;border:none;border-bottom:2px solid var(--green);
+          color:var(--green);font-family:var(--ff);font-size:.88rem;font-weight:600;
+          padding:.5rem 1.25rem;cursor:pointer;">Resumo</button>
+        <button id="fin-tab-prestadores" onclick="finTab('prestadores')"
+          style="background:none;border:none;border-bottom:2px solid transparent;
+          color:var(--text-m);font-family:var(--ff);font-size:.88rem;font-weight:600;
+          padding:.5rem 1.25rem;cursor:pointer;">Prestadores</button>
+        <button id="fin-tab-config" onclick="finTab('config')"
+          style="background:none;border:none;border-bottom:2px solid transparent;
+          color:var(--text-m);font-family:var(--ff);font-size:.88rem;font-weight:600;
+          padding:.5rem 1.25rem;cursor:pointer;display:none;">Configurações</button>
+      </div>
+
+      <!-- Sub-aba: Resumo -->
+      <div id="fin-panel-resumo">
+        <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr);gap:.75rem;margin-bottom:1.5rem;">
+          <div class="kpi-card verde">
+            <div class="kpi-valor" id="fin-total-missoes">—</div>
+            <div class="kpi-label">Missões no Período</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-valor" id="fin-total-km">—</div>
+            <div class="kpi-label">Total Km Voados</div>
+          </div>
+          <div class="kpi-card amber">
+            <div class="kpi-valor" id="fin-total-pagar">—</div>
+            <div class="kpi-label">Total a Pagar</div>
+          </div>
+          <div class="kpi-card verde">
+            <div class="kpi-valor" id="fin-total-pago">—</div>
+            <div class="kpi-label">Total Pago</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-valor" id="fin-total-pendente">—</div>
+            <div class="kpi-label">Total Pendente</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body" style="color:var(--text-m);font-size:.9rem;text-align:center;padding:2rem;"
+            id="fin-resumo-vazio">Selecione o período e clique em "Gerar Fechamento".</div>
+        </div>
+      </div>
+
+      <!-- Sub-aba: Prestadores -->
+      <div id="fin-panel-prestadores" style="display:none;">
+        <div class="card">
+          <div class="card-body" style="padding:0;">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nome</th><th>Cargo</th><th>Missões</th><th>Km</th>
+                    <th>Pernoites</th><th>Valor Total</th><th>Pago</th><th>Pendente</th><th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="fin-tbody-prestadores">
+                  <tr><td colspan="9" style="text-align:center;color:var(--text-m);padding:2rem;">
+                    Gere o fechamento para visualizar os prestadores.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub-aba: Configurações (admin only) -->
+      <div id="fin-panel-config" style="display:none;">
+        <div class="card" style="max-width:640px;">
+          <div class="card-head"><h3>Tabela de Valores</h3></div>
+          <div class="card-body">
+            <div style="font-size:.78rem;font-weight:700;color:var(--text-l);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.75rem;">Médico</div>
+            <div class="form-grid" style="margin-bottom:1.25rem;">
+              <div class="perfil-field"><label>Acionamento (R$)</label><input type="number" id="cfg-med-acion" step="0.01" min="0"></div>
+              <div class="perfil-field"><label>Km mínimo incluso</label><input type="number" id="cfg-med-km-min" min="0"></div>
+              <div class="perfil-field"><label>Excedente por km (R$)</label><input type="number" id="cfg-med-km-exc" step="0.01" min="0"></div>
+              <div class="perfil-field"><label>Pernoite (R$)</label><input type="number" id="cfg-med-pern" step="0.01" min="0"></div>
+            </div>
+            <div style="font-size:.78rem;font-weight:700;color:var(--text-l);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.75rem;">Enfermeiro</div>
+            <div class="form-grid" style="margin-bottom:1.25rem;">
+              <div class="perfil-field"><label>Acionamento (R$)</label><input type="number" id="cfg-enf-acion" step="0.01" min="0"></div>
+              <div class="perfil-field"><label>Km mínimo incluso</label><input type="number" id="cfg-enf-km-min" min="0"></div>
+              <div class="perfil-field"><label>Excedente por km (R$)</label><input type="number" id="cfg-enf-km-exc" step="0.01" min="0"></div>
+              <div class="perfil-field"><label>Pernoite (R$)</label><input type="number" id="cfg-enf-pern" step="0.01" min="0"></div>
+            </div>
+            <div style="font-size:.78rem;font-weight:700;color:var(--text-l);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.75rem;">Regulador</div>
+            <div class="form-grid" style="margin-bottom:1.5rem;">
+              <div class="perfil-field"><label>Valor por regulação (R$)</label><input type="number" id="cfg-reg-valor" step="0.01" min="0"></div>
+            </div>
+            <button class="btn-primary" onclick="salvarConfiguracoes()">Salvar Configurações</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /main -->
 </div><!-- /app -->
 
@@ -780,6 +926,191 @@ const SUPA_URL = 'https://hdovkmuwofvwpcyfkiih.supabase.co';
 const SUPA_KEY = 'sb_publishable_GetcnIgIEe6owbOQea2HOg_0MuxtLdP';
 const { createClient } = supabase;
 const db = createClient(SUPA_URL, SUPA_KEY);
+
+// ── Aeroportos + Trechos ──────────────────────────────────────────────────
+const AEROPORTOS_COORDS = {
+  'AUX':{nome:'Araguaína/TO',lat:-7.2283,lng:-48.2406},
+  'AJU':{nome:'Aracaju/SE',lat:-10.9840,lng:-37.0703},
+  'BRB':{nome:'Barreirinhas/MA',lat:-2.7456,lng:-42.8156},
+  'BEL':{nome:'Belém/PA',lat:-1.3792,lng:-48.4761},
+  'CNF':{nome:'Belo Horizonte/MG',lat:-19.6244,lng:-43.9719},
+  'BOA':{nome:'Boa Vista/RR',lat:2.8414,lng:-60.6922},
+  'BSB':{nome:'Brasília/DF',lat:-15.8711,lng:-47.9186},
+  'VCP':{nome:'Campinas/SP',lat:-23.0074,lng:-47.1345},
+  'CGR':{nome:'Campo Grande/MS',lat:-20.4687,lng:-54.6725},
+  'CAW':{nome:'Campos dos Goytacazes/RJ',lat:-21.6983,lng:-41.3017},
+  'CXJ':{nome:'Caxias do Sul/RS',lat:-29.1971,lng:-51.1875},
+  'CGB':{nome:'Cuiabá/MT',lat:-15.6531,lng:-56.1167},
+  'CWB':{nome:'Curitiba/PR',lat:-25.5285,lng:-49.1758},
+  'FLN':{nome:'Florianópolis/SC',lat:-27.6703,lng:-48.5525},
+  'FOR':{nome:'Fortaleza/CE',lat:-3.7762,lng:-38.5326},
+  'GYN':{nome:'Goiânia/GO',lat:-16.6320,lng:-49.2207},
+  'IMP':{nome:'Imperatriz/MA',lat:-5.5299,lng:-47.4600},
+  'JPA':{nome:'João Pessoa/PB',lat:-7.1458,lng:-34.9508},
+  'JOI':{nome:'Joinville/SC',lat:-26.2245,lng:-48.7975},
+  'LDB':{nome:'Londrina/PR',lat:-23.3336,lng:-51.1301},
+  'MCP':{nome:'Macapá/AP',lat:0.0507,lng:-51.0722},
+  'MCZ':{nome:'Maceió/AL',lat:-9.5108,lng:-35.7917},
+  'MAO':{nome:'Manaus/AM',lat:-3.0386,lng:-60.0497},
+  'MNX':{nome:'Manicoré/AM',lat:-5.8113,lng:-61.2783},
+  'MAB':{nome:'Marabá/PA',lat:-5.3686,lng:-49.1380},
+  'MDD':{nome:'Monte Dourado/PA',lat:-0.8978,lng:-52.6014},
+  'NAT':{nome:'Natal/RN',lat:-5.9114,lng:-35.2477},
+  'OYK':{nome:'Oiapoque/AP',lat:3.8547,lng:-51.7969},
+  'PMW':{nome:'Palmas/TO',lat:-10.2913,lng:-48.3569},
+  'PHB':{nome:'Parnaíba/PI',lat:-2.8944,lng:-41.7320},
+  'PIN':{nome:'Pinheiro/MA',lat:-2.5228,lng:-45.0828},
+  'POA':{nome:'Porto Alegre/RS',lat:-29.9944,lng:-51.1714},
+  'PVH':{nome:'Porto Velho/RO',lat:-8.7093,lng:-63.9023},
+  'REC':{nome:'Recife/PE',lat:-8.1264,lng:-34.9236},
+  'RBR':{nome:'Rio Branco/AC',lat:-9.8689,lng:-67.8981},
+  'GIG':{nome:'Rio de Janeiro/Galeão',lat:-22.8099,lng:-43.2506},
+  'SDU':{nome:'Rio de Janeiro/Santos Dumont',lat:-22.9105,lng:-43.1631},
+  'SSA':{nome:'Salvador/BA',lat:-12.9086,lng:-38.3225},
+  'STM':{nome:'Santarém/PA',lat:-2.4247,lng:-54.7858},
+  'SLZ':{nome:'São Luís/MA',lat:-2.5836,lng:-44.2341},
+  'CGH':{nome:'São Paulo/Congonhas',lat:-23.6261,lng:-46.6564},
+  'GRU':{nome:'São Paulo/Guarulhos',lat:-23.4356,lng:-46.4731},
+  'THE':{nome:'Teresina/PI',lat:-5.0599,lng:-42.8235},
+  'TIM':{nome:'Timon/MA',lat:-5.1942,lng:-42.8675},
+  'UDI':{nome:'Uberlândia/MG',lat:-18.8836,lng:-48.2253},
+  'VIX':{nome:'Vitória/ES',lat:-20.2581,lng:-40.2861}
+};
+
+function distanciaKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2-lat1) * Math.PI/180;
+  const dLng = (lng2-lng1) * Math.PI/180;
+  const a = Math.sin(dLat/2)*Math.sin(dLat/2) +
+    Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
+    Math.sin(dLng/2)*Math.sin(dLng/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+let trechoCont = 0;
+
+function addTrecho(orig='', dest='') {
+  const i = ++trechoCont;
+  const div = document.createElement('div');
+  div.id = 'trecho-' + i;
+  div.style.cssText = 'display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;';
+  div.innerHTML = `
+    <input type="text" id="tr-orig-${i}" value="${orig}"
+      placeholder="Origem (ex: BEL)"
+      style="flex:1;background:rgba(255,255,255,.05);
+      border:1px solid var(--border);border-radius:6px;
+      padding:.5rem .75rem;color:var(--text);
+      font-family:var(--ff);font-size:.85rem;outline:none;
+      text-transform:uppercase;"
+      oninput="this.value=this.value.toUpperCase();calcTrechos()">
+    <span style="color:var(--text-m);font-weight:700;">→</span>
+    <input type="text" id="tr-dest-${i}" value="${dest}"
+      placeholder="Destino (ex: CGH)"
+      style="flex:1;background:rgba(255,255,255,.05);
+      border:1px solid var(--border);border-radius:6px;
+      padding:.5rem .75rem;color:var(--text);
+      font-family:var(--ff);font-size:.85rem;outline:none;
+      text-transform:uppercase;"
+      oninput="this.value=this.value.toUpperCase();calcTrechos()">
+    <span id="tr-km-${i}" style="font-size:.78rem;
+      color:var(--green);min-width:60px;text-align:right;"></span>
+    <button onclick="document.getElementById('trecho-${i}').remove();calcTrechos()"
+      style="background:none;border:none;color:var(--text-m);
+      cursor:pointer;font-size:1rem;padding:2px 6px;">✕</button>`;
+  document.getElementById('trechos-container').appendChild(div);
+}
+
+function calcTrechos() {
+  let total = 0;
+  let validos = 0;
+  document.querySelectorAll('[id^="tr-orig-"]').forEach(el => {
+    const i = el.id.replace('tr-orig-','');
+    const orig = el.value.toUpperCase().trim();
+    const dest = document.getElementById('tr-dest-'+i)?.value.toUpperCase().trim();
+    const kmEl = document.getElementById('tr-km-'+i);
+    if (orig && dest && AEROPORTOS_COORDS[orig] && AEROPORTOS_COORDS[dest]) {
+      const km = distanciaKm(
+        AEROPORTOS_COORDS[orig].lat, AEROPORTOS_COORDS[orig].lng,
+        AEROPORTOS_COORDS[dest].lat, AEROPORTOS_COORDS[dest].lng
+      );
+      kmEl.textContent = km.toFixed(0) + ' km';
+      total += km;
+      validos++;
+    } else {
+      if(kmEl) kmEl.textContent = orig&&dest ? '⚠️' : '';
+    }
+  });
+  const res = document.getElementById('km-total-resultado');
+  if (total > 0) {
+    res.innerHTML = '<strong>Total: ' + total.toFixed(0) + ' km</strong>' +
+      ' em ' + validos + ' trecho(s)';
+    res.style.display = 'block';
+    document.getElementById('km-total-hidden').value = total.toFixed(2);
+  } else {
+    res.style.display = 'none';
+    document.getElementById('km-total-hidden').value = '0';
+  }
+}
+
+async function salvarTrechos(missaoId) {
+  const trechos = [];
+  let ordem = 1;
+  document.querySelectorAll('[id^="tr-orig-"]').forEach(el => {
+    const i = el.id.replace('tr-orig-','');
+    const orig = el.value.toUpperCase().trim();
+    const dest = document.getElementById('tr-dest-'+i)?.value.toUpperCase().trim();
+    if (orig && dest && AEROPORTOS_COORDS[orig] && AEROPORTOS_COORDS[dest]) {
+      const km = distanciaKm(
+        AEROPORTOS_COORDS[orig].lat, AEROPORTOS_COORDS[orig].lng,
+        AEROPORTOS_COORDS[dest].lat, AEROPORTOS_COORDS[dest].lng
+      );
+      trechos.push({
+        missao_id: missaoId,
+        ordem: ordem++,
+        origem_codigo: orig,
+        origem_nome: AEROPORTOS_COORDS[orig].nome,
+        origem_lat: AEROPORTOS_COORDS[orig].lat,
+        origem_lng: AEROPORTOS_COORDS[orig].lng,
+        destino_codigo: dest,
+        destino_nome: AEROPORTOS_COORDS[dest].nome,
+        destino_lat: AEROPORTOS_COORDS[dest].lat,
+        destino_lng: AEROPORTOS_COORDS[dest].lng,
+        distancia_km: km.toFixed(2)
+      });
+    }
+  });
+  if (trechos.length > 0) {
+    await db.from('trechos_missao').insert(trechos);
+  }
+}
+
+async function calcularValores(km, pernoites, missaoId) {
+  const { data: cfg } = await db
+    .from('config_financeiro').select('*').eq('id',1).single();
+  if (!cfg) return;
+
+  let valMed = cfg.medico_acionamento;
+  if (km > cfg.medico_km_minimo) {
+    valMed += (km - cfg.medico_km_minimo) * cfg.medico_km_excedente;
+  }
+  valMed += pernoites * cfg.medico_pernoite;
+
+  let valEnf = cfg.enfermeiro_acionamento;
+  if (km > cfg.enfermeiro_km_minimo) {
+    valEnf += (km - cfg.enfermeiro_km_minimo) * cfg.enfermeiro_km_excedente;
+  }
+  valEnf += pernoites * cfg.enfermeiro_pernoite;
+
+  const valReg = cfg.regulador_por_regulacao;
+
+  await db.from('missoes').update({
+    km_total: km,
+    pernoites: pernoites,
+    valor_medico: valMed.toFixed(2),
+    valor_enfermeiro: valEnf.toFixed(2),
+    valor_regulador: valReg
+  }).eq('id', missaoId);
+}
 
 // ── Estado ────────────────────────────────────────────────────────────────
 let usuarioAtual = null;
@@ -869,6 +1200,14 @@ async function carregarApp() {
   if (navReg) {
     const temAcesso = perfilAtual.is_admin || perfilAtual.cargo_tipo === 'regulador';
     navReg.style.display = temAcesso ? 'block' : 'none';
+  }
+  const navFin = document.getElementById('nav-financeiro');
+  if (navFin && (perfilAtual.is_admin || perfilAtual.cargo_tipo === 'administrativo')) {
+    navFin.style.display = 'block';
+  }
+  const tipo = perfilAtual.cargo_tipo || '';
+  if (tipo === 'medico' || tipo === 'diretor' || tipo === 'enfermeiro') {
+    carregarMeusVoos();
   }
   mostrarApp();
 
@@ -1217,6 +1556,243 @@ async function salvarMissao() {
   toast('✓ Missão registrada com sucesso!');
 }
 
+// ── Financeiro ────────────────────────────────────────────────────────────
+let mesAtual = null;
+let anoAtual = null;
+let _missoesPeriodo = [];
+
+function finTab(aba) {
+  ['resumo','prestadores','config'].forEach(a => {
+    document.getElementById('fin-panel-' + a).style.display = a === aba ? 'block' : 'none';
+    const btn = document.getElementById('fin-tab-' + a);
+    if (btn) {
+      btn.style.borderBottomColor = a === aba ? 'var(--green)' : 'transparent';
+      btn.style.color = a === aba ? 'var(--green)' : 'var(--text-m)';
+    }
+  });
+}
+
+function gerarFechamento() {
+  mesAtual = parseInt(document.getElementById('fin-mes').value);
+  anoAtual = parseInt(document.getElementById('fin-ano').value);
+  carregarFinanceiro(mesAtual, anoAtual);
+}
+
+async function carregarFinanceiro(mes, ano) {
+  const inicio = new Date(ano, mes-1, 1).toISOString();
+  const fim    = new Date(ano, mes, 0, 23, 59, 59).toISOString();
+
+  const { data: missoes } = await db.from('missoes')
+    .select('*')
+    .gte('created_at', inicio)
+    .lte('created_at', fim)
+    .eq('status', 'Concluída');
+
+  _missoesPeriodo = missoes || [];
+  renderizarResumoFinanceiro(_missoesPeriodo);
+  renderizarPrestadores(_missoesPeriodo);
+}
+
+function renderizarResumoFinanceiro(missoes) {
+  const totalKm    = missoes.reduce((s, m) => s + (parseFloat(m.km_total) || 0), 0);
+  const totalPagar = missoes.reduce((s, m) =>
+    s + (parseFloat(m.valor_medico)||0) + (parseFloat(m.valor_enfermeiro)||0) + (parseFloat(m.valor_regulador)||0), 0);
+  const totalPago  = missoes.reduce((s, m) => {
+    let v = 0;
+    if (m.pago_medico)     v += parseFloat(m.valor_medico)     || 0;
+    if (m.pago_enfermeiro) v += parseFloat(m.valor_enfermeiro) || 0;
+    if (m.pago_regulador)  v += parseFloat(m.valor_regulador)  || 0;
+    return s + v;
+  }, 0);
+  const pendente = totalPagar - totalPago;
+
+  const fmt = v => 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+  document.getElementById('fin-total-missoes').textContent  = missoes.length;
+  document.getElementById('fin-total-km').textContent       = totalKm.toFixed(0) + ' km';
+  document.getElementById('fin-total-pagar').textContent    = fmt(totalPagar);
+  document.getElementById('fin-total-pago').textContent     = fmt(totalPago);
+  document.getElementById('fin-total-pendente').textContent = fmt(pendente);
+  document.getElementById('fin-resumo-vazio').style.display = missoes.length ? 'none' : 'block';
+}
+
+function renderizarPrestadores(missoes) {
+  const mapa = {};
+  missoes.forEach(m => {
+    const adicionar = (id, nome, cargo, tipo, valorKey, pagoKey) => {
+      if (!id) return;
+      if (!mapa[id]) mapa[id] = { id, nome, cargo, tipo, missoes: [], kmTotal: 0, pernoites: 0, valorTotal: 0, valorPago: 0 };
+      const p = mapa[id];
+      p.missoes.push(m);
+      p.kmTotal   += parseFloat(m.km_total) || 0;
+      p.pernoites += parseInt(m.pernoites)  || 0;
+      const val  = parseFloat(m[valorKey])  || 0;
+      p.valorTotal += val;
+      if (m[pagoKey]) p.valorPago += val;
+    };
+    adicionar(m.medico_voo_id,     m.medico_voo_nome,     'Médico',      'medico',     'valor_medico',     'pago_medico');
+    adicionar(m.enfermeiro_voo_id, m.enfermeiro_voo_nome, 'Enfermeiro',  'enfermeiro', 'valor_enfermeiro', 'pago_enfermeiro');
+  });
+
+  const tb = document.getElementById('fin-tbody-prestadores');
+  const prestadores = Object.values(mapa);
+
+  if (!prestadores.length) {
+    tb.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--text-m);padding:2rem;">
+      Nenhum prestador com missões no período.</td></tr>`;
+    return;
+  }
+
+  const fmt = v => 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+  tb.innerHTML = prestadores.map(p => {
+    const pendente = p.valorTotal - p.valorPago;
+    const missaoRows = p.missoes.map(m => {
+      const val   = parseFloat(m['valor_' + p.tipo]) || 0;
+      const pago  = m['pago_' + p.tipo];
+      const badge = pago
+        ? `<span style="color:var(--green);font-size:.78rem;">✓ Pago</span>`
+        : `<button class="btn-sm" style="font-size:.75rem;padding:.2rem .6rem;"
+            onclick="pagarMissaoIndividual(${m.id},'${p.tipo}')">Pagar</button>`;
+      return `<tr style="background:rgba(255,255,255,.02);">
+        <td style="padding-left:2.5rem;font-size:.82rem;color:var(--text-m);">${m.codigo}</td>
+        <td style="font-size:.82rem;color:var(--text-m);">${(m.km_total||0)} km</td>
+        <td style="font-size:.82rem;color:var(--text-m);">${m.pernoites||0}</td>
+        <td style="font-size:.82rem;">${fmt(val)}</td>
+        <td></td><td></td><td>${badge}</td>
+      </tr>`;
+    }).join('');
+
+    return `<tr>
+      <td><strong>${p.nome || '—'}</strong></td>
+      <td>${p.cargo}</td>
+      <td>${p.missoes.length}</td>
+      <td>${p.kmTotal.toFixed(0)} km</td>
+      <td>${p.pernoites}</td>
+      <td>${fmt(p.valorTotal)}</td>
+      <td style="color:var(--green);">${fmt(p.valorPago)}</td>
+      <td style="color:var(--amber);">${fmt(pendente)}</td>
+      <td style="display:flex;gap:.4rem;flex-wrap:wrap;">
+        ${pendente > 0 ? `<button class="btn-primary btn-sm" style="font-size:.78rem;"
+          onclick="pagarPeriodo('${p.id}','${p.tipo}',${mesAtual},${anoAtual})">Pagar Período</button>` : ''}
+        <button class="btn-sm" style="font-size:.78rem;"
+          onclick="toggleMissoesDetalhes('det-${p.id}-${p.tipo}')">Ver Missões</button>
+      </td>
+    </tr>
+    <tr id="det-${p.id}-${p.tipo}" style="display:none;">
+      <td colspan="9" style="padding:0;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr style="background:rgba(255,255,255,.03);">
+              <th style="padding:.4rem 2.5rem;text-align:left;font-size:.78rem;">Missão</th>
+              <th style="text-align:left;font-size:.78rem;">Km</th>
+              <th style="text-align:left;font-size:.78rem;">Pernoites</th>
+              <th style="text-align:left;font-size:.78rem;">Valor</th>
+              <th colspan="3"></th>
+            </tr>
+          </thead>
+          <tbody>${missaoRows}</tbody>
+        </table>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function toggleMissoesDetalhes(rowId) {
+  const row = document.getElementById(rowId);
+  if (row) row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+}
+
+async function pagarPeriodo(prestadorId, tipo, mes, ano) {
+  const inicio = new Date(ano, mes-1, 1).toISOString();
+  const fim    = new Date(ano, mes, 0, 23, 59, 59).toISOString();
+  const agora  = new Date().toISOString();
+  const campo  = 'pago_' + tipo;
+  const dataC  = 'data_pagamento_' + tipo;
+  const idC    = tipo === 'medico' ? 'medico_voo_id' : 'enfermeiro_voo_id';
+
+  await db.from('missoes').update({ [campo]: true, [dataC]: agora })
+    .eq(idC, prestadorId)
+    .gte('created_at', inicio).lte('created_at', fim)
+    .eq('status', 'Concluída').eq(campo, false);
+
+  toast('✓ Pagamento registrado!');
+  carregarFinanceiro(mesAtual, anoAtual);
+}
+
+async function pagarMissaoIndividual(missaoId, tipo) {
+  const campo = 'pago_' + tipo;
+  const dataC = 'data_pagamento_' + tipo;
+  await db.from('missoes').update({ [campo]: true, [dataC]: new Date().toISOString() })
+    .eq('id', missaoId);
+  toast('✓ Pagamento registrado!');
+  carregarFinanceiro(mesAtual, anoAtual);
+}
+
+async function carregarConfiguracoes() {
+  const { data: cfg } = await db.from('config_financeiro').select('*').eq('id', 1).single();
+  if (!cfg) return;
+  document.getElementById('cfg-med-acion').value   = cfg.medico_acionamento      || 0;
+  document.getElementById('cfg-med-km-min').value  = cfg.medico_km_minimo        || 0;
+  document.getElementById('cfg-med-km-exc').value  = cfg.medico_km_excedente     || 0;
+  document.getElementById('cfg-med-pern').value    = cfg.medico_pernoite         || 0;
+  document.getElementById('cfg-enf-acion').value   = cfg.enfermeiro_acionamento  || 0;
+  document.getElementById('cfg-enf-km-min').value  = cfg.enfermeiro_km_minimo    || 0;
+  document.getElementById('cfg-enf-km-exc').value  = cfg.enfermeiro_km_excedente || 0;
+  document.getElementById('cfg-enf-pern').value    = cfg.enfermeiro_pernoite     || 0;
+  document.getElementById('cfg-reg-valor').value   = cfg.regulador_por_regulacao || 0;
+}
+
+async function salvarConfiguracoes() {
+  const cfg = {
+    medico_acionamento:      parseFloat(document.getElementById('cfg-med-acion').value)   || 0,
+    medico_km_minimo:        parseInt(document.getElementById('cfg-med-km-min').value)    || 0,
+    medico_km_excedente:     parseFloat(document.getElementById('cfg-med-km-exc').value)  || 0,
+    medico_pernoite:         parseFloat(document.getElementById('cfg-med-pern').value)    || 0,
+    enfermeiro_acionamento:  parseFloat(document.getElementById('cfg-enf-acion').value)   || 0,
+    enfermeiro_km_minimo:    parseInt(document.getElementById('cfg-enf-km-min').value)    || 0,
+    enfermeiro_km_excedente: parseFloat(document.getElementById('cfg-enf-km-exc').value)  || 0,
+    enfermeiro_pernoite:     parseFloat(document.getElementById('cfg-enf-pern').value)    || 0,
+    regulador_por_regulacao: parseFloat(document.getElementById('cfg-reg-valor').value)   || 0,
+    atualizado_por: usuarioAtual.id,
+    updated_at: new Date().toISOString()
+  };
+  const { error } = await db.from('config_financeiro').update(cfg).eq('id', 1);
+  if (error) { toast('Erro ao salvar.', true); return; }
+  toast('✓ Configurações salvas!');
+}
+
+// ── Meus Voos (widget prestador) ──────────────────────────────────────────
+async function carregarMeusVoos() {
+  const agora     = new Date();
+  const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString();
+  const inicio3m  = new Date(agora.getFullYear(), agora.getMonth() - 2, 1).toISOString();
+  const inicioAno = new Date(agora.getFullYear(), 0, 1).toISOString();
+  const uid       = usuarioAtual.id;
+
+  const buscar = async (filtro) => {
+    const q1 = db.from('missoes').select('km_total').eq('medico_voo_id', uid).eq('status', 'Concluída').gte('created_at', filtro);
+    const q2 = db.from('missoes').select('km_total').eq('enfermeiro_voo_id', uid).eq('status', 'Concluída').gte('created_at', filtro);
+    const [r1, r2] = await Promise.all([q1, q2]);
+    const todos = [...(r1.data||[]), ...(r2.data||[])];
+    return todos;
+  };
+
+  const [mesMissoes, tms3m, tmsAno] = await Promise.all([
+    buscar(inicioMes),
+    buscar(inicio3m),
+    buscar(inicioAno)
+  ]);
+
+  const km = arr => arr.reduce((s, m) => s + (parseFloat(m.km_total)||0), 0);
+
+  document.getElementById('mv-km-mes').textContent      = km(mesMissoes).toFixed(0) + ' km';
+  document.getElementById('mv-km-3m').textContent       = km(tms3m).toFixed(0)      + ' km';
+  document.getElementById('mv-km-ano').textContent      = km(tmsAno).toFixed(0)     + ' km';
+  document.getElementById('mv-missoes-mes').textContent = mesMissoes.length;
+  document.getElementById('widget-meus-voos').style.display = 'block';
+}
+
 // ── Navegação ─────────────────────────────────────────────────────────────
 function irPara(pagina) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -1224,6 +1800,17 @@ function irPara(pagina) {
   document.getElementById('page-' + pagina).classList.add('active');
   document.getElementById('nav-'  + pagina).classList.add('active');
   if (pagina === 'usuarios') carregarUsuarios();
+  if (pagina === 'financeiro') {
+    const agora = new Date();
+    mesAtual = mesAtual || (agora.getMonth() + 1);
+    anoAtual = anoAtual || agora.getFullYear();
+    document.getElementById('fin-mes').value = mesAtual;
+    document.getElementById('fin-ano').value = anoAtual;
+    if (perfilAtual.is_admin) {
+      document.getElementById('fin-tab-config').style.display = 'inline-block';
+      carregarConfiguracoes();
+    }
+  }
 }
 
 // ── UI helpers ────────────────────────────────────────────────────────────
@@ -1265,6 +1852,12 @@ function abrirEncerramento(id, codigo) {
   document.getElementById('enc-transferencia').value = '';
   document.getElementById('enc-desfecho').value = '';
   document.getElementById('enc-obs').value = '';
+  document.getElementById('trechos-container').innerHTML = '';
+  document.getElementById('km-total-resultado').style.display = 'none';
+  document.getElementById('km-total-hidden').value = '0';
+  document.getElementById('enc-pernoite-sim').value = '0';
+  document.getElementById('enc-pernoite-wrap').style.display = 'none';
+  document.getElementById('enc-pernoites').value = '1';
   document.getElementById('modal-encerramento').classList.add('show');
 }
 
@@ -1278,6 +1871,10 @@ async function encerrarMissao() {
   const transf   = document.getElementById('enc-transferencia').value;
   const desfecho = document.getElementById('enc-desfecho').value;
   const obs      = document.getElementById('enc-obs').value;
+  const kmTotal  = parseFloat(document.getElementById('km-total-hidden').value) || 0;
+  const pernoites = parseInt(document.getElementById('enc-pernoite-sim').value) === 1
+    ? parseInt(document.getElementById('enc-pernoites').value) || 0
+    : 0;
 
   if (!desfecho) { toast('Selecione o desfecho da missão.', true); return; }
 
@@ -1300,12 +1897,22 @@ async function encerrarMissao() {
     updated_at:         new Date().toISOString(),
   }).eq('missao_id', missaoEncerrandoId);
 
+  await salvarTrechos(missaoEncerrandoId);
+  await calcularValores(kmTotal, pernoites, missaoEncerrandoId);
+
   fecharEncerramento();
   await carregarMissoes();
   toast('✓ Missão encerrada com sucesso!');
 }
 
 // ── Start ─────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('enc-pernoite-sim')
+    .addEventListener('change', function() {
+      document.getElementById('enc-pernoite-wrap')
+        .style.display = this.value === '1' ? 'block' : 'none';
+    });
+});
 init();
 </script>
 
@@ -1313,6 +1920,41 @@ init();
   <div class="modal" style="max-width:520px;">
     <div class="modal-title">Encerrar Missão <span id="enc-codigo" style="color:var(--green);"></span></div>
     <div class="form-grid">
+      <div class="perfil-field full">
+        <input type="hidden" id="km-total-hidden" value="0">
+        <div style="margin-bottom:1.25rem;">
+          <div style="font-size:.78rem;font-weight:700;
+            color:var(--text-l);text-transform:uppercase;
+            letter-spacing:.05em;margin-bottom:.75rem;">
+            Trechos Voados
+          </div>
+          <div id="trechos-container"></div>
+          <button class="btn-outline btn-sm"
+            onclick="addTrecho()" style="margin-top:.5rem;">
+            + Adicionar Trecho
+          </button>
+          <div id="km-total-resultado" style="display:none;
+            background:rgba(120,190,32,.1);
+            border:1px solid rgba(120,190,32,.25);
+            border-radius:8px;padding:.6rem 1rem;
+            font-size:.87rem;color:var(--green);
+            margin-top:.75rem;">
+          </div>
+        </div>
+        <div class="perfil-field" style="margin-top:.75rem;">
+          <label>Houve pernoite remunerado?</label>
+          <select id="enc-pernoite-sim">
+            <option value="0">Não</option>
+            <option value="1">Sim</option>
+          </select>
+        </div>
+        <div id="enc-pernoite-wrap" style="display:none;">
+          <div class="perfil-field">
+            <label>Quantas noites?</label>
+            <input type="number" id="enc-pernoites" min="1" max="30" value="1">
+          </div>
+        </div>
+      </div>
       <div class="perfil-field">
         <label>Hora do Pouso</label>
         <input type="time" id="enc-pouso">

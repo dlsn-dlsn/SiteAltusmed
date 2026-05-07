@@ -375,6 +375,28 @@
       </div>
     </div>
 
+    <!-- SEÇÃO: TRECHOS DE VOO -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection('trechos')">
+        <span class="section-title">✈️ Trechos de Voo</span>
+        <span class="section-toggle" id="toggle-trechos">▶</span>
+      </div>
+      <div class="section-body hidden" id="body-trechos">
+        <input type="hidden" id="km-total-hidden" value="0">
+        <div id="trechos-container"></div>
+        <button class="btn-outline btn-sm" onclick="addTrecho()" style="margin-top:.5rem;">
+          + Adicionar Trecho
+        </button>
+        <div id="km-total-resultado" style="display:none;
+          background:rgba(120,190,32,.1);
+          border:1px solid rgba(120,190,32,.25);
+          border-radius:8px;padding:.6rem 1rem;
+          font-size:.87rem;color:var(--green);
+          margin-top:.75rem;">
+        </div>
+      </div>
+    </div>
+
     <!-- SEÇÃO 2: PACIENTE -->
     <div class="section">
       <div class="section-header" onclick="toggleSection('paciente')">
@@ -1370,6 +1392,161 @@ function coletarDrogas() {
     }).filter(d => d.droga && d.droga !== '');
 }
 
+// ── Trechos de Voo ────────────────────────────────────────────────────
+const AEROPORTOS_COORDS = {
+  'AUX':{nome:'Araguaína/TO',lat:-7.2283,lng:-48.2406},
+  'AJU':{nome:'Aracaju/SE',lat:-10.9840,lng:-37.0703},
+  'BRB':{nome:'Barreirinhas/MA',lat:-2.7456,lng:-42.8156},
+  'BEL':{nome:'Belém/PA',lat:-1.3792,lng:-48.4761},
+  'CNF':{nome:'Belo Horizonte/MG',lat:-19.6244,lng:-43.9719},
+  'BOA':{nome:'Boa Vista/RR',lat:2.8414,lng:-60.6922},
+  'BSB':{nome:'Brasília/DF',lat:-15.8711,lng:-47.9186},
+  'VCP':{nome:'Campinas/SP',lat:-23.0074,lng:-47.1345},
+  'CGR':{nome:'Campo Grande/MS',lat:-20.4687,lng:-54.6725},
+  'CAW':{nome:'Campos dos Goytacazes/RJ',lat:-21.6983,lng:-41.3017},
+  'CXJ':{nome:'Caxias do Sul/RS',lat:-29.1971,lng:-51.1875},
+  'CGB':{nome:'Cuiabá/MT',lat:-15.6531,lng:-56.1167},
+  'CWB':{nome:'Curitiba/PR',lat:-25.5285,lng:-49.1758},
+  'FLN':{nome:'Florianópolis/SC',lat:-27.6703,lng:-48.5525},
+  'FOR':{nome:'Fortaleza/CE',lat:-3.7762,lng:-38.5326},
+  'GYN':{nome:'Goiânia/GO',lat:-16.6320,lng:-49.2207},
+  'IMP':{nome:'Imperatriz/MA',lat:-5.5299,lng:-47.4600},
+  'JPA':{nome:'João Pessoa/PB',lat:-7.1458,lng:-34.9508},
+  'JOI':{nome:'Joinville/SC',lat:-26.2245,lng:-48.7975},
+  'LDB':{nome:'Londrina/PR',lat:-23.3336,lng:-51.1301},
+  'MCP':{nome:'Macapá/AP',lat:0.0507,lng:-51.0722},
+  'MCZ':{nome:'Maceió/AL',lat:-9.5108,lng:-35.7917},
+  'MAO':{nome:'Manaus/AM',lat:-3.0386,lng:-60.0497},
+  'MNX':{nome:'Manicoré/AM',lat:-5.8113,lng:-61.2783},
+  'MAB':{nome:'Marabá/PA',lat:-5.3686,lng:-49.1380},
+  'MDD':{nome:'Monte Dourado/PA',lat:-0.8978,lng:-52.6014},
+  'NAT':{nome:'Natal/RN',lat:-5.9114,lng:-35.2477},
+  'OYK':{nome:'Oiapoque/AP',lat:3.8547,lng:-51.7969},
+  'PMW':{nome:'Palmas/TO',lat:-10.2913,lng:-48.3569},
+  'PHB':{nome:'Parnaíba/PI',lat:-2.8944,lng:-41.7320},
+  'PIN':{nome:'Pinheiro/MA',lat:-2.5228,lng:-45.0828},
+  'POA':{nome:'Porto Alegre/RS',lat:-29.9944,lng:-51.1714},
+  'PVH':{nome:'Porto Velho/RO',lat:-8.7093,lng:-63.9023},
+  'REC':{nome:'Recife/PE',lat:-8.1264,lng:-34.9236},
+  'RBR':{nome:'Rio Branco/AC',lat:-9.8689,lng:-67.8981},
+  'GIG':{nome:'Rio de Janeiro/Galeão',lat:-22.8099,lng:-43.2506},
+  'SDU':{nome:'Rio de Janeiro/Santos Dumont',lat:-22.9105,lng:-43.1631},
+  'SSA':{nome:'Salvador/BA',lat:-12.9086,lng:-38.3225},
+  'STM':{nome:'Santarém/PA',lat:-2.4247,lng:-54.7858},
+  'SLZ':{nome:'São Luís/MA',lat:-2.5836,lng:-44.2341},
+  'CGH':{nome:'São Paulo/Congonhas',lat:-23.6261,lng:-46.6564},
+  'GRU':{nome:'São Paulo/Guarulhos',lat:-23.4356,lng:-46.4731},
+  'THE':{nome:'Teresina/PI',lat:-5.0599,lng:-42.8235},
+  'TIM':{nome:'Timon/MA',lat:-5.1942,lng:-42.8675},
+  'UDI':{nome:'Uberlândia/MG',lat:-18.8836,lng:-48.2253},
+  'VIX':{nome:'Vitória/ES',lat:-20.2581,lng:-40.2861}
+};
+
+function distanciaKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2-lat1) * Math.PI/180;
+  const dLng = (lng2-lng1) * Math.PI/180;
+  const a = Math.sin(dLat/2)*Math.sin(dLat/2) +
+    Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
+    Math.sin(dLng/2)*Math.sin(dLng/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+let trechoCont = 0;
+
+function addTrecho(orig='', dest='') {
+  const i = ++trechoCont;
+  const div = document.createElement('div');
+  div.id = 'trecho-' + i;
+  div.style.cssText = 'display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;';
+  div.innerHTML = `
+    <input type="text" id="tr-orig-${i}" value="${orig}"
+      placeholder="Origem (ex: BEL)"
+      style="flex:1;background:rgba(255,255,255,.05);
+      border:1px solid var(--border);border-radius:6px;
+      padding:.5rem .75rem;color:var(--text);
+      font-family:var(--ff);font-size:.85rem;outline:none;
+      text-transform:uppercase;"
+      oninput="this.value=this.value.toUpperCase();calcTrechos()">
+    <span style="color:var(--text-m);font-weight:700;">→</span>
+    <input type="text" id="tr-dest-${i}" value="${dest}"
+      placeholder="Destino (ex: CGH)"
+      style="flex:1;background:rgba(255,255,255,.05);
+      border:1px solid var(--border);border-radius:6px;
+      padding:.5rem .75rem;color:var(--text);
+      font-family:var(--ff);font-size:.85rem;outline:none;
+      text-transform:uppercase;"
+      oninput="this.value=this.value.toUpperCase();calcTrechos()">
+    <span id="tr-km-${i}" style="font-size:.78rem;
+      color:var(--green);min-width:60px;text-align:right;"></span>
+    <button onclick="document.getElementById('trecho-${i}').remove();calcTrechos()"
+      style="background:none;border:none;color:var(--text-m);
+      cursor:pointer;font-size:1rem;padding:2px 6px;">✕</button>`;
+  document.getElementById('trechos-container').appendChild(div);
+}
+
+function calcTrechos() {
+  let total = 0, validos = 0;
+  document.querySelectorAll('[id^="tr-orig-"]').forEach(el => {
+    const i    = el.id.replace('tr-orig-','');
+    const orig = el.value.toUpperCase().trim();
+    const dest = document.getElementById('tr-dest-'+i)?.value.toUpperCase().trim();
+    const kmEl = document.getElementById('tr-km-'+i);
+    if (orig && dest && AEROPORTOS_COORDS[orig] && AEROPORTOS_COORDS[dest]) {
+      const km = distanciaKm(
+        AEROPORTOS_COORDS[orig].lat, AEROPORTOS_COORDS[orig].lng,
+        AEROPORTOS_COORDS[dest].lat, AEROPORTOS_COORDS[dest].lng
+      );
+      if (kmEl) kmEl.textContent = km.toFixed(0) + ' km';
+      total += km; validos++;
+    } else {
+      if (kmEl) kmEl.textContent = orig && dest ? '⚠️' : '';
+    }
+  });
+  const res = document.getElementById('km-total-resultado');
+  if (total > 0) {
+    res.innerHTML = '<strong>Total: ' + total.toFixed(0) + ' km</strong> em ' + validos + ' trecho(s)';
+    res.style.display = 'block';
+    document.getElementById('km-total-hidden').value = total.toFixed(2);
+  } else {
+    res.style.display = 'none';
+    document.getElementById('km-total-hidden').value = '0';
+  }
+}
+
+async function salvarTrechos(missaoId, regulacaoId) {
+  const trechos = [];
+  let ordem = 1;
+  document.querySelectorAll('[id^="tr-orig-"]').forEach(el => {
+    const i    = el.id.replace('tr-orig-','');
+    const orig = el.value.toUpperCase().trim();
+    const dest = document.getElementById('tr-dest-'+i)?.value.toUpperCase().trim();
+    if (orig && dest && AEROPORTOS_COORDS[orig] && AEROPORTOS_COORDS[dest]) {
+      const km = distanciaKm(
+        AEROPORTOS_COORDS[orig].lat, AEROPORTOS_COORDS[orig].lng,
+        AEROPORTOS_COORDS[dest].lat, AEROPORTOS_COORDS[dest].lng
+      );
+      trechos.push({
+        missao_id:       missaoId,
+        regulacao_id:    regulacaoId,
+        ordem:           ordem++,
+        origem_codigo:   orig,
+        origem_nome:     AEROPORTOS_COORDS[orig].nome,
+        origem_lat:      AEROPORTOS_COORDS[orig].lat,
+        origem_lng:      AEROPORTOS_COORDS[orig].lng,
+        destino_codigo:  dest,
+        destino_nome:    AEROPORTOS_COORDS[dest].nome,
+        destino_lat:     AEROPORTOS_COORDS[dest].lat,
+        destino_lng:     AEROPORTOS_COORDS[dest].lng,
+        distancia_km:    km.toFixed(2)
+      });
+    }
+  });
+  if (trechos.length > 0) {
+    await db.from('trechos_missao').insert(trechos);
+  }
+}
+
 // ── Toast ─────────────────────────────────────────────────────────────
 function toast(msg, erro = false) {
   const t = document.getElementById('toast');
@@ -1515,6 +1692,8 @@ async function finalizarRegulacao() {
       .insert(regulacaoData).select('id').single();
     if (regErr) throw regErr;
 
+    const kmTotal = parseFloat(document.getElementById('km-total-hidden').value) || 0;
+
     const { data: missao, error: missErr } = await db.from('missoes').insert({
       codigo,
       medico_id:      usuarioAtual.id,
@@ -1530,11 +1709,17 @@ async function finalizarRegulacao() {
       hora_pouso:     null,
       hora_transferencia: null,
       desfecho:       null,
+      km_total:       kmTotal > 0 ? kmTotal : null,
+      medico_voo_id:  medicoVooId,
+      medico_voo_nome: medicoVooNome,
+      enfermeiro_voo_id: enfermeiroVooId,
+      enfermeiro_voo_nome: enfermeiroNome,
     }).select('id').single();
     if (missErr) throw missErr;
 
     if (reg?.id && missao?.id) {
       await db.from('regulacoes').update({ missao_id: missao.id }).eq('id', reg.id);
+      await salvarTrechos(missao.id, reg.id);
     }
 
     regulacaoSalva = regulacaoData;

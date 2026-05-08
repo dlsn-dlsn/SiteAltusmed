@@ -2113,69 +2113,137 @@ async function confirmarFechamento() {
   }
 }
 
-function exportarFechamentoPDF() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  const mes = document.getElementById('fin-mes').value;
-  const ano = document.getElementById('fin-ano').value;
-  const nomesMes = ['','Janeiro','Fevereiro','Marco','Abril',
-    'Maio','Junho','Julho','Agosto','Setembro','Outubro',
-    'Novembro','Dezembro'];
+async function exportarFechamentoPDF() {
+  try {
+    const { jsPDF } = window.jspdf;
+    if (!jsPDF) { toast('Erro: jsPDF nao carregado.', true); return; }
 
-  // Cabecalho
-  doc.setFillColor(15, 30, 53);
-  doc.rect(0, 0, 210, 28, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  doc.text('ALTUSMED - Fechamento Financeiro', 14, 12);
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.text('Periodo: ' + nomesMes[parseInt(mes)] + '/' + ano, 14, 20);
-  doc.text('Gerado em: ' + new Date().toLocaleDateString('pt-BR'), 140, 20);
+    const doc      = new jsPDF();
+    const mes      = mesAtual;
+    const ano      = anoAtual;
+    const nomesMes = ['','Janeiro','Fevereiro','Marco','Abril',
+      'Maio','Junho','Julho','Agosto','Setembro','Outubro',
+      'Novembro','Dezembro'];
 
-  doc.setTextColor(0, 0, 0);
-  let y = 38;
+    const inicio = new Date(ano, mes - 1, 1).toISOString();
+    const fim    = new Date(ano, mes, 0, 23, 59, 59).toISOString();
 
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Prestadores', 14, y); y += 8;
+    const { data: missoes } = await db.from('missoes')
+      .select('*')
+      .eq('status', 'Concluída')
+      .or('deletado.is.null,deletado.eq.false')
+      .gte('created_at', inicio)
+      .lte('created_at', fim);
 
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
+    const lista = missoes || [];
 
-  const rows = document.querySelectorAll('#fin-tbody-prestadores tr');
-  rows.forEach(row => {
-    const cells = row.querySelectorAll('td');
-    if (cells.length < 6) return;
-    if (y > 270) { doc.addPage(); y = 20; }
+    // Agrupa por prestador
+    const prestadores = {};
+    lista.forEach(m => {
+      if (m.medico_voo_id) {
+        if (!prestadores[m.medico_voo_id]) prestadores[m.medico_voo_id] = {
+          nome: m.medico_voo_nome || 'Medico', cargo: 'Medico',
+          missoes: 0, km: 0, pernoites: 0, valor: 0, pago: 0
+        };
+        prestadores[m.medico_voo_id].missoes++;
+        prestadores[m.medico_voo_id].km       += parseFloat(m.km_total)     || 0;
+        prestadores[m.medico_voo_id].pernoites += parseInt(m.pernoites)     || 0;
+        prestadores[m.medico_voo_id].valor     += parseFloat(m.valor_medico) || 0;
+        prestadores[m.medico_voo_id].pago      += m.pago_medico ? parseFloat(m.valor_medico) || 0 : 0;
+      }
+      if (m.enfermeiro_voo_id) {
+        if (!prestadores[m.enfermeiro_voo_id]) prestadores[m.enfermeiro_voo_id] = {
+          nome: m.enfermeiro_voo_nome || 'Enfermeiro', cargo: 'Enfermeiro',
+          missoes: 0, km: 0, pernoites: 0, valor: 0, pago: 0
+        };
+        prestadores[m.enfermeiro_voo_id].missoes++;
+        prestadores[m.enfermeiro_voo_id].km       += parseFloat(m.km_total)          || 0;
+        prestadores[m.enfermeiro_voo_id].pernoites += parseInt(m.pernoites)          || 0;
+        prestadores[m.enfermeiro_voo_id].valor     += parseFloat(m.valor_enfermeiro) || 0;
+        prestadores[m.enfermeiro_voo_id].pago      += m.pago_enfermeiro ? parseFloat(m.valor_enfermeiro) || 0 : 0;
+      }
+    });
 
+    // Cabecalho
+    doc.setFillColor(15, 30, 53);
+    doc.rect(0, 0, 210, 28, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text(cells[0].textContent.trim().substring(0, 50), 14, y);
+    doc.text('ALTUSMED - Fechamento Financeiro', 14, 12);
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text(cells[2].textContent.trim(), 100, y);
-    doc.text(cells[3].textContent.trim(), 120, y);
-    doc.text(cells[5].textContent.trim(), 150, y);
-    doc.text(cells[7].textContent.trim(), 180, y);
-    y += 7;
-    doc.setDrawColor(220, 220, 220);
-    doc.line(14, y - 2, 196, y - 2);
-  });
+    doc.text('Periodo: ' + nomesMes[mes] + '/' + ano, 14, 21);
+    doc.text('Gerado: ' + new Date().toLocaleDateString('pt-BR') +
+      ' ' + new Date().toLocaleTimeString('pt-BR'), 130, 21);
 
-  y += 5;
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  const totalPago  = document.getElementById('fin-total-pago')?.textContent    || '';
-  const totalPend  = document.getElementById('fin-total-pendente')?.textContent || '';
-  doc.text('Total Pago: '      + totalPago, 14, y); y += 7;
-  doc.text('Total Pendente: '  + totalPend, 14, y);
+    doc.setTextColor(0, 0, 0);
+    let y = 36;
 
-  doc.setFontSize(8);
-  doc.setTextColor(150, 150, 150);
-  doc.text('AltusMed Transporte Aeromedico - Documento gerado eletronicamente', 14, 290);
+    // Header tabela
+    doc.setFillColor(240, 240, 240);
+    doc.rect(14, y - 4, 182, 8, 'F');
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(50, 50, 50);
+    doc.text('Prestador',    16,  y);
+    doc.text('Cargo',        90,  y);
+    doc.text('Miss.',       112,  y);
+    doc.text('Km',          125,  y);
+    doc.text('Pern.',       142,  y);
+    doc.text('Valor Total', 155,  y);
+    doc.text('Pendente',    180,  y);
+    y += 8;
 
-  doc.save('fechamento-' + nomesMes[parseInt(mes)].toLowerCase() + '-' + ano + '.pdf');
-  toast('✓ PDF exportado com sucesso!');
+    // Linhas
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0, 0, 0);
+
+    let totalValor = 0;
+    let totalPago  = 0;
+
+    Object.values(prestadores).forEach(p => {
+      if (y > 270) { doc.addPage(); y = 20; }
+
+      const pendente = p.valor - p.pago;
+      totalValor += p.valor;
+      totalPago  += p.pago;
+
+      doc.setFontSize(8);
+      doc.text(p.nome.substring(0, 35), 16,  y);
+      doc.text(p.cargo,                 90,  y);
+      doc.text(String(p.missoes),      114,  y);
+      doc.text(p.km.toFixed(0) + 'km', 123,  y);
+      doc.text(String(p.pernoites),    145,  y);
+      doc.text('R$' + p.valor.toFixed(2),   153, y);
+      doc.text('R$' + pendente.toFixed(2),  178, y);
+      y += 6;
+
+      doc.setDrawColor(220, 220, 220);
+      doc.line(14, y - 1, 196, y - 1);
+    });
+
+    // Totais
+    y += 6;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text('TOTAL GERAL:', 14, y);
+    doc.text('R$ ' + totalValor.toFixed(2),              153, y);
+    doc.text('R$ ' + (totalValor - totalPago).toFixed(2), 178, y);
+
+    // Rodape
+    doc.setFontSize(7);
+    doc.setTextColor(150, 150, 150);
+    doc.setFont('helvetica', 'normal');
+    doc.text('AltusMed Transporte Aeromedico - Documento gerado eletronicamente', 14, 290);
+
+    const nomeMes = nomesMes[mes].toLowerCase();
+    doc.save('fechamento-' + nomeMes + '-' + ano + '.pdf');
+    toast('✓ PDF exportado!');
+  } catch (err) {
+    console.error('Erro PDF:', err);
+    toast('Erro ao gerar PDF: ' + err.message, true);
+  }
 }
 
 // ── Exclusão segura ───────────────────────────────────────────────────────

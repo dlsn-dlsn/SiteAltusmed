@@ -86,8 +86,10 @@
   .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; }
   .form-grid.cols3 { grid-template-columns: 1fr 1fr 1fr; }
   .form-grid.full { grid-template-columns: 1fr; }
+  .equipe-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
   @media (max-width: 600px) {
     .form-grid, .form-grid.cols3 { grid-template-columns: 1fr; }
+    .equipe-grid { grid-template-columns: 1fr; }
   }
   .field { display: flex; flex-direction: column; gap: .35rem; }
   .field.full { grid-column: 1 / -1; }
@@ -811,7 +813,7 @@
         <span class="section-toggle open" id="toggle-equipe">▼</span>
       </div>
       <div class="section-body" id="body-equipe">
-        <div class="form-grid">
+        <div class="equipe-grid">
           <div class="field">
             <label>Médico responsável pelo voo</label>
             <select id="equipe-medico">
@@ -948,7 +950,11 @@ function popularSelect(id, lista) {
   lista.forEach(p => {
     const opt = document.createElement('option');
     opt.value = p.id;
-    opt.textContent = p.nome + (p.crm ? ' — CRM ' + p.crm : '') + ' (' + (p.cargo || p.cargo_tipo) + ')';
+    const reg    = p.registro_tipo || 'CRM';
+    const uf     = p.registro_uf  || '';
+    const num    = p.crm          || '';
+    const regStr = num ? ` — ${reg}${uf ? '/'+uf : ''} ${num}` : '';
+    opt.textContent = p.nome + regStr + ' (' + (p.cargo || p.cargo_tipo) + ')';
     sel.appendChild(opt);
   });
 }

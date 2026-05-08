@@ -418,6 +418,7 @@
     border-radius: 14px; padding: 1.75rem;
     width: 100%; max-width: 480px;
     box-shadow: 0 24px 64px rgba(0,0,0,.5);
+    max-height: 90vh; overflow-y: auto;
   }
   .modal-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem; }
   .modal-actions { display: flex; gap: .75rem; justify-content: flex-end; margin-top: 1.25rem; }
@@ -676,8 +677,39 @@
               </select>
             </div>
             <div class="perfil-field">
-              <label id="pf-crm-label">CRM</label>
-              <input type="text" id="pf-crm" placeholder="PA 12345">
+              <label id="pf-crm-label">CRM / Nº do Registro</label>
+              <input type="text" id="pf-crm" placeholder="12345">
+            </div>
+            <div class="perfil-field">
+              <label>Tipo de Registro</label>
+              <select id="pf-registro-tipo">
+                <option value="CRM">CRM</option>
+                <option value="COREN">COREN</option>
+                <option value="CRO">CRO</option>
+                <option value="CRP">CRP</option>
+                <option value="CREFITO">CREFITO</option>
+                <option value="Outro">Outro</option>
+              </select>
+            </div>
+            <div class="perfil-field">
+              <label>UF do Registro</label>
+              <select id="pf-registro-uf">
+                <option value="">Selecione</option>
+                <option>AC</option><option>AL</option>
+                <option>AM</option><option>AP</option>
+                <option>BA</option><option>CE</option>
+                <option>DF</option><option>ES</option>
+                <option>GO</option><option>MA</option>
+                <option>MG</option><option>MS</option>
+                <option>MT</option><option>PA</option>
+                <option>PB</option><option>PE</option>
+                <option>PI</option><option>PR</option>
+                <option>RJ</option><option>RN</option>
+                <option>RO</option><option>RR</option>
+                <option>RS</option><option>SC</option>
+                <option>SE</option><option>SP</option>
+                <option>TO</option>
+              </select>
             </div>
             <div class="perfil-field full">
               <label>Especialidade</label>
@@ -770,7 +802,7 @@
           <input type="number" id="fin-ano" value="" min="2020" max="2099"
             style="width:80px;background:rgba(255,255,255,.05);border:1px solid var(--border);
             border-radius:6px;padding:.4rem .75rem;color:var(--text);font-family:var(--ff);font-size:.85rem;">
-          <button class="btn-primary" onclick="gerarFechamento()">Gerar Fechamento</button>
+          <button class="btn-primary" id="btn-gerar-fechamento">Gerar Fechamento</button>
         </div>
       </div>
 
@@ -1234,9 +1266,11 @@ async function carregarPerfil() {
   document.getElementById('pf-nome').value          = perfilAtual.nome || '';
   document.getElementById('pf-cargo').value         = perfilAtual.cargo || '';
   document.getElementById('pf-cargo-tipo').value    = tipo;
-  document.getElementById('pf-crm').value           = perfilAtual.crm || '';
-  document.getElementById('pf-especialidade').value = perfilAtual.especialidade || '';
-  document.getElementById('pf-telefone').value      = perfilAtual.telefone || '';
+  document.getElementById('pf-crm').value            = perfilAtual.crm || '';
+  document.getElementById('pf-registro-tipo').value  = perfilAtual.registro_tipo || 'CRM';
+  document.getElementById('pf-registro-uf').value    = perfilAtual.registro_uf || '';
+  document.getElementById('pf-especialidade').value  = perfilAtual.especialidade || '';
+  document.getElementById('pf-telefone').value       = perfilAtual.telefone || '';
   document.getElementById('pf-email').textContent   = usuarioAtual.email || '';
 
   // Select tipo de cargo — apenas admin pode alterar
@@ -1468,6 +1502,8 @@ async function salvarPerfil() {
     cargo:         document.getElementById('pf-cargo').value.trim(),
     cargo_tipo:    document.getElementById('pf-cargo-tipo').value,
     crm:           document.getElementById('pf-crm').value.trim(),
+    registro_tipo: document.getElementById('pf-registro-tipo').value,
+    registro_uf:   document.getElementById('pf-registro-uf').value,
     especialidade: document.getElementById('pf-especialidade').value.trim(),
     telefone:      document.getElementById('pf-telefone').value.trim(),
     updated_at:    new Date().toISOString(),
@@ -1572,21 +1608,27 @@ function finTab(aba) {
   });
 }
 
-function gerarFechamento() {
-  mesAtual = parseInt(document.getElementById('fin-mes').value);
-  anoAtual = parseInt(document.getElementById('fin-ano').value);
-  carregarFinanceiro(mesAtual, anoAtual);
-}
-
 async function carregarFinanceiro(mes, ano) {
   const inicio = new Date(ano, mes-1, 1).toISOString();
   const fim    = new Date(ano, mes, 0, 23, 59, 59).toISOString();
 
-  const { data: missoes } = await db.from('missoes')
+  let query = db.from('missoes')
     .select('*')
     .gte('created_at', inicio)
     .lte('created_at', fim)
     .eq('status', 'Concluída');
+
+  if (!perfilAtual.is_admin && perfilAtual.cargo_tipo !== 'administrativo') {
+    query = query.or(
+      'medico_voo_id.eq.' + usuarioAtual.id +
+      ',enfermeiro_voo_id.eq.' + usuarioAtual.id +
+      ',medico_id.eq.' + usuarioAtual.id
+    );
+  }
+
+  const { data: missoes, error } = await query;
+
+  if (error) { console.error('Erro financeiro:', error); return; }
 
   _missoesPeriodo = missoes || [];
   renderizarResumoFinanceiro(_missoesPeriodo);
@@ -1852,7 +1894,9 @@ function abrirEncerramento(id, codigo) {
   document.getElementById('enc-transferencia').value = '';
   document.getElementById('enc-desfecho').value = '';
   document.getElementById('enc-obs').value = '';
-  document.getElementById('trechos-container').innerHTML = '';
+  const tc = document.getElementById('trechos-container');
+  tc.innerHTML = '';
+  tc.style.cssText += 'max-height:220px;overflow-y:auto;padding-right:4px;';
   document.getElementById('km-total-resultado').style.display = 'none';
   document.getElementById('km-total-hidden').value = '0';
   document.getElementById('enc-pernoite-sim').value = '0';
@@ -1911,6 +1955,14 @@ document.addEventListener('DOMContentLoaded', () => {
     .addEventListener('change', function() {
       document.getElementById('enc-pernoite-wrap')
         .style.display = this.value === '1' ? 'block' : 'none';
+    });
+  document.getElementById('btn-gerar-fechamento')
+    .addEventListener('click', () => {
+      const mes = parseInt(document.getElementById('fin-mes').value);
+      const ano = parseInt(document.getElementById('fin-ano').value);
+      mesAtual = mes;
+      anoAtual = ano;
+      carregarFinanceiro(mes, ano);
     });
 });
 init();

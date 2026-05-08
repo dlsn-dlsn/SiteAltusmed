@@ -948,13 +948,14 @@ function popularSelect(id, lista) {
   const sel = document.getElementById(id);
   sel.innerHTML = '<option value="">Não designado</option>';
   lista.forEach(p => {
-    const opt = document.createElement('option');
-    opt.value = p.id;
-    const reg    = p.registro_tipo || 'CRM';
-    const uf     = p.registro_uf  || '';
-    const num    = p.crm          || '';
-    const regStr = num ? ` — ${reg}${uf ? '/'+uf : ''} ${num}` : '';
-    opt.textContent = p.nome + regStr + ' (' + (p.cargo || p.cargo_tipo) + ')';
+    const opt      = document.createElement('option');
+    opt.value      = p.id;
+    const fallback = p.cargo_tipo === 'enfermeiro' ? 'COREN' : 'CRM';
+    const reg      = p.registro_tipo || fallback;
+    const uf       = p.registro_uf   || '';
+    const num      = p.crm           || '';
+    const regStr   = num ? ` — ${reg}${uf ? '/'+uf : ''} ${num}` : '';
+    opt.textContent = p.nome + regStr;
     sel.appendChild(opt);
   });
 }

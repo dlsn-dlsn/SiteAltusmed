@@ -624,7 +624,7 @@
               <thead>
                 <tr>
                   <th>Missão</th><th>Paciente</th><th>Idade</th><th>Origem</th>
-                  <th>Destino</th><th>Tipo</th><th>Equipe</th><th>Km</th><th>Status</th>
+                  <th>Destino</th><th>Tipo</th><th>Equipe</th><th>Km</th><th>Status</th><th></th>
                 </tr>
               </thead>
               <tbody id="tabela-missoes-full">
@@ -667,7 +667,7 @@
             </div>
             <div class="perfil-field">
               <label>Tipo de Cargo</label>
-              <select id="pf-cargo-tipo" onchange="atualizarLabelRegistro()">
+              <select id="pf-cargo-tipo">
                 <option value="diretor">Diretor Aeromédico</option>
                 <option value="medico">Médico Aeromédico</option>
                 <option value="enfermeiro">Enfermeiro Aeromédico</option>
@@ -676,40 +676,34 @@
                 <option value="piloto">Piloto</option>
               </select>
             </div>
-            <div class="perfil-field">
-              <label id="pf-crm-label">CRM / Nº do Registro</label>
-              <input type="text" id="pf-crm" placeholder="12345">
-            </div>
-            <div class="perfil-field">
-              <label>Tipo de Registro</label>
-              <select id="pf-registro-tipo">
-                <option value="CRM">CRM</option>
-                <option value="COREN">COREN</option>
-                <option value="CRO">CRO</option>
-                <option value="CRP">CRP</option>
-                <option value="CREFITO">CREFITO</option>
-                <option value="Outro">Outro</option>
-              </select>
-            </div>
-            <div class="perfil-field">
-              <label>UF do Registro</label>
-              <select id="pf-registro-uf">
-                <option value="">Selecione</option>
-                <option>AC</option><option>AL</option>
-                <option>AM</option><option>AP</option>
-                <option>BA</option><option>CE</option>
-                <option>DF</option><option>ES</option>
-                <option>GO</option><option>MA</option>
-                <option>MG</option><option>MS</option>
-                <option>MT</option><option>PA</option>
-                <option>PB</option><option>PE</option>
-                <option>PI</option><option>PR</option>
-                <option>RJ</option><option>RN</option>
-                <option>RO</option><option>RR</option>
-                <option>RS</option><option>SC</option>
-                <option>SE</option><option>SP</option>
-                <option>TO</option>
-              </select>
+            <div class="perfil-field full">
+              <label>Registro Profissional</label>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;">
+                <div style="display:flex;flex-direction:column;gap:.25rem;">
+                  <span style="font-size:.75rem;color:var(--text-m);">Tipo</span>
+                  <select id="pf-registro-tipo">
+                    <option value="CRM">CRM</option>
+                    <option value="COREN">COREN</option>
+                  </select>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:.25rem;">
+                  <span style="font-size:.75rem;color:var(--text-m);">UF</span>
+                  <select id="pf-registro-uf">
+                    <option value="">UF</option>
+                    <option>AC</option><option>AL</option><option>AM</option><option>AP</option>
+                    <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
+                    <option>GO</option><option>MA</option><option>MG</option><option>MS</option>
+                    <option>MT</option><option>PA</option><option>PB</option><option>PE</option>
+                    <option>PI</option><option>PR</option><option>RJ</option><option>RN</option>
+                    <option>RO</option><option>RR</option><option>RS</option><option>SC</option>
+                    <option>SE</option><option>SP</option><option>TO</option>
+                  </select>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:.25rem;">
+                  <span style="font-size:.75rem;color:var(--text-m);">Número</span>
+                  <input type="text" id="pf-crm" placeholder="Ex: 16615">
+                </div>
+              </div>
             </div>
             <div class="perfil-field full">
               <label>Especialidade</label>
@@ -1292,18 +1286,11 @@ async function carregarPerfil() {
   }
 }
 
-function atualizarLabelRegistro() {
-  const tipo  = document.getElementById('pf-cargo-tipo')?.value || perfilAtual.cargo_tipo || '';
-  const label = document.getElementById('pf-crm-label');
-  if (label) label.textContent = tipo === 'enfermeiro' ? 'COREN' : 'CRM';
-}
-
 function atualizarUI() {
   const nome  = perfilAtual.nome  || 'Usuário';
   const cargo = perfilAtual.cargo || 'Médico';
   const tipo  = perfilAtual.cargo_tipo || 'medico';
   const info  = infoCargo(tipo);
-  atualizarLabelRegistro();
 
   document.getElementById('topbar-nome').textContent  = nome;
   document.getElementById('dash-nome').textContent    = nome;
@@ -1332,12 +1319,14 @@ async function carregarMissoes() {
   const agora     = new Date();
   const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString();
 
-  const { data: todas }     = await db.from('missoes').select('*')
-    .eq('medico_id', usuarioAtual.id).order('created_at', { ascending: false });
-  const { data: doMes }     = await db.from('missoes').select('*')
-    .eq('medico_id', usuarioAtual.id).gte('created_at', inicioMes);
-  const { data: andamento } = await db.from('missoes').select('*')
-    .eq('medico_id', usuarioAtual.id).eq('status', 'Em andamento');
+  const filtroAtivo = (q) => q.or('deletado.is.null,deletado.eq.false');
+
+  const { data: todas }     = await filtroAtivo(db.from('missoes').select('*')
+    .eq('medico_id', usuarioAtual.id)).order('created_at', { ascending: false });
+  const { data: doMes }     = await filtroAtivo(db.from('missoes').select('*')
+    .eq('medico_id', usuarioAtual.id).gte('created_at', inicioMes));
+  const { data: andamento } = await filtroAtivo(db.from('missoes').select('*')
+    .eq('medico_id', usuarioAtual.id).eq('status', 'Em andamento'));
 
   const missoes   = todas    || [];
   const mes       = doMes    || [];
@@ -1355,9 +1344,11 @@ async function carregarMissoes() {
 }
 
 function renderizarTabela(missoes, tbodyId, completo) {
-  const tb = document.getElementById(tbodyId);
+  const tb       = document.getElementById(tbodyId);
+  const isAdmin  = perfilAtual.is_admin === true;
+  const cols     = completo ? (isAdmin ? 11 : 10) : 7;
   if (!missoes.length) {
-    tb.innerHTML = `<tr><td colspan="${completo?9:7}" style="text-align:center;color:var(--text-m);padding:2rem;">
+    tb.innerHTML = `<tr><td colspan="${cols}" style="text-align:center;color:var(--text-m);padding:2rem;">
       Nenhuma missão registrada ainda.</td></tr>`;
     return;
   }
@@ -1367,6 +1358,11 @@ function renderizarTabela(missoes, tbodyId, completo) {
     const codigoEl = m.status === 'Em andamento'
       ? `<span class="mission-code" style="cursor:pointer;" onclick="abrirEncerramento(${m.id}, '${m.codigo}')">${m.codigo}</span>`
       : `<span class="mission-code">${m.codigo}</span>`;
+    const btnDel = completo && isAdmin
+      ? `<td><button onclick="abrirModalDeletar('missao',${m.id})"
+          style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:.9rem;"
+          title="Excluir">🗑</button></td>`
+      : '';
     return `<tr>
       <td>${codigoEl}</td>
       <td>${m.paciente_nome}</td>
@@ -1375,8 +1371,9 @@ function renderizarTabela(missoes, tbodyId, completo) {
       <td>${m.destino}</td>
       <td>${m.tipo}</td>
       <td>${m.equipe || '—'}</td>
-      ${completo ? `<td>${m.km || 0}</td>` : ''}
+      ${completo ? `<td>${m.km_total || m.km || 0} km</td>` : ''}
       <td><span class="badge ${badgeCls}">${m.status}</span></td>
+      ${btnDel}
     </tr>`;
   }).join('');
 }
@@ -1443,8 +1440,32 @@ async function carregarUsuarios() {
         </select>
       </div>
       <div class="edit-field">
-        <label>CRM / Registro</label>
-        <input type="text" id="u-crm-${p.id}" value="${p.crm || ''}" placeholder="PA 12345">
+        <label>Registro Profissional</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.4rem;">
+          <select id="u-reg-tipo-${p.id}">
+            <option value="CRM"   ${(p.registro_tipo||'CRM')==='CRM'   ?'selected':''}>CRM</option>
+            <option value="COREN" ${(p.registro_tipo||'')==='COREN'?'selected':''}>COREN</option>
+          </select>
+          <select id="u-reg-uf-${p.id}">
+            <option value="">UF</option>
+            ${['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT',
+               'PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO']
+              .map(uf => `<option ${(p.registro_uf||''===uf)?'selected':''}>${uf}</option>`).join('')}
+          </select>
+          <input type="text" id="u-crm-${p.id}" value="${p.crm || ''}" placeholder="Ex: 16615">
+        </div>
+      </div>
+      <div class="edit-field">
+        <label>CPF</label>
+        <input type="text" id="u-cpf-${p.id}" value="${p.cpf || ''}" placeholder="000.000.000-00">
+      </div>
+      <div class="edit-field">
+        <label>Data de Nascimento</label>
+        <input type="date" id="u-nasc-${p.id}" value="${p.data_nascimento || ''}">
+      </div>
+      <div class="edit-field">
+        <label>Chave Pix</label>
+        <input type="text" id="u-pix-${p.id}" value="${p.chave_pix || ''}" placeholder="CPF, e-mail, telefone ou chave aleatória">
       </div>
       <button class="btn-salvar-user" onclick="salvarUsuario('${p.id}')">
         ✓ Salvar alterações
@@ -1476,18 +1497,25 @@ async function salvarUsuario(uid) {
   const tipo  = document.getElementById('u-tipo-'  + uid)?.value;
   const crm   = document.getElementById('u-crm-'   + uid)?.value.trim();
 
-  const { error } = await db.from('perfis').update({
-    nome, cargo, cargo_tipo: tipo, crm, updated_at: new Date().toISOString()
-  }).eq('id', uid);
+  const dados = {
+    nome, cargo, cargo_tipo: tipo, crm,
+    registro_tipo:   document.getElementById('u-reg-tipo-' + uid)?.value,
+    registro_uf:     document.getElementById('u-reg-uf-'   + uid)?.value,
+    cpf:             document.getElementById('u-cpf-'      + uid)?.value.trim(),
+    data_nascimento: document.getElementById('u-nasc-'     + uid)?.value || null,
+    chave_pix:       document.getElementById('u-pix-'      + uid)?.value.trim(),
+    updated_at:      new Date().toISOString(),
+  };
+
+  const { error } = await db.from('perfis').update(dados).eq('id', uid);
 
   if (error) { toast('Erro ao salvar usuário.', true); return; }
 
   atualizarCardCor(uid, tipo);
   toast('✓ Perfil atualizado com sucesso!');
 
-  // Se editou o próprio perfil, recarrega UI
   if (uid === usuarioAtual.id) {
-    perfilAtual = { ...perfilAtual, nome, cargo, cargo_tipo: tipo, crm };
+    perfilAtual = { ...perfilAtual, ...dados, cargo_tipo: tipo };
     atualizarUI();
   }
 }
@@ -1616,7 +1644,8 @@ async function carregarFinanceiro(mes, ano) {
     .select('*')
     .gte('created_at', inicio)
     .lte('created_at', fim)
-    .eq('status', 'Concluída');
+    .eq('status', 'Concluída')
+    .or('deletado.is.null,deletado.eq.false');
 
   if (!perfilAtual.is_admin && perfilAtual.cargo_tipo !== 'administrativo') {
     query = query.or(
@@ -1626,13 +1655,19 @@ async function carregarFinanceiro(mes, ano) {
     );
   }
 
-  const { data: missoes, error } = await query;
+  const [{ data: missoes, error }, { data: perfisData }] = await Promise.all([
+    query,
+    db.from('perfis').select('id, registro_tipo, registro_uf, crm'),
+  ]);
 
   if (error) { console.error('Erro financeiro:', error); return; }
 
+  const perfisMapa = {};
+  (perfisData || []).forEach(pf => { perfisMapa[pf.id] = pf; });
+
   _missoesPeriodo = missoes || [];
   renderizarResumoFinanceiro(_missoesPeriodo);
-  renderizarPrestadores(_missoesPeriodo);
+  renderizarPrestadores(_missoesPeriodo, perfisMapa);
 }
 
 function renderizarResumoFinanceiro(missoes) {
@@ -1658,12 +1693,19 @@ function renderizarResumoFinanceiro(missoes) {
   document.getElementById('fin-resumo-vazio').style.display = missoes.length ? 'none' : 'block';
 }
 
-function renderizarPrestadores(missoes) {
+function renderizarPrestadores(missoes, perfisMapa = {}) {
   const mapa = {};
   missoes.forEach(m => {
     const adicionar = (id, nome, cargo, tipo, valorKey, pagoKey) => {
       if (!id) return;
-      if (!mapa[id]) mapa[id] = { id, nome, cargo, tipo, missoes: [], kmTotal: 0, pernoites: 0, valorTotal: 0, valorPago: 0 };
+      if (!mapa[id]) {
+        const pf = perfisMapa[id] || {};
+        mapa[id] = { id, nome, cargo, tipo, missoes: [], kmTotal: 0, pernoites: 0, valorTotal: 0, valorPago: 0,
+          registro_tipo: pf.registro_tipo || null,
+          registro_uf:   pf.registro_uf   || null,
+          crm:           pf.crm           || null,
+        };
+      }
       const p = mapa[id];
       p.missoes.push(m);
       p.kmTotal   += parseFloat(m.km_total) || 0;
@@ -1705,8 +1747,13 @@ function renderizarPrestadores(missoes) {
       </tr>`;
     }).join('');
 
+    const reg    = p.registro_tipo || 'CRM';
+    const uf     = p.registro_uf  || '';
+    const num    = p.crm          || '';
+    const regStr = num ? ` — ${reg}${uf ? '/'+uf : ''} ${num}` : '';
+
     return `<tr>
-      <td><strong>${p.nome || '—'}</strong></td>
+      <td><strong>${p.nome || '—'}</strong><br><span style="font-size:.75rem;color:var(--text-m);">${regStr.trim()}</span></td>
       <td>${p.cargo}</td>
       <td>${p.missoes.length}</td>
       <td>${p.kmTotal.toFixed(0)} km</td>
@@ -1949,6 +1996,46 @@ async function encerrarMissao() {
   toast('✓ Missão encerrada com sucesso!');
 }
 
+// ── Exclusão segura ───────────────────────────────────────────────────────
+let deletarTipo = '';
+let deletarId   = null;
+
+function abrirModalDeletar(tipo, id) {
+  deletarTipo = tipo;
+  deletarId   = id;
+  document.getElementById('del-senha').value = '';
+  document.getElementById('del-erro').style.display = 'none';
+  document.getElementById('modal-deletar').classList.add('show');
+  setTimeout(() => document.getElementById('del-senha').focus(), 100);
+}
+
+function fecharModalDeletar() {
+  deletarTipo = '';
+  deletarId   = null;
+  document.getElementById('modal-deletar').classList.remove('show');
+}
+
+async function confirmarDelete() {
+  const senha = document.getElementById('del-senha').value;
+  if (senha !== '1234') {
+    document.getElementById('del-erro').style.display = 'block';
+    return;
+  }
+
+  const tabela = deletarTipo === 'missao' ? 'missoes' : 'regulacoes';
+  const { error } = await db.from(tabela).update({
+    deletado:     true,
+    deletado_em:  new Date().toISOString(),
+    deletado_por: usuarioAtual.id,
+  }).eq('id', deletarId);
+
+  if (error) { toast('Erro ao excluir.', true); return; }
+
+  fecharModalDeletar();
+  await carregarMissoes();
+  toast('Registro excluído com sucesso.');
+}
+
 // ── Start ─────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('enc-pernoite-sim')
@@ -2036,6 +2123,27 @@ init();
     <div class="modal-actions">
       <button class="btn-sm" onclick="fecharEncerramento()">Cancelar</button>
       <button class="btn-primary" onclick="encerrarMissao()">✓ Encerrar Missão</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-deletar">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-title" style="color:#ef4444;">⚠️ Confirmar Exclusão</div>
+    <p style="font-size:.88rem;color:var(--text-m);margin-bottom:1.25rem;">
+      Esta ação não pode ser desfeita. Digite a senha de administrador para confirmar.
+    </p>
+    <div class="perfil-field">
+      <label>Senha de Confirmação</label>
+      <input type="password" id="del-senha" placeholder="••••"
+        onkeydown="if(event.key==='Enter') confirmarDelete()">
+    </div>
+    <div id="del-erro" style="display:none;color:#ef4444;font-size:.82rem;margin-top:.5rem;">
+      Senha incorreta.
+    </div>
+    <div class="modal-actions">
+      <button class="btn-sm" onclick="fecharModalDeletar()">Cancelar</button>
+      <button class="btn-sm" style="background:#dc2626;color:white;border-color:#dc2626;"
+        onclick="confirmarDelete()">Excluir</button>
     </div>
   </div>
 </div>

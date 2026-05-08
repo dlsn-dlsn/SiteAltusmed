@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AltusMed · Área Restrita</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -971,6 +972,8 @@ const AEROPORTOS_COORDS = {
   'FLN':{nome:'Florianópolis/SC',lat:-27.6703,lng:-48.5525},
   'FOR':{nome:'Fortaleza/CE',lat:-3.7762,lng:-38.5326},
   'GYN':{nome:'Goiânia/GO',lat:-16.6320,lng:-49.2207},
+  'GRP':{nome:'Gurupi/TO',lat:-11.738991,lng:-49.135820},
+  'BRA':{nome:'Barreiras/BA',lat:-12.080365,lng:-45.007491},
   'IMP':{nome:'Imperatriz/MA',lat:-5.5299,lng:-47.4600},
   'JPA':{nome:'João Pessoa/PB',lat:-7.1458,lng:-34.9508},
   'JOI':{nome:'Joinville/SC',lat:-26.2245,lng:-48.7975},
@@ -1739,7 +1742,10 @@ function renderizarPrestadores(missoes, perfisMapa = {}) {
         : `<button class="btn-sm" style="font-size:.75rem;padding:.2rem .6rem;"
             onclick="pagarMissaoIndividual(${m.id},'${p.tipo}')">Pagar</button>`;
       return `<tr style="background:rgba(255,255,255,.02);">
-        <td style="padding-left:2.5rem;font-size:.82rem;color:var(--text-m);">${m.codigo}</td>
+        <td style="padding-left:2.5rem;font-size:.82rem;">
+          <span style="color:var(--green);font-weight:700;cursor:pointer;text-decoration:underline;"
+            onclick="abrirDetalhesMissao(${m.id})">${m.codigo}</span>
+        </td>
         <td style="font-size:.82rem;color:var(--text-m);">${(m.km_total||0)} km</td>
         <td style="font-size:.82rem;color:var(--text-m);">${m.pernoites||0}</td>
         <td style="font-size:.82rem;">${fmt(val)}</td>
@@ -1849,6 +1855,92 @@ async function salvarConfiguracoes() {
   const { error } = await db.from('config_financeiro').update(cfg).eq('id', 1);
   if (error) { toast('Erro ao salvar.', true); return; }
   toast('✓ Configurações salvas!');
+}
+
+// ── Detalhes da Missão ────────────────────────────────────────────────────
+async function abrirDetalhesMissao(id) {
+  const { data: m } = await db.from('missoes').select('*').eq('id', id).single();
+  if (!m) return;
+
+  const { data: trechos } = await db.from('trechos_missao')
+    .select('*').eq('missao_id', id).order('ordem');
+
+  const { data: reg } = m.regulacao_id
+    ? await db.from('regulacoes').select('*').eq('id', m.regulacao_id).single()
+    : { data: null };
+
+  document.getElementById('det-codigo').textContent = m.codigo;
+
+  const trechosStr = trechos?.map(t =>
+    t.origem_codigo + '→' + t.destino_codigo + ' (' + parseFloat(t.distancia_km).toFixed(0) + 'km)'
+  ).join(' | ') || '—';
+
+  document.getElementById('det-conteudo').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;font-size:.87rem;">
+      <div><span style="color:var(--text-m);">Paciente:</span>
+        <strong style="margin-left:.4rem;">${m.paciente_nome || '—'}${m.paciente_idade ? ', '+m.paciente_idade+'a' : ''}</strong></div>
+      <div><span style="color:var(--text-m);">NACA:</span>
+        <strong style="margin-left:.4rem;">${m.naca || '—'}</strong></div>
+      <div><span style="color:var(--text-m);">Diagnóstico:</span>
+        <strong style="margin-left:.4rem;">${m.diagnostico || '—'}</strong></div>
+      <div><span style="color:var(--text-m);">Status:</span>
+        <strong style="margin-left:.4rem;">${m.status}</strong></div>
+      <div style="grid-column:1/-1;"><span style="color:var(--text-m);">Trechos:</span>
+        <strong style="margin-left:.4rem;">${trechosStr}</strong></div>
+      <div><span style="color:var(--text-m);">Km Total:</span>
+        <strong style="margin-left:.4rem;color:var(--green);">${m.km_total ? parseFloat(m.km_total).toFixed(0)+' km' : '—'}</strong></div>
+      <div><span style="color:var(--text-m);">Pernoites:</span>
+        <strong style="margin-left:.4rem;">${m.pernoites || 0}</strong></div>
+      <div><span style="color:var(--text-m);">Desfecho:</span>
+        <strong style="margin-left:.4rem;">${m.desfecho || '—'}</strong></div>
+      <div><span style="color:var(--text-m);">Pouso:</span>
+        <strong style="margin-left:.4rem;">${m.hora_pouso || '—'}</strong></div>
+      <div><span style="color:var(--text-m);">Transferência:</span>
+        <strong style="margin-left:.4rem;">${m.hora_transferencia || '—'}</strong></div>
+      <div><span style="color:var(--text-m);">Médico:</span>
+        <strong style="margin-left:.4rem;">${m.medico_voo_nome || '—'}</strong></div>
+      <div><span style="color:var(--text-m);">Enfermeiro(a):</span>
+        <strong style="margin-left:.4rem;">${m.enfermeiro_voo_nome || '—'}</strong></div>
+    </div>`;
+
+  if (reg) {
+    document.getElementById('det-completo').innerHTML = `
+      <div style="font-size:.82rem;color:var(--text-m);margin-bottom:.75rem;font-weight:700;
+        text-transform:uppercase;letter-spacing:.05em;">Dados da Regulação</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;font-size:.85rem;">
+        <div><span style="color:var(--text-m);">Origem:</span>
+          <strong style="margin-left:.4rem;">${reg.origem || '—'}</strong></div>
+        <div><span style="color:var(--text-m);">Destino:</span>
+          <strong style="margin-left:.4rem;">${reg.destino || '—'}</strong></div>
+        <div><span style="color:var(--text-m);">Aeronave:</span>
+          <strong style="margin-left:.4rem;">${reg.aeronave || '—'}</strong></div>
+        <div><span style="color:var(--text-m);">Fluxo:</span>
+          <strong style="margin-left:.4rem;">${reg.fluxo || '—'}</strong></div>
+        <div><span style="color:var(--text-m);">PA:</span>
+          <strong style="margin-left:.4rem;">${reg.pa || '—'}</strong></div>
+        <div><span style="color:var(--text-m);">FC:</span>
+          <strong style="margin-left:.4rem;">${reg.fc ? reg.fc+' bpm' : '—'}</strong></div>
+        <div><span style="color:var(--text-m);">SpO2:</span>
+          <strong style="margin-left:.4rem;">${reg.spo2 ? reg.spo2+'%' : '—'}</strong></div>
+        <div><span style="color:var(--text-m);">GCS:</span>
+          <strong style="margin-left:.4rem;">${reg.gcs_total || '—'}</strong></div>
+        ${reg.observacoes ? `<div style="grid-column:1/-1;">
+          <span style="color:var(--text-m);">Observações:</span>
+          <div style="margin-top:.3rem;padding:.6rem;background:rgba(255,255,255,.04);
+            border-radius:6px;font-size:.82rem;">${reg.observacoes}</div></div>` : ''}
+        ${reg.recomendacao_altitude ? `<div style="grid-column:1/-1;
+          background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.3);
+          border-radius:6px;padding:.6rem;color:#ef4444;font-weight:600;">
+          ⚠️ Recomendação de Voo com Altitude de Cabine Reduzida</div>` : ''}
+      </div>`;
+  } else {
+    document.getElementById('det-completo').innerHTML =
+      '<div style="color:var(--text-m);font-size:.85rem;">Sem dados de regulação vinculados.</div>';
+  }
+
+  document.getElementById('det-completo').style.display = 'none';
+  document.querySelector('#modal-detalhes-missao .btn-sm').style.display = 'inline-block';
+  document.getElementById('modal-detalhes-missao').classList.add('show');
 }
 
 // ── Meus Voos (widget prestador) ──────────────────────────────────────────
@@ -1996,6 +2088,87 @@ async function encerrarMissao() {
   toast('✓ Missão encerrada com sucesso!');
 }
 
+// ── Fechamento PDF ────────────────────────────────────────────────────────
+async function confirmarFechamento() {
+  const opcao = document.querySelector('input[name="fech-opcao"]:checked')?.value;
+  document.getElementById('modal-fechamento-opcoes').classList.remove('show');
+
+  const mes = parseInt(document.getElementById('fin-mes').value);
+  const ano = parseInt(document.getElementById('fin-ano').value);
+  mesAtual = mes;
+  anoAtual = ano;
+  await carregarFinanceiro(mes, ano);
+
+  if (opcao === 'com_pdf') {
+    exportarFechamentoPDF();
+  }
+}
+
+function exportarFechamentoPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const mes = document.getElementById('fin-mes').value;
+  const ano = document.getElementById('fin-ano').value;
+  const nomesMes = ['','Janeiro','Fevereiro','Marco','Abril',
+    'Maio','Junho','Julho','Agosto','Setembro','Outubro',
+    'Novembro','Dezembro'];
+
+  // Cabecalho
+  doc.setFillColor(15, 30, 53);
+  doc.rect(0, 0, 210, 28, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('ALTUSMED - Fechamento Financeiro', 14, 12);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Periodo: ' + nomesMes[parseInt(mes)] + '/' + ano, 14, 20);
+  doc.text('Gerado em: ' + new Date().toLocaleDateString('pt-BR'), 140, 20);
+
+  doc.setTextColor(0, 0, 0);
+  let y = 38;
+
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Prestadores', 14, y); y += 8;
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+
+  const rows = document.querySelectorAll('#fin-tbody-prestadores tr');
+  rows.forEach(row => {
+    const cells = row.querySelectorAll('td');
+    if (cells.length < 6) return;
+    if (y > 270) { doc.addPage(); y = 20; }
+
+    doc.setFont('helvetica', 'bold');
+    doc.text(cells[0].textContent.trim().substring(0, 50), 14, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(cells[2].textContent.trim(), 100, y);
+    doc.text(cells[3].textContent.trim(), 120, y);
+    doc.text(cells[5].textContent.trim(), 150, y);
+    doc.text(cells[7].textContent.trim(), 180, y);
+    y += 7;
+    doc.setDrawColor(220, 220, 220);
+    doc.line(14, y - 2, 196, y - 2);
+  });
+
+  y += 5;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  const totalPago  = document.getElementById('fin-total-pago')?.textContent    || '';
+  const totalPend  = document.getElementById('fin-total-pendente')?.textContent || '';
+  doc.text('Total Pago: '      + totalPago, 14, y); y += 7;
+  doc.text('Total Pendente: '  + totalPend, 14, y);
+
+  doc.setFontSize(8);
+  doc.setTextColor(150, 150, 150);
+  doc.text('AltusMed Transporte Aeromedico - Documento gerado eletronicamente', 14, 290);
+
+  doc.save('fechamento-' + nomesMes[parseInt(mes)].toLowerCase() + '-' + ano + '.pdf');
+  toast('✓ PDF exportado com sucesso!');
+}
+
 // ── Exclusão segura ───────────────────────────────────────────────────────
 let deletarTipo = '';
 let deletarId   = null;
@@ -2045,11 +2218,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   document.getElementById('btn-gerar-fechamento')
     .addEventListener('click', () => {
-      const mes = parseInt(document.getElementById('fin-mes').value);
-      const ano = parseInt(document.getElementById('fin-ano').value);
-      mesAtual = mes;
-      anoAtual = ano;
-      carregarFinanceiro(mes, ano);
+      document.getElementById('modal-fechamento-opcoes').classList.add('show');
     });
 });
 init();
@@ -2126,6 +2295,53 @@ init();
     </div>
   </div>
 </div>
+<div class="modal-overlay" id="modal-fechamento-opcoes">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-title">Gerar Fechamento</div>
+    <p style="font-size:.87rem;color:var(--text-m);margin-bottom:1.25rem;">
+      Deseja exportar este fechamento em PDF?
+    </p>
+    <div style="display:flex;flex-direction:column;gap:.6rem;margin-bottom:1.25rem;">
+      <label style="display:flex;align-items:center;gap:.75rem;cursor:pointer;font-size:.9rem;">
+        <input type="radio" name="fech-opcao" value="com_pdf" checked
+          style="accent-color:var(--green);">
+        Gerar e exportar PDF
+      </label>
+      <label style="display:flex;align-items:center;gap:.75rem;cursor:pointer;font-size:.9rem;">
+        <input type="radio" name="fech-opcao" value="sem_pdf"
+          style="accent-color:var(--green);">
+        Apenas gerar (sem PDF)
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-sm"
+        onclick="document.getElementById('modal-fechamento-opcoes').classList.remove('show')">
+        Cancelar
+      </button>
+      <button class="btn-primary" onclick="confirmarFechamento()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-detalhes-missao">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-title">Missão <span id="det-codigo" style="color:var(--green);"></span></div>
+    <div id="det-conteudo"></div>
+    <div style="margin-top:1.25rem;display:flex;justify-content:space-between;align-items:center;">
+      <button class="btn-sm"
+        onclick="document.getElementById('det-completo').style.display='block';this.style.display='none'">
+        Ver todos os detalhes
+      </button>
+      <button class="btn-sm"
+        onclick="document.getElementById('modal-detalhes-missao').classList.remove('show')">
+        Fechar
+      </button>
+    </div>
+    <div id="det-completo" style="display:none;margin-top:1rem;
+      border-top:1px solid var(--border);padding-top:1rem;"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-deletar">
   <div class="modal" style="max-width:400px;">
     <div class="modal-title" style="color:#ef4444;">⚠️ Confirmar Exclusão</div>

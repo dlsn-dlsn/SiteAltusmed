@@ -1743,6 +1743,257 @@ async function finalizarRegulacao() {
 }
 
 // ── Exportar PDF ──────────────────────────────────────────────────────
+function desenharMonitor(doc, yInicio, d) {
+  const x = 14;
+  const w = 182;
+  const alturaTotal = 58;
+
+  // Fundo do monitor
+  doc.setFillColor(10, 14, 20);
+  doc.roundedRect(x, yInicio, w, alturaTotal, 3, 3, 'F');
+
+  // Header do monitor
+  doc.setFillColor(15, 30, 53);
+  doc.rect(x, yInicio, w, 10, 'F');
+  doc.setTextColor(120, 190, 32);
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'bold');
+  doc.text('ALTUSMED MONITOR', x + 3, yInicio + 6.5);
+
+  // Paciente info no header
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(6.5);
+  doc.setFont('helvetica', 'normal');
+  const nomePac = (d.paciente_nome || '').substring(0, 25);
+  const infoPac = (d.aeronave || '') + ' . ' + (d.origem || '') + '->' + (d.destino || '');
+  doc.text(nomePac, x + w - 3, yInicio + 5, { align: 'right' });
+  doc.text(infoPac.substring(0, 35), x + w - 3, yInicio + 9, { align: 'right' });
+
+  // Linha separadora verde
+  doc.setDrawColor(120, 190, 32);
+  doc.setLineWidth(0.3);
+  doc.line(x, yInicio + 10, x + w, yInicio + 10);
+
+  // Curvas sinteticas
+  const wCurvas = w - 32;
+  const xCurvas = x + 2;
+  const cores = {
+    ecg:  [0, 255, 136],
+    spo2: [0, 204, 255],
+    resp: [255, 204, 0],
+    pa:   [255, 102, 102],
+  };
+
+  function curvaECG(yBase) {
+    doc.setDrawColor(...cores.ecg);
+    doc.setLineWidth(0.4);
+    const s = wCurvas / 4;
+    doc.line(xCurvas, yBase, xCurvas + s * 0.6, yBase);
+    doc.line(xCurvas + s * 0.6, yBase, xCurvas + s * 0.7, yBase - 4);
+    doc.line(xCurvas + s * 0.7, yBase - 4, xCurvas + s * 0.75, yBase + 3);
+    doc.line(xCurvas + s * 0.75, yBase + 3, xCurvas + s * 0.8, yBase);
+    doc.line(xCurvas + s * 0.8, yBase, xCurvas + s * 1.6, yBase);
+    doc.line(xCurvas + s * 1.6, yBase, xCurvas + s * 1.7, yBase - 4);
+    doc.line(xCurvas + s * 1.7, yBase - 4, xCurvas + s * 1.75, yBase + 3);
+    doc.line(xCurvas + s * 1.75, yBase + 3, xCurvas + s * 1.8, yBase);
+    doc.line(xCurvas + s * 1.8, yBase, xCurvas + s * 2.6, yBase);
+    doc.line(xCurvas + s * 2.6, yBase, xCurvas + s * 2.7, yBase - 4);
+    doc.line(xCurvas + s * 2.7, yBase - 4, xCurvas + s * 2.75, yBase + 3);
+    doc.line(xCurvas + s * 2.75, yBase + 3, xCurvas + s * 2.8, yBase);
+    doc.line(xCurvas + s * 2.8, yBase, xCurvas + wCurvas, yBase);
+  }
+
+  function curvaSeno(yBase, amplitude, cor, freq) {
+    doc.setDrawColor(...cor);
+    doc.setLineWidth(0.4);
+    const steps = 80;
+    let prevX = xCurvas, prevY = yBase;
+    for (let i = 1; i <= steps; i++) {
+      const xp = xCurvas + (i / steps) * wCurvas;
+      const yp = yBase - Math.sin((i / steps) * Math.PI * 2 * freq) * amplitude;
+      doc.line(prevX, prevY, xp, yp);
+      prevX = xp; prevY = yp;
+    }
+  }
+
+  function curvaPA(yBase) {
+    doc.setDrawColor(...cores.pa);
+    doc.setLineWidth(0.4);
+    const s = wCurvas / 5;
+    for (let i = 0; i < 5; i++) {
+      const ox = xCurvas + i * s;
+      doc.line(ox, yBase, ox + s * 0.2, yBase);
+      doc.line(ox + s * 0.2, yBase, ox + s * 0.3, yBase - 4);
+      doc.line(ox + s * 0.3, yBase - 4, ox + s * 0.4, yBase - 1);
+      doc.line(ox + s * 0.4, yBase - 1, ox + s * 0.5, yBase + 1.5);
+      doc.line(ox + s * 0.5, yBase + 1.5, ox + s, yBase);
+    }
+  }
+
+  const linhas = [
+    { label: 'ECG . II',     cor: cores.ecg,  y: yInicio + 16 },
+    { label: 'SpO2 . Pleth', cor: cores.spo2, y: yInicio + 23 },
+    { label: 'Resp',         cor: cores.resp, y: yInicio + 30 },
+    { label: 'PA invasiva',  cor: cores.pa,   y: yInicio + 37 },
+  ];
+
+  linhas.forEach((l, idx) => {
+    doc.setTextColor(...l.cor.map(c => Math.min(c, 200)));
+    doc.setFontSize(5.5);
+    doc.setFont('helvetica', 'normal');
+    doc.text(l.label, xCurvas, l.y - 2);
+    if (idx < linhas.length - 1) {
+      doc.setDrawColor(17, 26, 36);
+      doc.setLineWidth(0.2);
+      doc.line(xCurvas, l.y + 3, xCurvas + wCurvas, l.y + 3);
+    }
+  });
+
+  curvaECG(linhas[0].y + 1);
+  curvaSeno(linhas[1].y + 1, 2.5, cores.spo2, 3);
+  curvaSeno(linhas[2].y + 1, 1.8, cores.resp, 1.5);
+  curvaPA(linhas[3].y + 1);
+
+  // Glasgow
+  const yGCS = yInicio + 43;
+  const gcsTotal = d.gcs_total || (
+    (parseInt(d.gcs_o) || 0) +
+    (parseInt(d.gcs_v) || 0) +
+    (parseInt(d.gcs_m) || 0)
+  );
+
+  doc.setTextColor(180, 120, 255);
+  doc.setFontSize(6);
+  doc.setFont('helvetica', 'bold');
+  doc.text('GLASGOW', xCurvas, yGCS + 1);
+
+  doc.setFontSize(14);
+  doc.setTextColor(200, 136, 255);
+  doc.text(String(gcsTotal || '-'), xCurvas + 18, yGCS + 6);
+
+  doc.setDrawColor(150, 100, 220);
+  doc.setLineWidth(0.3);
+  doc.line(xCurvas + 27, yGCS - 1, xCurvas + 27, yGCS + 8);
+
+  const comps = [
+    { label: 'AO', val: d.gcs_o || '-' },
+    { label: 'RV', val: d.gcs_v || '-' },
+    { label: 'RM', val: d.gcs_m || '-' },
+  ];
+  comps.forEach((c, i) => {
+    const xc = xCurvas + 31 + i * 18;
+    doc.setFillColor(50, 30, 70);
+    doc.roundedRect(xc, yGCS - 1, 16, 10, 1, 1, 'F');
+    doc.setTextColor(170, 110, 230);
+    doc.setFontSize(6.5);
+    doc.setFont('helvetica', 'bold');
+    doc.text(c.label, xc + 8, yGCS + 3, { align: 'center' });
+    doc.setFontSize(9);
+    doc.setTextColor(200, 136, 255);
+    doc.text(String(c.val), xc + 8, yGCS + 8, { align: 'center' });
+  });
+
+  if (d.gcs_pupilar && d.gcs_pupilar !== 'ignorada') {
+    const desconto = d.gcs_pupilar === '2' ? 1 : d.gcs_pupilar === '3' ? 2 : 0;
+    const gcsp = (gcsTotal || 0) - desconto;
+    const xp = xCurvas + 31 + 3 * 18 + 4;
+    doc.setDrawColor(150, 100, 220);
+    doc.setLineWidth(0.3);
+    doc.line(xp - 2, yGCS - 1, xp - 2, yGCS + 9);
+    doc.setFillColor(40, 25, 60);
+    doc.roundedRect(xp, yGCS - 1, 18, 10, 1, 1, 'F');
+    doc.setTextColor(160, 100, 210);
+    doc.setFontSize(6.5);
+    doc.setFont('helvetica', 'bold');
+    doc.text('GCS-P', xp + 9, yGCS + 3, { align: 'center' });
+    doc.setFontSize(9);
+    doc.setTextColor(180, 120, 240);
+    doc.text(String(gcsp), xp + 9, yGCS + 8, { align: 'center' });
+  }
+
+  // Painel lateral de valores
+  const xVal = x + wCurvas + 4;
+  const largVal = w - wCurvas - 5;
+
+  const vitais = [
+    { label: 'HR.ECG', val: d.fc   ? String(d.fc)   : '-', unit: 'bpm', cor: [0, 220, 100] },
+    { label: 'SpO2',   val: d.spo2 ? String(d.spo2) : '-', unit: '%',   cor: [0, 180, 230] },
+    { label: 'Resp',   val: d.fr   ? String(d.fr)   : '-', unit: 'rpm', cor: [220, 180, 0] },
+    { label: 'PA',
+      val: (d.pa || (d.pa_sistolica && d.pa_diastolica ? d.pa_sistolica + '/' + d.pa_diastolica : '-')),
+      unit: d.pam ? '(' + Math.round(d.pam) + ')' : '',
+      cor: [230, 80, 80], grande: true },
+    { label: 'Temp',   val: d.temp ? String(d.temp) : '-', unit: 'oC',  cor: [230, 140, 50] },
+  ];
+
+  let yv = yInicio + 11;
+  const altV = (alturaTotal - 12) / vitais.length;
+
+  vitais.forEach(v => {
+    const rgb = v.cor;
+    doc.setFillColor(
+      Math.floor(rgb[0] * 0.08 + 8),
+      Math.floor(rgb[1] * 0.08 + 8),
+      Math.floor(rgb[2] * 0.08 + 14)
+    );
+    doc.rect(xVal, yv, largVal, altV - 0.5, 'F');
+
+    doc.setTextColor(...rgb.map(c => Math.min(Math.floor(c * 0.7), 255)));
+    doc.setFontSize(5.5);
+    doc.setFont('helvetica', 'normal');
+    doc.text(v.label, xVal + 1, yv + 3);
+
+    doc.setTextColor(...rgb);
+    doc.setFontSize(v.grande ? 7.5 : 9);
+    doc.setFont('helvetica', 'bold');
+    doc.text(String(v.val).substring(0, 7), xVal + largVal / 2, yv + altV - 3.5, { align: 'center' });
+
+    if (v.unit) {
+      doc.setFontSize(5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...rgb.map(c => Math.floor(c * 0.6)));
+      doc.text(v.unit, xVal + largVal / 2, yv + altV - 0.5, { align: 'center' });
+    }
+
+    yv += altV;
+  });
+
+  // Rodape do monitor
+  const yBot = yInicio + alturaTotal - 6;
+  doc.setFillColor(6, 10, 15);
+  doc.rect(x, yBot, w, 6, 'F');
+
+  if (d.recomendacao_altitude) {
+    doc.setFillColor(180, 0, 0);
+    doc.circle(x + 4, yBot + 3, 1.5, 'F');
+    doc.setTextColor(255, 100, 100);
+    doc.setFontSize(6);
+    doc.setFont('helvetica', 'bold');
+    doc.text('ALTITUDE CABINE REDUZIDA', x + 7, yBot + 4);
+  }
+
+  if (d.o2_dispositivo && ['VMI', 'VNI', 'CPAP'].includes(d.o2_dispositivo)) {
+    doc.setTextColor(230, 140, 50);
+    doc.setFontSize(6);
+    doc.setFont('helvetica', 'normal');
+    const vmiTxt = d.o2_dispositivo +
+      (d.vm_fio2 ? ' . FiO2 ' + d.vm_fio2 + '%' : '') +
+      (d.vm_peep ? ' . PEEP ' + d.vm_peep : '');
+    doc.text(vmiTxt, x + w / 2, yBot + 4, { align: 'center' });
+  }
+
+  if (d.naca) {
+    doc.setFillColor(180, 0, 0);
+    doc.roundedRect(x + w - 20, yBot + 1, 18, 4, 1, 1, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(6);
+    doc.setFont('helvetica', 'bold');
+    doc.text(d.naca, x + w - 11, yBot + 4, { align: 'center' });
+  }
+
+  return yInicio + alturaTotal + 4;
+}
+
 function exportarPDF() {
   if (!regulacaoSalva) { toast('Salve a regulação antes de exportar.', true); return; }
   const { jsPDF } = window.jspdf;
@@ -1840,25 +2091,10 @@ function exportarPDF() {
   row('NACA', d.naca);
   multiRow('Diagnostico', d.diagnostico);
 
-  // Sinais Vitais
-  secHeader('SINAIS VITAIS');
-  row('PA (mmHg)', d.pa);
-  if (d.pam) row('PAM', d.pam + ' mmHg');
-  row('FC',          d.fc   ? d.fc   + ' bpm' : null);
-  row('FR',          d.fr   ? d.fr   + ' rpm' : null);
-  row('SpO2',        d.spo2 ? d.spo2 + ' %'   : null);
-  row('Temperatura', d.temp ? d.temp + ' oC'  : null);
-  if (d.gcs_total) {
-    const pedStr = d.gcs_pediatrico ? ' (Pediatrico)' : '';
-    row('GCS Total' + pedStr, d.gcs_total + ' / 15');
-    row('GCS  O / V / M', d.gcs_o + ' / ' + d.gcs_v + ' / ' + d.gcs_m);
-    if (d.gcs_pupilar != null) {
-      const descontoMap = { 1: 0, 2: 1, 3: 2 };
-      const desc = descontoMap[d.gcs_pupilar] ?? 0;
-      const gcsp = d.gcs_total - desc;
-      row('GCS-P', gcsp + (desc > 0 ? ' (desconto pupilar: -' + desc + ')' : ' (sem desconto)'));
-    }
-  }
+  // Sinais Vitais — monitor multiparametrico visual
+  checkPage();
+  y += 3;
+  y = desenharMonitor(doc, y, d);
 
   // O2
   if (d.o2_ativo) {

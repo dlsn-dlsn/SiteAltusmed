@@ -966,7 +966,9 @@ async function carregarAeroportosCustom() {
   try {
     const { data } = await db.from('aeroportos_custom').select('nome');
     aeroportosCustom = (data || []).map(r => r.nome);
-  }
+  } catch(e) { console.error('aeroportosCustom:', e); }
+}
+
 // ── Autocomplete de aeroportos ────────────────────────────────────────
 function jaccard(a, b) {
   const tri = s => {
@@ -2194,6 +2196,7 @@ function exportarPDF() {
   doc.text('Assinatura do Medico Regulador', ml, footY + 18);
 
   doc.save('AltusMed-' + d.codigo + '.pdf');
+}
 
 // ── Start ─────────────────────────────────────────────────────────────
 init();

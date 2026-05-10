@@ -1979,9 +1979,7 @@ function desenharMonitor(doc, yInicio, d) {
     doc.setTextColor(230, 140, 50);
     doc.setFontSize(6);
     doc.setFont('helvetica', 'normal');
-    const vmiTxt = d.o2_dispositivo +
-      (d.vm_fio2 ? ' . FiO2 ' + d.vm_fio2 + '%' : '') +
-      (d.vm_peep ? ' . PEEP ' + d.vm_peep : '');
+    const vmiTxt = String(d.o2_dispositivo || '') + (d.vm_fio2 ? ' · FiO2 ' + d.vm_fio2 + '%' : '') + (d.vm_peep ? ' · PEEP ' + d.vm_peep : '');
     doc.text(vmiTxt, x + w / 2, yBot + 4, { align: 'center' });
   }
 
@@ -2045,9 +2043,17 @@ function exportarPDF() {
   // Cabeçalho
   doc.setFillColor(15, 30, 53); doc.rect(0, 0, pw, 28, 'F');
   doc.setFont('helvetica', 'bold'); doc.setFontSize(20); doc.setTextColor(120, 190, 32);
-  doc.text('ALTUSMED', ml, 13);
+  
+    // Logos no cabeçalho
+    if (typeof LOGO_ALTUSMED !== 'undefined' && LOGO_ALTUSMED && !LOGO_ALTUSMED.startsWith('PLACE')) {
+      try { doc.addImage(LOGO_ALTUSMED, 'PNG', 14, 3, 32, 9); } catch(e) {}
+    }
+    if (typeof LOGO_AEROTOP !== 'undefined' && LOGO_AEROTOP && !LOGO_AEROTOP.startsWith('PLACE')) {
+      try { doc.addImage(LOGO_AEROTOP, 'PNG', 148, 2, 48, 13); } catch(e) {}
+    }
+    doc.text('ALTUSMED', ml, 13);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(180, 200, 220);
-  doc.text('Regulacao Aeromedica', ml, 21);
+  doc.text('Regulação Aeromédica', ml, 21);
   doc.setFontSize(8); doc.setTextColor(120, 140, 160);
   doc.text('Gerado em: ' + now, pw - ml, 21, { align: 'right' });
   y = 36;
@@ -2073,7 +2079,7 @@ function exportarPDF() {
   if (d.tempo_total_missao) {
     const ht = Math.floor(d.tempo_total_missao / 60), mt = d.tempo_total_missao % 60;
     const nota = (d.tempo_voo_horas * 60 + d.tempo_voo_minutos) > 210 ? ' (incl. reabastecimento)' : '';
-    row('Tempo total missao', ht + 'h ' + mt + 'min' + nota);
+    row('Tempo total missão', ht + 'h ' + mt + 'min' + nota);
   }
 
   // Paciente
@@ -2092,7 +2098,7 @@ function exportarPDF() {
   if (d.paciente_peso) row('Peso', d.paciente_peso + ' kg');
   row('Sexo', d.paciente_sexo);
   row('NACA', d.naca);
-  multiRow('Diagnostico', d.diagnostico);
+  multiRow('Diagnóstico', d.diagnostico);
 
   // Sinais Vitais — monitor multiparametrico visual
   checkPage();
@@ -2101,7 +2107,7 @@ function exportarPDF() {
 
   // O2
   if (d.o2_ativo) {
-    secHeader('OXIGENIO');
+    secHeader('OXIGÊNIO');
     row('Dispositivo', d.o2_dispositivo);
     row('Flow', d.o2_flow ? d.o2_flow + ' L/min' : null);
     if (d.o2_litros_necessarios)
@@ -2121,7 +2127,7 @@ function exportarPDF() {
   const dvaList   = d.duas         ? JSON.parse(d.duas)         : [];
   const drogaList = d.outras_drogas ? JSON.parse(d.outras_drogas) : [];
   if (d.infusao_continua && (dvaList.length || drogaList.length)) {
-    secHeader('MEDICACOES EM INFUSAO CONTINUA');
+    secHeader('MEDICAÇÕES EM INFUSÃO CONTÍNUA');
     if (dvaList.length) {
       doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(90, 90, 90);
       doc.text('DVA:', ml, y); y += 5;
@@ -2136,7 +2142,7 @@ function exportarPDF() {
 
   // Observações
   if (d.observacoes) {
-    secHeader('OBSERVACOES E ANOTACOES');
+    secHeader('OBSERVAÇÕES E ANOTAÇÕES');
     multiRow('', d.observacoes);
   }
 
@@ -2148,7 +2154,7 @@ function exportarPDF() {
   if (d.outra_restricao_altitude) restricoes.push('Outra: ' + (d.outra_restricao_obs || 'ver observacoes'));
 
   if (d.recomendacao_altitude) {
-    secHeader('RESTRICOES DE ALTITUDE');
+    secHeader('RESTRIÇÕES DE ALTITUDE DE CABINE');
     restricoes.forEach(r => {
       checkPage();
       doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(20, 20, 20);
@@ -2163,21 +2169,21 @@ function exportarPDF() {
     doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(180, 20, 20);
     doc.text('! RECOMENDACAO DE VOO COM ALTITUDE DE CABINE REDUZIDA', ml + 4, y + 5.5);
     doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(160, 40, 40);
-    doc.text('Altitude de cabine < 5.000 pes ou a criterio medico — expansao de gases', ml + 4, y + 10.5);
+    doc.text('Altitude de cabine < 5.000 pés ou a critério médico — expansão de gases', ml + 4, y + 10.5);
     doc.setLineWidth(0.2);
     y += 18;
   }
 
   // Fluxo
   if (d.fluxo) {
-    secHeader('FLUXO E DECISAO MEDICA');
+    secHeader('FLUXO E DECISÃO MÉDICA');
     const fluxoLabels = {
       liberado:     'Liberado para Voo',
       reavaliacao:  'Reavaliacao',
       misericordia: 'Voo de Misericordia (Salvaguardar a Vida Humana)',
       negado:       'Voo Negado'
     };
-    row('Decisao', fluxoLabels[d.fluxo] || d.fluxo);
+    row('Decisão', fluxoLabels[d.fluxo] || d.fluxo);
     if (d.fluxo === 'reavaliacao' && d.fluxo_reavaliacao_horas)
       row('Reavaliar em', d.fluxo_reavaliacao_horas + ' horas');
   }

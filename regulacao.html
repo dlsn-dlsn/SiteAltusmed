@@ -926,7 +926,9 @@ async function carregarPerfil() {
     perfilAtual = data || {};
     document.getElementById('topbar-saudacao').textContent = saudacaoCargo(perfilAtual.cargo_tipo);
     document.getElementById('topbar-nome').textContent = perfilAtual.nome || usuarioAtual.email;
-  }
+  } catch(e) { console.error('carregarPerfil:', e); }
+}
+
 // ── Equipe de voo ─────────────────────────────────────────────────────
 async function carregarEquipe() {
   try {
@@ -940,7 +942,9 @@ async function carregarEquipe() {
 
     popularSelect('equipe-medico',     medicos);
     popularSelect('equipe-enfermeiro', enfermeiros);
-  }
+  } catch(e) { console.error('carregarEquipe:', e); }
+}
+
 function popularSelect(id, lista) {
   const sel = document.getElementById(id);
   sel.innerHTML = '<option value="">Não designado</option>';
@@ -2189,10 +2193,6 @@ function exportarPDF() {
   doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(100, 100, 100);
   doc.text('Assinatura do Medico Regulador', ml, footY + 18);
 
-  }
-  }
-  }
-  }
   doc.save('AltusMed-' + d.codigo + '.pdf');
 
 // ── Start ─────────────────────────────────────────────────────────────

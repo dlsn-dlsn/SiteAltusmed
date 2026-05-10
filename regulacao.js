@@ -1151,18 +1151,7 @@ function exportarPDF() {
     if (y > 270) { doc.addPage(); y = 20; }
   }
 
-  function secHeader(titulo) {
-    if (y > 260) { doc.addPage(); y = 20; }
-    doc.setFillColor(240, 247, 232);
-    doc.rect(ml, y, cw, 6, 'F');
-    doc.setFillColor(120, 190, 32);
-    doc.rect(ml, y, 2.5, 6, 'F');
-    doc.setTextColor(15, 30, 53);
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.text(titulo.toUpperCase(), ml + 5, y + 4.2);
-    y += 8;
-  }
+  function secHeader(titulo) { y = secTitulo(doc, titulo, ml, y, pw - ml*2); }
   function secHeader_old(title) {
     checkPage(); y += 3;
     doc.setFillColor(26, 46, 74);

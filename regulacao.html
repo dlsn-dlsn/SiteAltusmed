@@ -1746,7 +1746,7 @@ async function finalizarRegulacao() {
 function desenharMonitor(doc, yInicio, d) {
   const x = 14;
   const w = 182;
-  const alturaTotal = 85;
+  const alturaTotal = 95;
 
   // Fundo do monitor
   doc.setFillColor(10, 14, 20);
@@ -1923,11 +1923,11 @@ function desenharMonitor(doc, yInicio, d) {
       val: (d.pa || (d.pa_sistolica && d.pa_diastolica ? d.pa_sistolica + '/' + d.pa_diastolica : '-')),
       unit: d.pam ? '(' + Math.round(d.pam) + ')' : '',
       cor: [230, 80, 80], grande: true },
-    { label: 'Temp',   val: d.temp ? String(d.temp) : '-', unit: 'oC',  cor: [230, 140, 50] },
+    { label: 'Temp',   val: d.temp ? String(d.temp) : '-', unit: '°C',  cor: [230, 140, 50] },
   ];
 
   let yv = yInicio + 11;
-  const altV = 75 / vitais.length;
+  const altV = 83 / vitais.length;
 
   vitais.forEach(v => {
     const rgb = v.cor;
@@ -2005,7 +2005,8 @@ function exportarPDF() {
     if (y > 270) { doc.addPage(); y = 20; }
   }
 
-  function secHeader(title) {
+  function secHeader(titulo) { y = secTitulo(doc, titulo, ml, y, pw - ml*2); }
+  function secHeader_old(title) {
     checkPage(); y += 3;
     doc.setFillColor(26, 46, 74);
     doc.rect(ml, y, cw, 7, 'F');
@@ -2051,11 +2052,11 @@ function exportarPDF() {
   doc.setFillColor(235, 243, 255); doc.setDrawColor(26, 46, 74);
   doc.roundedRect(ml, y, cw, 10, 2, 2, 'FD');
   doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(26, 46, 74);
-  doc.text('Missao: ' + d.codigo, pw / 2, y + 7, { align: 'center' });
+  doc.text('Missão: ' + d.codigo, pw / 2, y + 7, { align: 'center' });
   y += 16;
 
   // Logística
-  secHeader('LOGISTICA');
+  secHeader('LOGÍSTICA');
   row('Origem', d.origem);
   if (d.hospital_origem && d.hospital_origem !== 'Ignorado') row('Hospital Origem', d.hospital_origem);
   if (d.leito_origem    && d.leito_origem    !== 'Ignorado') row('Leito Origem',    d.leito_origem);
@@ -2180,7 +2181,7 @@ function exportarPDF() {
   // Equipe de voo
   if (d.medico_voo_nome || d.enfermeiro_voo_nome) {
     secHeader('EQUIPE DE VOO');
-    if (d.medico_voo_nome)    row('Medico',         d.medico_voo_nome);
+    if (d.medico_voo_nome)    row('Médico',         d.medico_voo_nome);
     if (d.enfermeiro_voo_nome) row('Enfermeiro(a)', d.enfermeiro_voo_nome);
   }
 
@@ -2190,10 +2191,10 @@ function exportarPDF() {
   doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(60, 60, 60);
   const medicoNome = perfilAtual.nome || usuarioAtual?.email || '';
   const crm = perfilAtual.crm ? '  |  CRM-PA ' + perfilAtual.crm : '';
-  doc.text('Medico Regulador: ' + medicoNome + crm, ml, footY + 5);
+  doc.text('Médico Regulador: ' + medicoNome + crm, ml, footY + 5);
   doc.setDrawColor(100, 100, 100); doc.line(ml, footY + 14, ml + 72, footY + 14);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(100, 100, 100);
-  doc.text('Assinatura do Medico Regulador', ml, footY + 18);
+  doc.text('Assinatura do Médico Regulador', ml, footY + 18);
 
   doc.save('AltusMed-' + d.codigo + '.pdf');
 }

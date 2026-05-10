@@ -926,9 +926,7 @@ async function carregarPerfil() {
     perfilAtual = data || {};
     document.getElementById('topbar-saudacao').textContent = saudacaoCargo(perfilAtual.cargo_tipo);
     document.getElementById('topbar-nome').textContent = perfilAtual.nome || usuarioAtual.email;
-  } catch(e) {}
-}
-
+  }
 // ── Equipe de voo ─────────────────────────────────────────────────────
 async function carregarEquipe() {
   try {
@@ -942,9 +940,7 @@ async function carregarEquipe() {
 
     popularSelect('equipe-medico',     medicos);
     popularSelect('equipe-enfermeiro', enfermeiros);
-  } catch(e) {}
-}
-
+  }
 function popularSelect(id, lista) {
   const sel = document.getElementById(id);
   sel.innerHTML = '<option value="">Não designado</option>';
@@ -966,9 +962,7 @@ async function carregarAeroportosCustom() {
   try {
     const { data } = await db.from('aeroportos_custom').select('nome');
     aeroportosCustom = (data || []).map(r => r.nome);
-  } catch(e) {}
-}
-
+  }
 // ── Autocomplete de aeroportos ────────────────────────────────────────
 function jaccard(a, b) {
   const tri = s => {
@@ -2040,9 +2034,6 @@ function exportarPDF() {
   // Cabeçalho
   doc.setFillColor(15, 30, 53); doc.rect(0, 0, pw, 28, 'F');
   doc.setFont('helvetica', 'bold'); doc.setFontSize(20); doc.setTextColor(120, 190, 32);
-  
-        catch(e) {}
-    }
     doc.text('ALTUSMED', ml, 13);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(180, 200, 220);
   doc.text('Regulação Aeromédica', ml, 21);
@@ -2198,6 +2189,10 @@ function exportarPDF() {
   doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(100, 100, 100);
   doc.text('Assinatura do Medico Regulador', ml, footY + 18);
 
+  }
+  }
+  }
+  }
   doc.save('AltusMed-' + d.codigo + '.pdf');
 
 // ── Start ─────────────────────────────────────────────────────────────

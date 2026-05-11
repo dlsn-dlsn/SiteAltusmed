@@ -1862,6 +1862,10 @@ async function abrirDetalhesMissao(id) {
   const { data: m } = await db.from('missoes').select('*').eq('id', id).single();
   if (!m) return;
 
+  window.modalMissaoId = id;
+  const btnPdf = document.getElementById('btn-pdf-missao');
+  if (btnPdf) btnPdf.style.display = m.status === 'Concluída' ? 'inline-block' : 'none';
+
   const { data: trechos } = await db.from('trechos_missao')
     .select('*').eq('missao_id', id).order('ordem');
 
@@ -1941,6 +1945,244 @@ async function abrirDetalhesMissao(id) {
   document.getElementById('det-completo').style.display = 'none';
   document.querySelector('#modal-detalhes-missao .btn-sm').style.display = 'inline-block';
   document.getElementById('modal-detalhes-missao').classList.add('show');
+}
+
+async function exportarPDFMissao(id) {
+  try {
+    const { jsPDF } = window.jspdf;
+    if (!jsPDF) { toast('Erro: jsPDF nao carregado.', true); return; }
+
+    // Busca dados
+    const [{ data: m }, { data: trechos }] = await Promise.all([
+      db.from('missoes').select('*').eq('id', id).single(),
+      db.from('trechos_missao').select('*').eq('missao_id', id).order('ordem'),
+    ]);
+    if (!m) { toast('Missao nao encontrada.', true); return; }
+
+    const { data: reg } = m.regulacao_id
+      ? await db.from('regulacoes').select('*').eq('id', m.regulacao_id).single()
+      : { data: null };
+
+    const uids = [m.medico_voo_id, m.enfermeiro_voo_id].filter(Boolean);
+    const { data: perfis } = uids.length
+      ? await db.from('perfis').select('id,nome,registro_tipo,registro_uf,registro_numero').in('id', uids)
+      : { data: [] };
+
+    const perfilMed = (perfis || []).find(p => p.id === m.medico_voo_id) || null;
+    const perfilEnf = (perfis || []).find(p => p.id === m.enfermeiro_voo_id) || null;
+
+    const doc = new jsPDF();
+    const PW = 210, ML = 14, MR = 14, CW = PW - ML - MR;
+    let y = 0;
+
+    const sf = rgb => doc.setFillColor(...rgb);
+    const sd = rgb => doc.setDrawColor(...rgb);
+    const st = rgb => doc.setTextColor(...rgb);
+    const ff = (s, sz) => { doc.setFont('helvetica', s); doc.setFontSize(sz); };
+    const ln = (x1,y1,x2,y2) => doc.line(x1,y1,x2,y2);
+
+    const C = {
+      navy:   [15, 30, 53],
+      green:  [120, 190, 32],
+      white:  [255, 255, 255],
+      text:   [31, 41, 55],
+      gray:   [100, 116, 139],
+      border: [210, 218, 228],
+      secBg:  [240, 247, 232],
+      pageBg: [240, 244, 248],
+      amber:  [212, 168, 32],
+    };
+
+    function bgPage() {
+      sf(C.pageBg); doc.rect(0, 0, PW, 297, 'F');
+    }
+    function checkPage(need) {
+      if (y > 279 - (need || 20)) { doc.addPage(); miniHeader(); }
+    }
+    function miniHeader() {
+      bgPage();
+      sf(C.navy); doc.rect(0, 0, PW, 8, 'F');
+      st(C.green); ff('bold', 7); doc.text('ALTUSMED', ML, 5.5);
+      st(C.white); ff('normal', 6);
+      doc.text('Relatorio de Encerramento — continuacao', PW/2, 5.5, { align:'center' });
+      if (m.codigo) { st(C.green); ff('bold', 6); doc.text(m.codigo, PW-MR, 5.5, { align:'right' }); }
+      sf(C.green); doc.rect(0, 8, PW, 0.8, 'F');
+      y = 14;
+    }
+    function secTitle(titulo) {
+      checkPage(16);
+      sf(C.secBg); doc.rect(ML, y, CW, 8, 'F');
+      sf(C.green);  doc.rect(ML, y, 2.5, 8, 'F');
+      st(C.navy); ff('bold', 8);
+      doc.text(titulo.toUpperCase(), ML+5.5, y+5.2);
+      y += 11;
+    }
+    function drawField(label, value, fx, fy, fw, fh) {
+      sf(C.white); sd(C.border); doc.setLineWidth(0.15);
+      doc.roundedRect(fx, fy, fw, fh, 1.5, 1.5, 'FD');
+      st(C.gray); ff('normal', 5.5); doc.text(label, fx+2.5, fy+3.5);
+      st(C.text); ff('bold', 7.5);
+      doc.text(String(value || '—').substring(0,38), fx+2.5, fy+fh-2.5);
+    }
+    function fieldRow(cols) {
+      const rowH = 13;
+      checkPage(rowH+3);
+      const colW = CW / cols.length;
+      cols.forEach((col, i) => drawField(col.label, col.value, ML+i*colW, y, colW-1, rowH));
+      y += rowH+2;
+    }
+
+    // ── CABEÇALHO ────────────────────────────────────────────────────────
+    bgPage();
+    sf(C.navy); doc.rect(0, 0, PW, 32, 'F');
+
+    st(C.green); ff('bold', 16); doc.text('ALTUSMED', ML, 14);
+    st(C.white); ff('normal', 7); doc.text('Medicina e Resgate Aereo', ML, 19.5);
+
+    st(C.white); ff('bold', 11);
+    doc.text('Relatorio de Encerramento de Missao', PW/2, 13, { align:'center' });
+    st([180,200,220]); ff('normal', 7);
+    doc.text('Documento para registro e assinatura das partes envolvidas', PW/2, 19, { align:'center' });
+
+    if (m.codigo) {
+      st(C.green); ff('bold', 13); doc.text(m.codigo, PW-MR, 13, { align:'right' });
+      st([180,200,220]); ff('normal', 6.5); doc.text('Codigo da Missao', PW-MR, 19, { align:'right' });
+    }
+
+    sf(C.green); doc.rect(0, 32, PW, 3, 'F');
+    y = 42;
+
+    // ── ROTA VOADA ────────────────────────────────────────────────────────
+    secTitle('Rota Voada');
+
+    const tList = trechos || [];
+    if (tList.length) {
+      tList.forEach((t, i) => {
+        checkPage(12);
+        sf(C.white); sd(C.border); doc.setLineWidth(0.15);
+        doc.roundedRect(ML, y, CW, 10, 1.5, 1.5, 'FD');
+        sf(C.navy); doc.roundedRect(ML, y, 10, 10, 1.5, 0, 'F');
+        st(C.white); ff('bold', 8); doc.text(String(i+1), ML+5, y+6.3, { align:'center' });
+        const orig = t.origem_codigo || t.origem || '?';
+        const dest = t.destino_codigo || t.destino || '?';
+        st(C.text); ff('bold', 8.5); doc.text(orig+' -> '+dest, ML+14, y+5);
+        if (t.origem && t.destino && (t.origem !== orig || t.destino !== dest)) {
+          st(C.gray); ff('normal', 6.5);
+          doc.text((t.origem+' -> '+t.destino).substring(0,60), ML+14, y+8.5);
+        }
+        if (t.distancia_km) {
+          st(C.green); ff('bold', 9);
+          doc.text(parseFloat(t.distancia_km).toFixed(0)+' km', ML+CW-3, y+6, { align:'right' });
+        }
+        y += 12;
+      });
+    } else {
+      checkPage(10);
+      st(C.gray); ff('normal', 7.5); doc.text('Sem trechos registrados.', ML+2, y+5);
+      y += 10;
+    }
+
+    checkPage(12);
+    sf(C.secBg); sd(C.green); doc.setLineWidth(0.2);
+    doc.roundedRect(ML, y, CW, 9, 1.5, 1.5, 'FD');
+    st(C.text); ff('bold', 7.5); doc.text('Km Total:', ML+4, y+5.8);
+    st(C.green); ff('bold', 9);
+    doc.text(m.km_total ? parseFloat(m.km_total).toFixed(0)+' km' : '—', ML+24, y+5.8);
+    st(C.text); ff('bold', 7.5); doc.text('Pernoites:', ML+CW/2, y+5.8);
+    st(C.navy); ff('bold', 9); doc.text(String(m.pernoites||0), ML+CW/2+22, y+5.8);
+    y += 13;
+
+    // ── DADOS DO PACIENTE ─────────────────────────────────────────────────
+    secTitle('Dados do Paciente');
+
+    const pacIdadeStr = m.paciente_idade ? m.paciente_idade+' anos' : null;
+    fieldRow([
+      { label:'Nome do Paciente', value: m.paciente_nome || null },
+      { label:'Idade',            value: pacIdadeStr },
+    ]);
+    fieldRow([
+      { label:'Diagnostico', value: m.diagnostico || null },
+      { label:'NACA',        value: m.naca ? String(m.naca) : (reg?.naca ? String(reg.naca) : null) },
+    ]);
+    fieldRow([
+      { label:'Hora do Pouso',         value: m.hora_pouso         || null },
+      { label:'Hora da Transferencia', value: m.hora_transferencia || null },
+    ]);
+    if (m.desfecho) {
+      checkPage(15);
+      drawField('Desfecho', m.desfecho, ML, y, CW, 13);
+      y += 15;
+    }
+
+    // ── EQUIPE DE VOO ─────────────────────────────────────────────────────
+    secTitle('Equipe de Voo');
+
+    const fmtReg = p => p && p.registro_numero
+      ? (p.registro_tipo||'CRM')+(p.registro_uf?'-'+p.registro_uf:'')+' '+p.registro_numero
+      : null;
+    const regMedStr = fmtReg(perfilMed);
+    const regEnfStr = fmtReg(perfilEnf);
+
+    fieldRow([
+      { label:'Medico Responsavel', value: m.medico_voo_nome    || null },
+      { label:'Registro',           value: regMedStr },
+    ]);
+    fieldRow([
+      { label:'Enfermeiro(a)',  value: m.enfermeiro_voo_nome || null },
+      { label:'Registro',      value: regEnfStr },
+    ]);
+
+    // ── ASSINATURAS ───────────────────────────────────────────────────────
+    checkPage(85);
+    secTitle('Assinaturas');
+
+    const sigW = (CW-2)/2;
+    const sigH = 38;
+
+    function sigBlock(fx, fy, titulo, nome, registro, vazio) {
+      sf(C.white); sd(C.border); doc.setLineWidth(0.15);
+      doc.roundedRect(fx, fy, sigW, sigH, 1.5, 1.5, 'FD');
+      sf(C.navy); doc.roundedRect(fx, fy, sigW, 6, 1.5, 0, 'F');
+      st(C.white); ff('bold', 5.5);
+      doc.text(titulo, fx+sigW/2, fy+4, { align:'center' });
+      sd([200,200,200]); doc.setLineWidth(0.5);
+      ln(fx+4, fy+22, fx+sigW-4, fy+22);
+      if (vazio) {
+        st(C.gray); ff('normal', 6);
+        doc.text('Assinatura', fx+sigW/2, fy+25.5, { align:'center' });
+        ff('normal', 6.5);
+        doc.text('Nome: ___________________________', fx+4, fy+30.5);
+        doc.text('Registro: _______________________', fx+4, fy+34.5);
+      } else {
+        st(C.gray); ff('normal', 6); doc.text('Assinatura', fx+sigW/2, fy+25.5, { align:'center' });
+        if (nome) { st(C.text); ff('bold', 7); doc.text(nome.substring(0,30), fx+sigW/2, fy+30.5, { align:'center' }); }
+        if (registro) { st(C.gray); ff('normal', 6.5); doc.text(registro, fx+sigW/2, fy+35, { align:'center' }); }
+      }
+    }
+
+    sigBlock(ML,            y, 'MEDICO RESPONSAVEL PELO VOO', m.medico_voo_nome, regMedStr, false);
+    sigBlock(ML+sigW+2, y, 'ENFERMEIRO(A) DE VOO',        m.enfermeiro_voo_nome, regEnfStr, false);
+    y += sigH+5;
+
+    checkPage(sigH+5);
+    sigBlock(ML,        y, 'MEDICO RECEPTOR',       null, null, true);
+    sigBlock(ML+sigW+2, y, 'ENFERMEIRO(A) RECEPTOR', null, null, true);
+    y += sigH+6;
+
+    // ── RODAPÉ ───────────────────────────────────────────────────────────
+    const rodapeY = 285;
+    sf(C.amber); doc.rect(0, rodapeY-1, PW, 0.8, 'F');
+    sf([254,251,235]); doc.rect(0, rodapeY+0.5, PW, 11, 'F');
+    st([133,100,4]); ff('normal', 6.5);
+    doc.text('Missao: '+(m.codigo||id), ML, rodapeY+6);
+    doc.text('Gerado em '+new Date().toLocaleDateString('pt-BR')+' | ALTUSMED', PW-MR, rodapeY+6, { align:'right' });
+
+    doc.save('encerramento-'+(m.codigo||id)+'.pdf');
+
+  } catch(e) {
+    console.error('Erro ao exportar PDF da missao:', e);
+    toast('Erro ao gerar PDF: '+e.message, true);
+  }
 }
 
 // ── Meus Voos (widget prestador) ──────────────────────────────────────────
@@ -2409,10 +2651,17 @@ init();
         onclick="document.getElementById('det-completo').style.display='block';this.style.display='none'">
         Ver todos os detalhes
       </button>
-      <button class="btn-sm"
-        onclick="document.getElementById('modal-detalhes-missao').classList.remove('show')">
-        Fechar
-      </button>
+      <div style="display:flex;gap:.5rem;align-items:center;">
+        <button id="btn-pdf-missao" class="btn-sm"
+          style="display:none;background:var(--green);color:white;border-color:var(--green);"
+          onclick="exportarPDFMissao(window.modalMissaoId)">
+          📄 Exportar PDF
+        </button>
+        <button class="btn-sm"
+          onclick="document.getElementById('modal-detalhes-missao').classList.remove('show')">
+          Fechar
+        </button>
+      </div>
     </div>
     <div id="det-completo" style="display:none;margin-top:1rem;
       border-top:1px solid var(--border);padding-top:1rem;"></div>

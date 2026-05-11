@@ -889,460 +889,630 @@ async function finalizarRegulacao() {
 }
 
 // ── Exportar PDF ──────────────────────────────────────────────────────
-function desenharMonitor(doc, yInicio, d) {
-  const x = 14;
-  const w = 182;
-  const alturaTotal = 95;
-
-  // Fundo do monitor
-  doc.setFillColor(10, 14, 20);
-  doc.roundedRect(x, yInicio, w, alturaTotal, 3, 3, 'F');
-
-  // Header do monitor
-  doc.setFillColor(15, 30, 53);
-  doc.rect(x, yInicio, w, 10, 'F');
-  doc.setTextColor(120, 190, 32);
-  doc.setFontSize(7);
-  doc.setFont('helvetica', 'bold');
-  doc.text('ALTUSMED MONITOR', x + 3, yInicio + 6.5);
-
-  // Paciente info no header
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(6.5);
-  doc.setFont('helvetica', 'normal');
-  const nomePac = (d.paciente_nome || '').substring(0, 25);
-  const infoPac = (d.aeronave || '') + ' . ' + (d.origem || '') + '->' + (d.destino || '');
-  doc.text(nomePac, x + w - 3, yInicio + 5, { align: 'right' });
-  doc.text(infoPac.substring(0, 35), x + w - 3, yInicio + 9, { align: 'right' });
-
-  // Linha separadora verde
-  doc.setDrawColor(120, 190, 32);
-  doc.setLineWidth(0.3);
-  doc.line(x, yInicio + 10, x + w, yInicio + 10);
-
-  // Curvas sinteticas
-  const wCurvas = w - 32;
-  const xCurvas = x + 2;
-  const cores = {
-    ecg:  [0, 255, 136],
-    spo2: [0, 204, 255],
-    resp: [255, 204, 0],
-    pa:   [255, 102, 102],
-  };
-
-  function curvaECG(yBase) {
-    doc.setDrawColor(...cores.ecg);
-    doc.setLineWidth(0.4);
-    const s = wCurvas / 4;
-    doc.line(xCurvas, yBase, xCurvas + s * 0.6, yBase);
-    doc.line(xCurvas + s * 0.6, yBase, xCurvas + s * 0.7, yBase - 4);
-    doc.line(xCurvas + s * 0.7, yBase - 4, xCurvas + s * 0.75, yBase + 3);
-    doc.line(xCurvas + s * 0.75, yBase + 3, xCurvas + s * 0.8, yBase);
-    doc.line(xCurvas + s * 0.8, yBase, xCurvas + s * 1.6, yBase);
-    doc.line(xCurvas + s * 1.6, yBase, xCurvas + s * 1.7, yBase - 4);
-    doc.line(xCurvas + s * 1.7, yBase - 4, xCurvas + s * 1.75, yBase + 3);
-    doc.line(xCurvas + s * 1.75, yBase + 3, xCurvas + s * 1.8, yBase);
-    doc.line(xCurvas + s * 1.8, yBase, xCurvas + s * 2.6, yBase);
-    doc.line(xCurvas + s * 2.6, yBase, xCurvas + s * 2.7, yBase - 4);
-    doc.line(xCurvas + s * 2.7, yBase - 4, xCurvas + s * 2.75, yBase + 3);
-    doc.line(xCurvas + s * 2.75, yBase + 3, xCurvas + s * 2.8, yBase);
-    doc.line(xCurvas + s * 2.8, yBase, xCurvas + wCurvas, yBase);
-  }
-
-  function curvaSeno(yBase, amplitude, cor, freq) {
-    doc.setDrawColor(...cor);
-    doc.setLineWidth(0.4);
-    const steps = 80;
-    let prevX = xCurvas, prevY = yBase;
-    for (let i = 1; i <= steps; i++) {
-      const xp = xCurvas + (i / steps) * wCurvas;
-      const yp = yBase - Math.sin((i / steps) * Math.PI * 2 * freq) * amplitude;
-      doc.line(prevX, prevY, xp, yp);
-      prevX = xp; prevY = yp;
-    }
-  }
-
-  function curvaPA(yBase) {
-    doc.setDrawColor(...cores.pa);
-    doc.setLineWidth(0.4);
-    const s = wCurvas / 5;
-    for (let i = 0; i < 5; i++) {
-      const ox = xCurvas + i * s;
-      doc.line(ox, yBase, ox + s * 0.2, yBase);
-      doc.line(ox + s * 0.2, yBase, ox + s * 0.3, yBase - 4);
-      doc.line(ox + s * 0.3, yBase - 4, ox + s * 0.4, yBase - 1);
-      doc.line(ox + s * 0.4, yBase - 1, ox + s * 0.5, yBase + 1.5);
-      doc.line(ox + s * 0.5, yBase + 1.5, ox + s, yBase);
-    }
-  }
-
-  const linhas = [
-    { label: 'ECG . II',     cor: cores.ecg,  y: yInicio + 16 },
-    { label: 'SpO2 . Pleth', cor: cores.spo2, y: yInicio + 23 },
-    { label: 'Resp',         cor: cores.resp, y: yInicio + 30 },
-    { label: 'PA invasiva',  cor: cores.pa,   y: yInicio + 37 },
-  ];
-
-  linhas.forEach((l, idx) => {
-    doc.setTextColor(...l.cor.map(c => Math.min(c, 200)));
-    doc.setFontSize(5.5);
-    doc.setFont('helvetica', 'normal');
-    doc.text(l.label, xCurvas, l.y - 2);
-    if (idx < linhas.length - 1) {
-      doc.setDrawColor(17, 26, 36);
-      doc.setLineWidth(0.2);
-      doc.line(xCurvas, l.y + 3, xCurvas + wCurvas, l.y + 3);
-    }
-  });
-
-  curvaECG(linhas[0].y + 1);
-  curvaSeno(linhas[1].y + 1, 2.5, cores.spo2, 3);
-  curvaSeno(linhas[2].y + 1, 1.8, cores.resp, 1.5);
-  curvaPA(linhas[3].y + 1);
-
-  // Glasgow
-  const yGCS = yInicio + 43;
-  const gcsTotal = d.gcs_total || (
-    (parseInt(d.gcs_o) || 0) +
-    (parseInt(d.gcs_v) || 0) +
-    (parseInt(d.gcs_m) || 0)
-  );
-
-  doc.setTextColor(180, 120, 255);
-  doc.setFontSize(6);
-  doc.setFont('helvetica', 'bold');
-  doc.text('GLASGOW', xCurvas, yGCS + 1);
-
-  doc.setFontSize(14);
-  doc.setTextColor(200, 136, 255);
-  doc.text(String(gcsTotal || '-'), xCurvas + 18, yGCS + 6);
-
-  doc.setDrawColor(150, 100, 220);
-  doc.setLineWidth(0.3);
-  doc.line(xCurvas + 27, yGCS - 1, xCurvas + 27, yGCS + 8);
-
-  const comps = [
-    { label: 'AO', val: d.gcs_o || '-' },
-    { label: 'RV', val: d.gcs_v || '-' },
-    { label: 'RM', val: d.gcs_m || '-' },
-  ];
-  comps.forEach((c, i) => {
-    const xc = xCurvas + 31 + i * 18;
-    doc.setFillColor(50, 30, 70);
-    doc.roundedRect(xc, yGCS - 1, 16, 10, 1, 1, 'F');
-    doc.setTextColor(170, 110, 230);
-    doc.setFontSize(6.5);
-    doc.setFont('helvetica', 'bold');
-    doc.text(c.label, xc + 8, yGCS + 3, { align: 'center' });
-    doc.setFontSize(9);
-    doc.setTextColor(200, 136, 255);
-    doc.text(String(c.val), xc + 8, yGCS + 8, { align: 'center' });
-  });
-
-  if (d.gcs_pupilar && d.gcs_pupilar !== 'ignorada') {
-    const desconto = d.gcs_pupilar === '2' ? 1 : d.gcs_pupilar === '3' ? 2 : 0;
-    const gcsp = (gcsTotal || 0) - desconto;
-    const xp = xCurvas + 31 + 3 * 18 + 4;
-    doc.setDrawColor(150, 100, 220);
-    doc.setLineWidth(0.3);
-    doc.line(xp - 2, yGCS - 1, xp - 2, yGCS + 9);
-    doc.setFillColor(40, 25, 60);
-    doc.roundedRect(xp, yGCS - 1, 18, 10, 1, 1, 'F');
-    doc.setTextColor(160, 100, 210);
-    doc.setFontSize(6.5);
-    doc.setFont('helvetica', 'bold');
-    doc.text('GCS-P', xp + 9, yGCS + 3, { align: 'center' });
-    doc.setFontSize(9);
-    doc.setTextColor(180, 120, 240);
-    doc.text(String(gcsp), xp + 9, yGCS + 8, { align: 'center' });
-  }
-
-  // Painel lateral de valores
-  const xVal = x + wCurvas + 4;
-  const largVal = w - wCurvas - 5;
-
-  const vitais = [
-    { label: 'HR.ECG', val: d.fc   ? String(d.fc)   : '-', unit: 'bpm', cor: [0, 220, 100] },
-    { label: 'SpO2',   val: d.spo2 ? String(d.spo2) : '-', unit: '%',   cor: [0, 180, 230] },
-    { label: 'Resp',   val: d.fr   ? String(d.fr)   : '-', unit: 'rpm', cor: [220, 180, 0] },
-    { label: 'PA',
-      val: (d.pa || (d.pa_sistolica && d.pa_diastolica ? d.pa_sistolica + '/' + d.pa_diastolica : '-')),
-      unit: d.pam ? '(' + Math.round(d.pam) + ')' : '',
-      cor: [230, 80, 80], grande: true },
-    { label: 'Temp',   val: d.temp ? String(d.temp) : '-', unit: '°C',  cor: [230, 140, 50] },
-  ];
-
-  let yv = yInicio + 11;
-  const altV = 83 / vitais.length;
-
-  vitais.forEach(v => {
-    const rgb = v.cor;
-    doc.setFillColor(
-      Math.floor(rgb[0] * 0.08 + 8),
-      Math.floor(rgb[1] * 0.08 + 8),
-      Math.floor(rgb[2] * 0.08 + 14)
-    );
-    doc.rect(xVal, yv, largVal, altV - 0.5, 'F');
-
-    doc.setTextColor(...rgb.map(c => Math.min(Math.floor(c * 0.7), 255)));
-    doc.setFontSize(5.5);
-    doc.setFont('helvetica', 'normal');
-    doc.text(v.label, xVal + 1, yv + 3);
-
-    doc.setTextColor(...rgb);
-    doc.setFontSize(v.grande ? 7.5 : 9);
-    doc.setFont('helvetica', 'bold');
-    doc.text(String(v.val).substring(0, 7), xVal + largVal / 2, yv + altV - 3.5, { align: 'center' });
-
-    if (v.unit) {
-      doc.setFontSize(5);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...rgb.map(c => Math.floor(c * 0.6)));
-      doc.text(v.unit, xVal + largVal / 2, yv + altV - 0.5, { align: 'center' });
-    }
-
-    yv += altV;
-  });
-
-  // Rodape do monitor
-  const yBot = yInicio + alturaTotal - 6;
-  doc.setFillColor(6, 10, 15);
-  doc.rect(x, yBot, w, 6, 'F');
-
-  if (d.recomendacao_altitude) {
-    doc.setFillColor(180, 0, 0);
-    doc.circle(x + 4, yBot + 3, 1.5, 'F');
-    doc.setTextColor(255, 100, 100);
-    doc.setFontSize(6);
-    doc.setFont('helvetica', 'bold');
-    doc.text('ALTITUDE CABINE REDUZIDA', x + 7, yBot + 4);
-  }
-
-  if (d.o2_dispositivo && ['VMI', 'VNI', 'CPAP'].includes(d.o2_dispositivo)) {
-    doc.setTextColor(230, 140, 50);
-    doc.setFontSize(6);
-    doc.setFont('helvetica', 'normal');
-    const vmiTxt = String(d.o2_dispositivo || '') + (d.vm_fio2 ? ' · FiO2 ' + d.vm_fio2 + '%' : '') + (d.vm_peep ? ' · PEEP ' + d.vm_peep : '');
-    doc.text(vmiTxt, x + w / 2, yBot + 4, { align: 'center' });
-  }
-
-  if (d.naca) {
-    doc.setFillColor(180, 0, 0);
-    doc.roundedRect(x + w - 20, yBot + 1, 18, 4, 1, 1, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(6);
-    doc.setFont('helvetica', 'bold');
-    doc.text(d.naca, x + w - 11, yBot + 4, { align: 'center' });
-  }
-
-  return yInicio + alturaTotal + 4;
-}
-
 function exportarPDF() {
   if (!regulacaoSalva) { toast('Salve a regulação antes de exportar.', true); return; }
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const d   = regulacaoSalva;
-  const ml  = 20, pw = 210, cw = pw - ml * 2;
-  let y     = 20;
-  const now = new Date().toLocaleString('pt-BR');
+  const ML  = 14, PW = 210, CW = 182;
+  let y     = 0;
 
-  function checkPage() {
-    if (y > 270) { doc.addPage(); y = 20; }
+  const C = {
+    navy:   [15, 30, 53],
+    navy2:  [10, 14, 20],
+    green:  [120, 190, 32],
+    white:  [255, 255, 255],
+    red:    [220, 38, 38],
+    amber:  [212, 168, 32],
+    text:   [31, 41, 55],
+    bg:     [248, 249, 250],
+    border: [224, 224, 224],
+    secBg:  [240, 247, 232],
+  };
+
+  const sf = (r) => doc.setFillColor(...r);
+  const sd = (r) => doc.setDrawColor(...r);
+  const st = (r) => doc.setTextColor(...r);
+  const ff = (s, sz) => { doc.setFont('helvetica', s); doc.setFontSize(sz); };
+  const ln = (x1,y1,x2,y2) => doc.line(x1,y1,x2,y2);
+
+  function seg(pts) {
+    pts.reduce((p, c) => { if (p) ln(p[0], p[1], c[0], c[1]); return c; });
   }
 
-  function secHeader(titulo) { y = secTitulo(doc, titulo, ml, y, pw - ml*2); }
-  function secHeader_old(title) {
-    checkPage(); y += 3;
-    doc.setFillColor(26, 46, 74);
-    doc.rect(ml, y, cw, 7, 'F');
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5);
-    doc.setTextColor(255, 255, 255);
-    doc.text(title, ml + 3, y + 5);
-    y += 10;
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
-    doc.setTextColor(25, 25, 25);
+  function checkPage(need) {
+    need = need || 20;
+    if (y > 279 - need) { doc.addPage(); y = 14; }
   }
 
-  function row(label, value) {
-    if (value === null || value === undefined || value === '') return;
-    checkPage();
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(90, 90, 90);
-    doc.text(label, ml, y);
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(20, 20, 20);
-    doc.text(String(value), ml + 52, y);
-    y += 6;
-  }
+  // ─── CABEÇALHO ────────────────────────────────────────────────────────
+  const HDR_H = 22;
+  sf(C.navy); doc.rect(0, 0, PW, HDR_H, 'F');
 
-  function multiRow(label, text) {
-    if (!text) return;
-    checkPage();
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(90, 90, 90);
-    doc.text(label, ml, y); y += 5;
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(20, 20, 20);
-    doc.splitTextToSize(text, cw - 4).forEach(l => { checkPage(); doc.text(l, ml + 2, y); y += 5; });
-    y += 2;
-  }
-
-  // Cabeçalho
-  doc.setFillColor(15, 30, 53); doc.rect(0, 0, pw, 28, 'F');
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(20); doc.setTextColor(120, 190, 32);
-    doc.text('ALTUSMED', ml, 13);
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(180, 200, 220);
-  doc.text('Regulação Aeromédica', ml, 21);
-  doc.setFontSize(8); doc.setTextColor(120, 140, 160);
-  doc.text('Gerado em: ' + now, pw - ml, 21, { align: 'right' });
-  y = 36;
-
-  // Código
-  doc.setFillColor(235, 243, 255); doc.setDrawColor(26, 46, 74);
-  doc.roundedRect(ml, y, cw, 10, 2, 2, 'FD');
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(26, 46, 74);
-  doc.text('Missão: ' + d.codigo, pw / 2, y + 7, { align: 'center' });
-  y += 16;
-
-  // Logística
-  secHeader('LOGÍSTICA');
-  row('Origem', d.origem);
-  if (d.hospital_origem && d.hospital_origem !== 'Ignorado') row('Hospital Origem', d.hospital_origem);
-  if (d.leito_origem    && d.leito_origem    !== 'Ignorado') row('Leito Origem',    d.leito_origem);
-  row('Destino', d.destino);
-  if (d.hospital_destino && d.hospital_destino !== 'Ignorado') row('Hospital Destino', d.hospital_destino);
-  if (d.leito_destino    && d.leito_destino    !== 'Ignorado') row('Leito Destino',    d.leito_destino);
-  row('Aeronave', d.aeronave);
-  if (d.tempo_voo_horas || d.tempo_voo_minutos)
-    row('Tempo de voo', (d.tempo_voo_horas || 0) + 'h ' + (d.tempo_voo_minutos || 0) + 'min');
-  if (d.tempo_total_missao) {
-    const ht = Math.floor(d.tempo_total_missao / 60), mt = d.tempo_total_missao % 60;
-    const nota = (d.tempo_voo_horas * 60 + d.tempo_voo_minutos) > 210 ? ' (incl. reabastecimento)' : '';
-    row('Tempo total missão', ht + 'h ' + mt + 'min' + nota);
-  }
-
-  // Paciente
-  secHeader('PACIENTE');
-  row('Nome', d.paciente_nome);
+  // Ícone ECG no header
+  sf([30, 55, 15]); doc.roundedRect(ML, 3.5, 8, 8, 1.5, 1.5, 'F');
+  sd(C.green); doc.setLineWidth(0.6);
   (() => {
-    if (d.paciente_idade == null) return;
-    let s = d.paciente_idade + ' anos';
-    if (d.paciente_idade === 0 && d.paciente_idade_meses != null) {
-      s = d.paciente_idade_meses + ' meses';
-      if (d.paciente_idade_meses === 0 && d.paciente_idade_dias != null)
-        s = d.paciente_idade_dias + ' dias';
-    }
-    row('Idade', s);
+    const ix = ML + 0.8, iy = 7.5;
+    seg([[ix,iy],[ix+1.2,iy],[ix+1.8,iy-2],[ix+2.3,iy+2.2],[ix+2.8,iy],[ix+4,iy],
+         [ix+4.8,iy],[ix+5.4,iy-2],[ix+5.9,iy+2.2],[ix+6.4,iy],[ix+7.2,iy]]);
   })();
-  if (d.paciente_peso) row('Peso', d.paciente_peso + ' kg');
-  row('Sexo', d.paciente_sexo);
-  row('NACA', d.naca);
-  multiRow('Diagnóstico', d.diagnostico);
 
-  // Sinais Vitais — monitor multiparametrico visual
-  checkPage();
-  y += 3;
-  y = desenharMonitor(doc, y, d);
+  // ALTUSMED e subtexto
+  st(C.green); ff('bold', 10);
+  doc.text('ALTUSMED', ML + 10.5, 8.5);
+  doc.setTextColor(200, 215, 230); ff('normal', 5.5);
+  doc.text('TRANSPORTE AEROMÉDICO', ML + 10.5, 12);
 
-  // O2
-  if (d.o2_ativo) {
-    secHeader('OXIGÊNIO');
-    row('Dispositivo', d.o2_dispositivo);
-    row('Flow', d.o2_flow ? d.o2_flow + ' L/min' : null);
-    if (d.o2_litros_necessarios)
-      row('O2 necessario', d.o2_litros_necessarios + ' L (E=' + d.o2_cilindros_necessarios + ' cil.)');
-    if (d.vm_modo)   row('Modo VM',         d.vm_modo);
-    if (d.vm_fio2)   row('FiO2',            d.vm_fio2 + ' %');
-    if (d.vm_peep)   row('PEEP',            d.vm_peep + ' cmH2O');
-    if (d.vm_volume) row('Vol. corrente',   d.vm_volume + ' ml');
-    if (d.vm_freq)   row('Freq. prog.',     d.vm_freq + ' rpm');
-    if (d.vm_ps)     row('Pressao suporte', d.vm_ps + ' cmH2O');
-    if (d.vm_ti)     row('Tempo insp.',     d.vm_ti + ' s');
-    if (d.vm_fluxo)  row('Fluxo',          d.vm_fluxo + ' L/min');
-    if (d.vm_obs)    row('Obs. VM',         d.vm_obs);
+  // Título central
+  st(C.white); ff('bold', 8);
+  doc.text('Ficha de Regulação Aeromédica', PW / 2, 8.5, { align: 'center' });
+
+  // Código AM à direita em verde
+  st(C.green); ff('bold', 10);
+  doc.text(d.codigo || '', PW - ML, 9, { align: 'right' });
+
+  // Linha separadora inferior do header
+  const yBot = HDR_H - 4.5;
+  sd(C.green); doc.setLineWidth(0.2);
+  ln(ML, yBot - 1, PW - ML, yBot - 1);
+
+  const now = new Date();
+  const dataHora = now.toLocaleDateString('pt-BR') + ' · ' +
+    now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const medicoSaud = (() => {
+    const tipo = perfilAtual.cargo_tipo || '';
+    const nome = perfilAtual.nome || '';
+    const pref = (tipo === 'medico' || tipo === 'diretor') ? 'Dr. ' :
+                 (tipo === 'enfermeiro' ? 'ENF(a). ' : '');
+    const reg  = perfilAtual.crm
+      ? (perfilAtual.registro_tipo || 'CRM') + '/' + (perfilAtual.registro_uf || 'PA') + ' ' + perfilAtual.crm
+      : '';
+    return (pref + nome + (reg ? ' · ' + reg : '')).trim();
+  })();
+
+  doc.setTextColor(180, 200, 220); ff('normal', 5.5);
+  doc.text(dataHora, ML, yBot + 0.8);
+  st(C.green); ff('italic', 5.5);
+  doc.text('Cuidados sem fronteiras, dedicação sem limites', PW / 2, yBot + 0.8, { align: 'center' });
+  doc.setTextColor(180, 200, 220); ff('normal', 5.5);
+  if (medicoSaud) doc.text(medicoSaud, PW - ML, yBot + 0.8, { align: 'right' });
+
+  // Faixa verde 3px na base
+  sf(C.green); doc.rect(0, HDR_H, PW, 1.2, 'F');
+  y = HDR_H + 1.2 + 4;
+
+  // ─── HELPERS ──────────────────────────────────────────────────────────
+
+  function secTitle(titulo) {
+    checkPage(10);
+    y += 2;
+    sf(C.secBg); doc.rect(ML, y, CW, 6, 'F');
+    sf(C.green); doc.rect(ML, y, 1.5, 6, 'F');
+    st(C.navy); ff('bold', 6.5);
+    doc.text(titulo.toUpperCase(), ML + 4, y + 4.2);
+    y += 8;
+    ff('normal', 8); st(C.text);
   }
 
-  // Infusão Contínua
-  const dvaList   = d.duas         ? JSON.parse(d.duas)         : [];
-  const drogaList = d.outras_drogas ? JSON.parse(d.outras_drogas) : [];
-  if (d.infusao_continua && (dvaList.length || drogaList.length)) {
-    secHeader('MEDICAÇÕES EM INFUSÃO CONTÍNUA');
-    if (dvaList.length) {
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(90, 90, 90);
-      doc.text('DVA:', ml, y); y += 5;
-      dvaList.forEach(item => row('  ' + item.droga, (item.valor || '—') + ' ' + (item.unidade || '')));
-    }
-    if (drogaList.length) {
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(90, 90, 90);
-      doc.text('Outras drogas:', ml, y); y += 5;
-      drogaList.forEach(item => row('  ' + item.droga, (item.valor || '—') + ' ' + (item.unidade || '')));
-    }
+  function drawField(label, value, fx, fy, fw, fh) {
+    if (value === null || value === undefined || value === '') return;
+    fh = fh || 10;
+    sf(C.bg); sd(C.border); doc.setLineWidth(0.2);
+    doc.roundedRect(fx, fy, fw, fh, 1, 1, 'FD');
+    doc.setTextColor(170, 170, 170); ff('normal', 5);
+    doc.text(label.toUpperCase(), fx + 2.5, fy + 3.5);
+    st(C.text); ff('bold', 7);
+    const fit = doc.splitTextToSize(String(value), fw - 5);
+    doc.text(fit[0], fx + 2.5, fy + 8);
   }
 
-  // Observações
-  if (d.observacoes) {
-    secHeader('OBSERVAÇÕES E ANOTAÇÕES');
-    multiRow('', d.observacoes);
+  function fieldRow(cols, rowH) {
+    rowH = rowH || 10;
+    checkPage(rowH + 2);
+    const totalSpan = cols.reduce((s, c) => s + (c.span || 1), 0);
+    const gap = 2, totalGap = gap * (cols.length - 1);
+    let cx = ML;
+    cols.forEach(c => {
+      const fw = ((c.span || 1) / totalSpan) * (CW - totalGap);
+      drawField(c.label, c.value, cx, y, fw, rowH);
+      cx += fw + gap;
+    });
+    y += rowH + 2;
   }
 
-  // Restrições de altitude
-  const restricoes = [];
-  if (d.cirurgia_recente)         restricoes.push('Cirurgia recente < 7 dias');
-  if (d.pneumo_nao_drenado)       restricoes.push('Pneumotorax / Pneumoencefalo / Pneumoperitonio nao drenado');
-  if (d.obstrucao_intestinal)     restricoes.push('Obstrucao intestinal');
-  if (d.outra_restricao_altitude) restricoes.push('Outra: ' + (d.outra_restricao_obs || 'ver observacoes'));
-
+  // ─── ALERTA ALTITUDE (topo) ────────────────────────────────────────────
   if (d.recomendacao_altitude) {
-    secHeader('RESTRIÇÕES DE ALTITUDE DE CABINE');
-    restricoes.forEach(r => {
-      checkPage();
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(20, 20, 20);
-      doc.text('  * ' + r, ml, y); y += 6;
+    checkPage(14);
+    sf([254, 242, 242]); sd(C.red); doc.setLineWidth(0.4);
+    doc.roundedRect(ML, y, CW, 11, 2, 2, 'FD');
+    st(C.red); ff('bold', 7.5);
+    doc.text('! RECOMENDAÇÃO DE VOO COM ALTITUDE DE CABINE REDUZIDA', ML + 4, y + 5);
+    const lista = [];
+    if (d.cirurgia_recente)         lista.push('Cirurgia recente < 7 dias');
+    if (d.pneumo_nao_drenado)       lista.push('Pneumotórax / Pneumoencéfalo não drenado');
+    if (d.obstrucao_intestinal)     lista.push('Obstrução intestinal');
+    if (d.outra_restricao_altitude && d.outra_restricao_obs) lista.push(d.outra_restricao_obs);
+    if (lista.length) {
+      doc.setTextColor(153, 27, 27); ff('normal', 5.5);
+      const alertTxt = doc.splitTextToSize(lista.join(' · '), CW - 8);
+      doc.text(alertTxt[0], ML + 4, y + 9);
+    }
+    y += 14;
+  }
+
+  // ─── LOGÍSTICA ────────────────────────────────────────────────────────
+  secTitle('Logística');
+
+  // Trechos visuais com setas
+  (() => {
+    const trechos = [];
+    document.querySelectorAll('[id^="tr-orig-"]').forEach(el => {
+      const i    = el.id.replace('tr-orig-', '');
+      const orig = el.value.toUpperCase().trim();
+      const dest = (document.getElementById('tr-dest-' + i)?.value || '').toUpperCase().trim();
+      if (orig && dest) {
+        const km = (AEROPORTOS_COORDS[orig] && AEROPORTOS_COORDS[dest])
+          ? distanciaKm(AEROPORTOS_COORDS[orig].lat, AEROPORTOS_COORDS[orig].lng,
+                        AEROPORTOS_COORDS[dest].lat, AEROPORTOS_COORDS[dest].lng).toFixed(0)
+          : null;
+        trechos.push({ orig, dest, km });
+      }
+    });
+    if (!trechos.length) return;
+
+    checkPage(14);
+    const pontos = [];
+    trechos.forEach((t, i) => {
+      if (i === 0) pontos.push({ code: t.orig, km: null });
+      pontos.push({ code: t.dest, km: t.km });
     });
 
-    checkPage(); y += 2;
-    doc.setFillColor(253, 220, 220);
-    doc.setDrawColor(220, 38, 38);
-    doc.setLineWidth(0.6);
-    doc.roundedRect(ml, y, cw, 14, 2, 2, 'FD');
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(180, 20, 20);
-    doc.text('! RECOMENDACAO DE VOO COM ALTITUDE DE CABINE REDUZIDA', ml + 4, y + 5.5);
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(160, 40, 40);
-    doc.text('Altitude de cabine < 5.000 pés ou a critério médico — expansão de gases', ml + 4, y + 10.5);
-    doc.setLineWidth(0.2);
-    y += 18;
+    let cx = ML;
+    pontos.forEach((p, i) => {
+      const bw = p.km ? 22 : 16;
+      sf(C.secBg); sd(C.green); doc.setLineWidth(0.3);
+      doc.roundedRect(cx, y, bw, 9, 1.5, 1.5, 'FD');
+      st([39, 80, 10]); ff('bold', 7);
+      doc.text(p.code, cx + bw / 2, y + 4.8, { align: 'center' });
+      if (p.km) {
+        doc.setTextColor(136, 136, 136); ff('normal', 4.5);
+        doc.text(p.km + 'km', cx + bw / 2, y + 8.2, { align: 'center' });
+      }
+      cx += bw;
+      if (i < pontos.length - 1) {
+        st(C.green); ff('normal', 10);
+        doc.text('>', cx + 1.5, y + 6.2);
+        cx += 8;
+      }
+    });
+
+    const kmTotal = parseFloat(document.getElementById('km-total-hidden')?.value) || 0;
+    if (kmTotal > 0 && cx + 26 < ML + CW) {
+      cx += 4;
+      sf(C.secBg); sd(C.green); doc.setLineWidth(0.3);
+      doc.roundedRect(cx, y, 24, 9, 1.5, 1.5, 'FD');
+      st(C.green); ff('bold', 7);
+      doc.text(kmTotal.toFixed(0) + ' km', cx + 12, y + 5.5, { align: 'center' });
+    }
+    y += 13;
+  })();
+
+  const hVoo = (d.tempo_voo_horas || 0) + 'h ' + (d.tempo_voo_minutos || 0) + 'min';
+  let tempoTotal = null;
+  if (d.tempo_total_missao) {
+    const ht = Math.floor(d.tempo_total_missao / 60), mt = d.tempo_total_missao % 60;
+    tempoTotal = ht + 'h ' + mt + 'min';
+  }
+  fieldRow([
+    { label: 'Aeronave',           value: d.aeronave,   span: 1 },
+    { label: 'Tempo de voo',       value: hVoo,         span: 1 },
+    { label: 'Tempo total missão', value: tempoTotal,   span: 1 },
+  ]);
+
+  const origH = (d.hospital_origem  && d.hospital_origem  !== 'Ignorado') ? d.hospital_origem  : null;
+  const origL = (origH && d.leito_origem    && d.leito_origem    !== 'Ignorado') ? d.leito_origem    : null;
+  const destH = (d.hospital_destino && d.hospital_destino !== 'Ignorado') ? d.hospital_destino : null;
+  const destL = (destH && d.leito_destino   && d.leito_destino   !== 'Ignorado') ? d.leito_destino   : null;
+  if (origH || destH) {
+    fieldRow([
+      { label: 'Hospital origem',  value: origH ? origH + (origL ? ' · ' + origL : '') : null, span: 1 },
+      { label: 'Hospital destino', value: destH ? destH + (destL ? ' · ' + destL : '') : null, span: 1 },
+    ]);
   }
 
-  // Fluxo
-  if (d.fluxo) {
-    secHeader('FLUXO E DECISÃO MÉDICA');
-    const fluxoLabels = {
-      liberado:     'Liberado para Voo',
-      reavaliacao:  'Reavaliacao',
-      misericordia: 'Voo de Misericordia (Salvaguardar a Vida Humana)',
-      negado:       'Voo Negado'
+  // ─── PACIENTE ────────────────────────────────────────────────────────
+  secTitle('Paciente');
+
+  let idadeStr = null;
+  if (d.paciente_idade != null) {
+    idadeStr = d.paciente_idade > 0 ? d.paciente_idade + ' anos' : '< 1 ano';
+    if (d.paciente_idade === 0 && d.paciente_idade_meses)
+      idadeStr = d.paciente_idade_meses + ' meses';
+  }
+  const idadePeso = [idadeStr, d.paciente_peso ? d.paciente_peso + ' kg' : null].filter(Boolean).join(' · ');
+
+  fieldRow([
+    { label: 'Nome',          value: d.paciente_nome, span: 2 },
+    { label: 'Idade / Peso',  value: idadePeso || null, span: 1 },
+    { label: 'NACA',          value: d.naca, span: 1 },
+  ]);
+  if (d.diagnostico) {
+    fieldRow([
+      { label: 'Diagnóstico',     value: d.diagnostico, span: 3 },
+      { label: 'Sexo',            value: d.paciente_sexo, span: 1 },
+    ]);
+  }
+
+  // ─── MONITOR ────────────────────────────────────────────────────────
+  secTitle('Sinais Vitais — Monitor AltusMed');
+  checkPage(85);
+
+  (() => {
+    const mX = ML, mW = CW, mH = 80;
+    const xV = mX + mW - 32, wV = 32, wC = mW - wV - 1;
+    const yM = y;
+
+    // Fundo escuro
+    sf(C.navy2); sd([26, 42, 58]); doc.setLineWidth(0.4);
+    doc.roundedRect(mX, yM, mW, mH, 2, 2, 'FD');
+
+    // Header do monitor
+    sf(C.navy); doc.rect(mX, yM, mW, 9, 'F');
+    sd(C.green); doc.setLineWidth(0.3);
+    ln(mX, yM + 9, mX + mW, yM + 9);
+
+    // Mini ECG no header
+    doc.setLineWidth(0.5);
+    (() => {
+      const hix = mX + 3, hiy = yM + 5.5;
+      seg([[hix,hiy],[hix+1,hiy],[hix+1.5,hiy-2],[hix+2,hiy+1.5],[hix+2.5,hiy],[hix+4,hiy]]);
+    })();
+
+    st(C.green); ff('bold', 7);
+    doc.text('ALTUSMED MONITOR', mX + 7.5, yM + 6.2);
+
+    st(C.white); ff('normal', 5.5);
+    doc.text((d.paciente_nome || '').substring(0, 30), xV - 1, yM + 4.5, { align: 'right' });
+    doc.setTextColor(160, 180, 200); ff('normal', 4.5);
+    doc.text((d.diagnostico || '').substring(0, 38), xV - 1, yM + 8, { align: 'right' });
+
+    // Separador curvas | painel lateral
+    sd([26, 42, 58]); doc.setLineWidth(0.2);
+    ln(xV, yM + 9, xV, yM + mH - 7);
+
+    // Curvas
+    const coresW = {
+      ecg:  [0, 255, 136],
+      spo2: [0, 204, 255],
+      resp: [255, 204, 0],
+      pa:   [255, 102, 102],
     };
-    row('Decisão', fluxoLabels[d.fluxo] || d.fluxo);
-    if (d.fluxo === 'reavaliacao' && d.fluxo_reavaliacao_horas)
-      row('Reavaliar em', d.fluxo_reavaliacao_horas + ' horas');
+    const rowH = 12;
+    const lbls = ['ECG · II · 25mm/s', 'SpO2 · Pleth', 'Resp · II', 'PA invasiva · art'];
+    const lblC = [[0,180,80],[0,150,180],[180,150,0],[180,60,60]];
+    const yC0  = yM + 10;
+    const xW   = mX + 2, wW = wC - 3;
+
+    lbls.forEach((lb, idx) => {
+      const yr = yC0 + idx * rowH;
+      doc.setTextColor(...lblC[idx]); ff('normal', 4.5);
+      doc.text(lb, xW, yr + 3);
+      if (idx < 3) {
+        sd([17, 26, 36]); doc.setLineWidth(0.15);
+        ln(xW, yr + rowH - 0.3, xV - 1, yr + rowH - 0.3);
+      }
+    });
+
+    function drawECG(yBase) {
+      sd(coresW.ecg); doc.setLineWidth(0.5);
+      const s = wW / 4;
+      for (let rep = 0; rep < 4; rep++) {
+        const ox = xW + rep * s;
+        seg([[ox,yBase],[ox+s*.55,yBase],[ox+s*.63,yBase-3.5],
+             [ox+s*.68,yBase+2.5],[ox+s*.73,yBase],[ox+s,yBase]]);
+      }
+    }
+
+    function drawSine(yBase, amp, cor, freq) {
+      sd(cor); doc.setLineWidth(0.5);
+      let px = xW, py = yBase;
+      for (let i = 1; i <= 60; i++) {
+        const nx = xW + (i/60)*wW, ny = yBase - Math.sin((i/60)*Math.PI*2*freq)*amp;
+        ln(px, py, nx, ny); px = nx; py = ny;
+      }
+    }
+
+    function drawPA(yBase) {
+      sd(coresW.pa); doc.setLineWidth(0.5);
+      const s = wW / 6;
+      for (let rep = 0; rep < 6; rep++) {
+        const ox = xW + rep * s;
+        seg([[ox,yBase],[ox+s*.2,yBase],[ox+s*.3,yBase-3.5],
+             [ox+s*.4,yBase-1],[ox+s*.5,yBase+1.5],[ox+s,yBase]]);
+      }
+    }
+
+    drawECG(yC0 + 8);
+    drawSine(yC0 + rowH + 8, 2.5, coresW.spo2, 3);
+    drawSine(yC0 + 2*rowH + 8, 2, coresW.resp, 1.5);
+    drawPA(yC0 + 3*rowH + 8);
+
+    // Glasgow
+    const yGCS = yC0 + 4*rowH + 2;
+    const gcsO = parseInt(d.gcs_o) || 0;
+    const gcsVv = parseInt(d.gcs_v) || 0;
+    const gcsM = parseInt(d.gcs_m) || 0;
+    const gcsTot = d.gcs_total || (gcsO + gcsVv + gcsM);
+
+    st([180, 120, 255]); ff('bold', 5);
+    doc.text('GLASGOW', xW, yGCS + 3);
+    st([200, 136, 255]); ff('bold', 11);
+    doc.text(String(gcsTot || '-'), xW + 17, yGCS + 8, { align: 'center' });
+    sd([150, 100, 220]); doc.setLineWidth(0.3);
+    ln(xW + 25, yGCS - 0.5, xW + 25, yGCS + 9.5);
+
+    const comps = [{ lbl:'AO', val:d.gcs_o||'-' },{ lbl:'RV', val:d.gcs_v||'-' },{ lbl:'RM', val:d.gcs_m||'-' }];
+    comps.forEach((c, i) => {
+      const cx2 = xW + 28 + i * 16;
+      sf([50, 30, 70]); doc.rect(cx2, yGCS - 0.5, 14, 10, 'F');
+      st([170,110,230]); ff('bold', 5.5);
+      doc.text(c.lbl, cx2 + 7, yGCS + 4, { align: 'center' });
+      st([200,136,255]); ff('bold', 8);
+      doc.text(String(c.val), cx2 + 7, yGCS + 9, { align: 'center' });
+    });
+
+    if (d.gcs_pupilar) {
+      const desc = d.gcs_pupilar == 2 ? 1 : d.gcs_pupilar == 3 ? 2 : 0;
+      const gcsp = gcsTot - desc;
+      const cx2  = xW + 28 + 3*16;
+      sd([150,100,220]); doc.setLineWidth(0.3);
+      ln(cx2 - 2, yGCS - 0.5, cx2 - 2, yGCS + 9.5);
+      sf([40, 25, 60]); doc.rect(cx2, yGCS - 0.5, 18, 10, 'F');
+      st([160,100,210]); ff('bold', 5.5);
+      doc.text('GCS-P', cx2 + 9, yGCS + 4, { align: 'center' });
+      st([180,120,240]); ff('bold', 8);
+      doc.text(String(gcsp), cx2 + 9, yGCS + 9, { align: 'center' });
+    }
+
+    // Painel lateral de valores
+    const vitais = [
+      { lbl:'HR·ECG', val:d.fc   ? String(d.fc)   : '-', unit:'bpm',  cor:[0,220,100] },
+      { lbl:'SpO2',   val:d.spo2 ? String(d.spo2) : '-', unit:'%',    cor:[0,180,230] },
+      { lbl:'Resp',   val:d.fr   ? String(d.fr)   : '-', unit:'rpm',  cor:[220,180,0] },
+      { lbl:'PA',     val:d.pa   ? String(d.pa)   : '-',
+        unit:d.pam ? '('+Math.round(d.pam)+')' : 'mmHg', cor:[230,80,80], small:true },
+      { lbl:'Temp',   val:d.temp ? String(d.temp) : '-', unit:'C',    cor:[230,140,50] },
+    ];
+    const altV = (mH - 16) / vitais.length;
+    let yv = yM + 9;
+    vitais.forEach(v => {
+      const [r,g,b] = v.cor;
+      sf([Math.floor(r*.07)+8, Math.floor(g*.07)+8, Math.floor(b*.07)+14]);
+      doc.rect(xV, yv, wV, altV - 0.3, 'F');
+      sd([Math.floor(r*.15)+10, Math.floor(g*.15)+10, Math.floor(b*.15)+14]);
+      doc.setLineWidth(0.15); doc.rect(xV, yv, wV, altV - 0.3, 'S');
+      st([Math.floor(r*.5), Math.floor(g*.5), Math.floor(b*.5)]);
+      ff('normal', 4.5); doc.text(v.lbl, xV + 1.5, yv + 3.5);
+      st(v.cor); ff('bold', v.small ? 6.5 : 9);
+      doc.text(v.val.substring(0, 6), xV + wV/2, yv + altV - 5, { align: 'center' });
+      if (v.unit) {
+        st([Math.floor(r*.45), Math.floor(g*.45), Math.floor(b*.45)]);
+        ff('normal', 4.5);
+        doc.text(v.unit, xV + wV/2, yv + altV - 1.5, { align: 'center' });
+      }
+      yv += altV;
+    });
+
+    // Rodapé do monitor
+    const yBotM = yM + mH - 6.5;
+    sf([6, 10, 15]); doc.rect(mX, yBotM, mW, 6.5, 'F');
+    sd(C.navy2); doc.setLineWidth(0.15);
+    ln(mX, yBotM, mX + mW, yBotM);
+
+    // Alerta altitude (esquerda)
+    if (d.recomendacao_altitude) {
+      sf([180, 0, 0]); doc.circle(mX + 4, yBotM + 3.2, 1.5, 'F');
+      st([255,100,100]); ff('bold', 5.5);
+      doc.text('ALTITUDE CABINE REDUZIDA', mX + 7.5, yBotM + 4.5);
+    }
+
+    // Dispositivo O2 (centro) — separado do NACA
+    if (d.o2_dispositivo && ['VMI','VNI','CPAP'].includes(d.o2_dispositivo)) {
+      let otxt = String(d.o2_dispositivo);
+      if (d.vm_fio2) otxt += ' FiO2 ' + d.vm_fio2 + '%';
+      if (d.vm_peep) otxt += ' PEEP ' + d.vm_peep;
+      st([230,140,50]); ff('normal', 5.5);
+      doc.text(otxt, mX + mW/2, yBotM + 4.5, { align: 'center' });
+    }
+
+    // NACA (direita) — sem °C grudado
+    if (d.naca) {
+      sf(C.red); doc.roundedRect(mX + mW - 20, yBotM + 1.2, 18, 4.5, 1, 1, 'F');
+      st(C.white); ff('bold', 5.5);
+      doc.text(d.naca, mX + mW - 11, yBotM + 4.5, { align: 'center' });
+    }
+
+    y = yM + mH + 4;
+  })();
+
+  // ─── O2 / VENTILAÇÃO ────────────────────────────────────────────────
+  if (d.o2_ativo) {
+    secTitle('O2 e Ventilação Mecânica');
+    fieldRow([
+      { label: 'Dispositivo', value: d.o2_dispositivo || null, span: 1 },
+      { label: 'Modo',        value: d.vm_modo  || null, span: 1 },
+      { label: 'FiO2',        value: d.vm_fio2  ? d.vm_fio2  + '%'      : null, span: 1 },
+      { label: 'PEEP',        value: d.vm_peep  ? d.vm_peep  + ' cmH2O' : null, span: 1 },
+    ]);
+    if (d.vm_volume || d.vm_freq || d.vm_ps) {
+      fieldRow([
+        { label: 'Vol. corrente',    value: d.vm_volume ? d.vm_volume + ' ml'   : null, span: 1 },
+        { label: 'Freq. programada', value: d.vm_freq   ? d.vm_freq   + ' rpm'  : null, span: 1 },
+        { label: 'Pressão suporte',  value: d.vm_ps     ? d.vm_ps     + ' cmH2O': null, span: 1 },
+        { label: 'Tempo insp.',      value: d.vm_ti     ? d.vm_ti     + ' s'    : null, span: 1 },
+      ]);
+    }
+    if (d.o2_litros_necessarios) {
+      checkPage(10);
+      sf(C.secBg); sd(C.green); doc.setLineWidth(0.25);
+      doc.roundedRect(ML, y, CW, 8, 1.5, 1.5, 'FD');
+      st([59, 109, 17]); ff('normal', 8);
+      const cils = d.o2_cilindros_necessarios;
+      doc.text(
+        'O2 necessário: ' + d.o2_litros_necessarios + ' L' + (cils ? ' · Cilindro E = ' + cils : ''),
+        ML + 4, y + 5.5
+      );
+      y += 10;
+    }
   }
 
-  // Equipe de voo
-  if (d.medico_voo_nome || d.enfermeiro_voo_nome) {
-    secHeader('EQUIPE DE VOO');
-    if (d.medico_voo_nome)    row('Médico',         d.medico_voo_nome);
-    if (d.enfermeiro_voo_nome) row('Enfermeiro(a)', d.enfermeiro_voo_nome);
+  // ─── MEDICAÇÕES ──────────────────────────────────────────────────────
+  const dvaList   = (() => { try { return d.duas         ? (typeof d.duas         === 'string' ? JSON.parse(d.duas)         : d.duas)         : []; } catch(e) { return []; } })();
+  const drogaList = (() => { try { return d.outras_drogas ? (typeof d.outras_drogas === 'string' ? JSON.parse(d.outras_drogas) : d.outras_drogas) : []; } catch(e) { return []; } })();
+
+  if (d.infusao_continua && (dvaList.length || drogaList.length)) {
+    secTitle('Drogas Vasoativas em Infusão');
+    [...dvaList, ...drogaList].forEach(item => {
+      if (!item.droga) return;
+      checkPage(10);
+      sf([255,248,240]); sd([240,160,64]); doc.setLineWidth(0.2);
+      doc.roundedRect(ML, y, CW, 8, 1.5, 1.5, 'FD');
+      st(C.text); ff('bold', 8);
+      doc.text(item.droga, ML + 4, y + 5.5);
+      const doseStr = item.valor ? String(item.valor) + ' ' + (item.unidade || '') : '-';
+      st([133, 79, 11]); ff('normal', 8);
+      doc.text(doseStr, ML + CW - 4, y + 5.5, { align: 'right' });
+      y += 10;
+    });
   }
 
-  // Rodapé
-  const footY = Math.max(y + 15, 262);
-  doc.setDrawColor(180, 180, 180); doc.line(ml, footY, pw - ml, footY);
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(60, 60, 60);
-  const medicoNome = perfilAtual.nome || usuarioAtual?.email || '';
-  const crm = perfilAtual.crm ? '  |  CRM-PA ' + perfilAtual.crm : '';
-  doc.text('Médico Regulador: ' + medicoNome + crm, ml, footY + 5);
-  doc.setDrawColor(100, 100, 100); doc.line(ml, footY + 14, ml + 72, footY + 14);
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(100, 100, 100);
-  doc.text('Assinatura do Médico Regulador', ml, footY + 18);
+  // ─── ALTITUDE DETALHES ──────────────────────────────────────────────
+  if (d.recomendacao_altitude) {
+    secTitle('Recomendações de Altitude de Cabine');
+    checkPage(15);
+    sf([254,242,242]); sd(C.red); doc.setLineWidth(0.3);
+    doc.roundedRect(ML, y, CW, 8, 1.5, 1.5, 'FD');
+    st([153, 27, 27]); ff('bold', 7);
+    doc.text('! ALTITUDE DE CABINE REDUZIDA — <5.000 pés ou a critério médico', ML + 4, y + 5.5);
+    y += 10;
 
-  doc.save('AltusMed-' + d.codigo + '.pdf');
+    const toggleItems = [
+      { label: 'Cirurgia recente < 7 dias',                  val: d.cirurgia_recente },
+      { label: 'Pneumotórax / Pneumoencéfalo não drenado',    val: d.pneumo_nao_drenado },
+      { label: 'Obstrução intestinal',                         val: d.obstrucao_intestinal },
+      { label: d.outra_restricao_obs || 'Outra restrição',    val: d.outra_restricao_altitude },
+    ];
+    toggleItems.forEach(item => {
+      checkPage(8);
+      st([68, 68, 68]); ff('normal', 7.5);
+      doc.text(item.label, ML + 2, y + 4.5);
+      if (item.val) {
+        sf(C.red); doc.roundedRect(ML + CW - 15, y + 0.5, 13, 6, 1.5, 1.5, 'F');
+        st(C.white); ff('bold', 6);
+        doc.text('SIM', ML + CW - 8.5, y + 4.8, { align: 'center' });
+      } else {
+        sf([240,240,240]); doc.roundedRect(ML + CW - 15, y + 0.5, 13, 6, 1.5, 1.5, 'F');
+        st([136,136,136]); ff('normal', 6);
+        doc.text('NÃO', ML + CW - 8.5, y + 4.8, { align: 'center' });
+      }
+      sd([240,240,240]); doc.setLineWidth(0.2);
+      ln(ML, y + 7.5, ML + CW, y + 7.5);
+      y += 8;
+    });
+  }
+
+  // ─── OBSERVAÇÕES ────────────────────────────────────────────────────
+  if (d.observacoes) {
+    secTitle('Observações e Anotações');
+    const obsLines = doc.splitTextToSize(d.observacoes, CW - 8);
+    const obsH     = Math.max(12, obsLines.length * 5 + 6);
+    checkPage(obsH + 4);
+    sf(C.bg); sd(C.border); doc.setLineWidth(0.2);
+    doc.roundedRect(ML, y, CW, obsH, 1.5, 1.5, 'FD');
+    st([68, 68, 68]); ff('normal', 8);
+    obsLines.forEach((l, i) => doc.text(l, ML + 4, y + 5 + i * 5));
+    y += obsH + 3;
+  }
+
+  // ─── FLUXO E EQUIPE ──────────────────────────────────────────────────
+  if (d.fluxo || d.medico_voo_nome || d.enfermeiro_voo_nome) {
+    checkPage(30);
+    const yG = y, half = (CW - 3) / 2;
+
+    if (d.fluxo) {
+      sf(C.secBg); doc.rect(ML, yG, half, 6, 'F');
+      sf(C.green); doc.rect(ML, yG, 1.5, 6, 'F');
+      st(C.navy); ff('bold', 6.5);
+      doc.text('DECISÃO MÉDICA', ML + 4, yG + 4.2);
+
+      const fluxoLabel = {
+        liberado:     'Liberado para Voo',
+        reavaliacao:  'Reavaliação em ' + (d.fluxo_reavaliacao_horas || '?') + 'h',
+        misericordia: 'Voo de Misericórdia',
+        negado:       'Voo Negado',
+      }[d.fluxo] || d.fluxo;
+
+      sf([232,244,212]); sd(C.green); doc.setLineWidth(0.3);
+      doc.roundedRect(ML, yG + 7, half, 10, 2, 2, 'FD');
+      st([22, 163, 74]); ff('bold', 8);
+      doc.text(fluxoLabel, ML + half / 2, yG + 13.5, { align: 'center' });
+    }
+
+    if (d.medico_voo_nome || d.enfermeiro_voo_nome) {
+      const ex = ML + half + 3;
+      sf(C.secBg); doc.rect(ex, yG, half, 6, 'F');
+      sf(C.green); doc.rect(ex, yG, 1.5, 6, 'F');
+      st(C.navy); ff('bold', 6.5);
+      doc.text('EQUIPE DE VOO', ex + 4, yG + 4.2);
+      let ey = yG + 7;
+      if (d.medico_voo_nome)     { drawField('Médico',        d.medico_voo_nome,     ex, ey, half, 9); ey += 10; }
+      if (d.enfermeiro_voo_nome) { drawField('Enfermeiro(a)', d.enfermeiro_voo_nome, ex, ey, half, 9); }
+    }
+
+    y = yG + 22;
+  }
+
+  // ─── ASSINATURA ─────────────────────────────────────────────────────
+  checkPage(28);
+  y += 4;
+  // Linha dourada
+  sd(C.amber); doc.setLineWidth(0.7);
+  ln(ML, y, ML + CW, y);
+  y += 5;
+
+  // Linha de assinatura do médico
+  sd([120, 120, 120]); doc.setLineWidth(0.3);
+  ln(ML, y + 14, ML + 58, y + 14);
+  st([100, 100, 100]); ff('normal', 7);
+  doc.text('Médico Regulador', ML + 29, y + 18, { align: 'center' });
+
+  const mNome = perfilAtual.nome || '';
+  const mReg  = (() => {
+    const tipo = perfilAtual.registro_tipo || 'CRM';
+    const uf   = perfilAtual.registro_uf   || 'PA';
+    const num  = perfilAtual.crm           || '';
+    return num ? tipo + '/' + uf + ' ' + num : '';
+  })();
+  st(C.amber); ff('bold', 7);
+  doc.text(mNome + (mReg ? ' · ' + mReg : ''), ML + 29, y + 22, { align: 'center' });
+
+  doc.setTextColor(180, 180, 180); ff('normal', 5.5);
+  doc.text('Documento gerado eletronicamente', ML + CW, y + 14, { align: 'right' });
+  st(C.amber); ff('bold', 6);
+  doc.text((d.codigo || '') + ' · AltusMed v0.01b', ML + CW, y + 19, { align: 'right' });
+  y += 26;
+
+  // ─── RODAPÉ DO PDF ──────────────────────────────────────────────────
+  const fY = 289;
+  sf([245,245,245]); doc.rect(0, fY, PW, 9, 'F');
+  sd([224,224,224]); doc.setLineWidth(0.3);
+  ln(0, fY, PW, fY);
+  doc.setTextColor(180, 180, 180); ff('normal', 5.5);
+  doc.text('AltusMed Transporte Aeromédico · CNPJ 58.633.654/0001-32', ML, fY + 5.5);
+  doc.text('ngmmedicos@gmail.com · (91) 9117-0682 · altusmed.med.br', ML + CW, fY + 5.5, { align: 'right' });
+
+  doc.save('AltusMed-' + (d.codigo || 'regulacao') + '.pdf');
 }
 
 // ── Start ─────────────────────────────────────────────────────────────

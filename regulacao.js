@@ -920,9 +920,21 @@ function exportarPDF() {
     pts.reduce((p, c) => { if (p) ln(p[0], p[1], c[0], c[1]); return c; });
   }
 
+  function miniHeader() {
+    sf(C.navy); doc.rect(0, 0, PW, 8, 'F');
+    st(C.green); ff('bold', 7);
+    doc.text('ALTUSMED', ML, 5.5);
+    st(C.white); ff('normal', 6);
+    doc.text('Ficha de Regulação Aeromédica — continuação', PW / 2, 5.5, { align: 'center' });
+    st(C.green); ff('bold', 6);
+    if (d.codigo) doc.text(d.codigo, PW - ML, 5.5, { align: 'right' });
+    sf(C.green); doc.rect(0, 8, PW, 0.8, 'F');
+    y = 14;
+  }
+
   function checkPage(need) {
     need = need || 20;
-    if (y > 279 - need) { doc.addPage(); y = 14; }
+    if (y > 279 - need) { doc.addPage(); miniHeader(); }
   }
 
   // ─── CABEÇALHO ────────────────────────────────────────────────────────
@@ -1042,6 +1054,7 @@ function exportarPDF() {
   }
 
   // ─── LOGÍSTICA ────────────────────────────────────────────────────────
+  checkPage(25);
   secTitle('Logística');
 
   // Trechos visuais com setas
@@ -1122,6 +1135,7 @@ function exportarPDF() {
   }
 
   // ─── PACIENTE ────────────────────────────────────────────────────────
+  checkPage(25);
   secTitle('Paciente');
 
   let idadeStr = null;
@@ -1145,6 +1159,7 @@ function exportarPDF() {
   }
 
   // ─── MONITOR ────────────────────────────────────────────────────────
+  checkPage(95);
   secTitle('Sinais Vitais — Monitor AltusMed');
   checkPage(85);
 
@@ -1189,7 +1204,7 @@ function exportarPDF() {
       pa:   [255, 102, 102],
     };
     const rowH = 12;
-    const lbls = ['ECG · II · 25mm/s', 'SpO2 · Pleth', 'Resp · II', 'PA invasiva · art'];
+    const lbls = ['ECG · II · 25mm/s', 'SpO2 · Pleth', 'Resp · II', 'Pressão Arterial'];
     const lblC = [[0,180,80],[0,150,180],[180,150,0],[180,60,60]];
     const yC0  = yM + 10;
     const xW   = mX + 2, wW = wC - 3;
@@ -1280,7 +1295,7 @@ function exportarPDF() {
       { lbl:'HR·ECG', val:d.fc   ? String(d.fc)   : '-', unit:'bpm',  cor:[0,220,100] },
       { lbl:'SpO2',   val:d.spo2 ? String(d.spo2) : '-', unit:'%',    cor:[0,180,230] },
       { lbl:'Resp',   val:d.fr   ? String(d.fr)   : '-', unit:'rpm',  cor:[220,180,0] },
-      { lbl:'PA',     val:d.pa   ? String(d.pa)   : '-',
+      { lbl:'P.Arterial', val:d.pa ? String(d.pa) : '-',
         unit:d.pam ? '('+Math.round(d.pam)+')' : 'mmHg', cor:[230,80,80], small:true },
       { lbl:'Temp',   val:d.temp ? String(d.temp) : '-', unit:'C',    cor:[230,140,50] },
     ];
@@ -1338,6 +1353,7 @@ function exportarPDF() {
 
   // ─── O2 / VENTILAÇÃO ────────────────────────────────────────────────
   if (d.o2_ativo) {
+    checkPage(25);
     secTitle('O2 e Ventilação Mecânica');
     fieldRow([
       { label: 'Dispositivo', value: d.o2_dispositivo || null, span: 1 },
@@ -1365,6 +1381,39 @@ function exportarPDF() {
       );
       y += 10;
     }
+
+    // Fluxo e dispositivo
+    if (d.o2_flow || d.o2_dispositivo) {
+      checkPage(8);
+      const fluxoParts = [
+        d.o2_flow       ? 'Fluxo: ' + d.o2_flow + ' L/min' : null,
+        d.o2_dispositivo ? 'Dispositivo: ' + d.o2_dispositivo : null,
+      ].filter(Boolean);
+      st(C.textM || [100,100,100]); ff('normal', 7.5);
+      doc.text(fluxoParts.join(' · '), ML + 2, y + 4.5);
+      y += 7;
+    }
+
+    // Parâmetros ventilatórios (VMI / VNI / CPAP)
+    if (d.o2_dispositivo && ['VMI','VNI','CPAP'].includes(d.o2_dispositivo)) {
+      const vmParams = [
+        d.vm_modo   ? ['Modo',             d.vm_modo   + '']         : null,
+        d.vm_fio2   ? ['FiO2',             d.vm_fio2   + '%']        : null,
+        d.vm_peep   ? ['PEEP',             d.vm_peep   + ' cmH2O']   : null,
+        d.vm_volume ? ['Volume corrente',   d.vm_volume + ' ml']      : null,
+        d.vm_freq   ? ['Freq. programada',  d.vm_freq   + ' rpm']     : null,
+      ].filter(Boolean);
+      vmParams.forEach(([lbl, val]) => {
+        checkPage(7);
+        doc.setTextColor(130,130,130); ff('bold', 6.5);
+        doc.text(lbl + ':', ML + 6, y + 4.5);
+        st(C.text); ff('normal', 7);
+        doc.text(val, ML + 52, y + 4.5);
+        sd([240,240,240]); doc.setLineWidth(0.15);
+        ln(ML + 4, y + 6.5, ML + CW, y + 6.5);
+        y += 7;
+      });
+    }
   }
 
   // ─── MEDICAÇÕES ──────────────────────────────────────────────────────
@@ -1372,6 +1421,7 @@ function exportarPDF() {
   const drogaList = (() => { try { return d.outras_drogas ? (typeof d.outras_drogas === 'string' ? JSON.parse(d.outras_drogas) : d.outras_drogas) : []; } catch(e) { return []; } })();
 
   if (d.infusao_continua && (dvaList.length || drogaList.length)) {
+    checkPage(25);
     secTitle('Drogas Vasoativas em Infusão');
     [...dvaList, ...drogaList].forEach(item => {
       if (!item.droga) return;
@@ -1389,6 +1439,7 @@ function exportarPDF() {
 
   // ─── ALTITUDE DETALHES ──────────────────────────────────────────────
   if (d.recomendacao_altitude) {
+    checkPage(25);
     secTitle('Recomendações de Altitude de Cabine');
     checkPage(15);
     sf([254,242,242]); sd(C.red); doc.setLineWidth(0.3);
@@ -1424,6 +1475,7 @@ function exportarPDF() {
 
   // ─── OBSERVAÇÕES ────────────────────────────────────────────────────
   if (d.observacoes) {
+    checkPage(25);
     secTitle('Observações e Anotações');
     const obsLines = doc.splitTextToSize(d.observacoes, CW - 8);
     const obsH     = Math.max(12, obsLines.length * 5 + 6);
@@ -1437,7 +1489,7 @@ function exportarPDF() {
 
   // ─── FLUXO E EQUIPE ──────────────────────────────────────────────────
   if (d.fluxo || d.medico_voo_nome || d.enfermeiro_voo_nome) {
-    checkPage(30);
+    checkPage(25);
     const yG = y, half = (CW - 3) / 2;
 
     if (d.fluxo) {
@@ -1474,8 +1526,8 @@ function exportarPDF() {
   }
 
   // ─── ASSINATURA ─────────────────────────────────────────────────────
-  checkPage(28);
-  y += 4;
+  checkPage(32);
+  y += 15;
   // Linha dourada
   sd(C.amber); doc.setLineWidth(0.7);
   ln(ML, y, ML + CW, y);

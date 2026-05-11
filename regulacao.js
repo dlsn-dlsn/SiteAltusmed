@@ -1300,11 +1300,11 @@ function exportarPDF() {
 
     // Painel lateral de valores
     const vitais = [
-      { lbl:'HR·ECG',     val:d.fc   ? String(d.fc)   : '-', unit:'bpm', cor:[0,220,100],  fs:28 },
-      { lbl:'SpO2',       val:d.spo2 ? String(d.spo2) : '-', unit:'%',   cor:[0,180,230],  fs:26 },
-      { lbl:'Resp',       val:d.fr   ? String(d.fr)   : '-', unit:'rpm', cor:[220,180,0],  fs:24 },
-      { lbl:'P.Arterial', val:d.pa   ? String(d.pa)   : '-', unit:'mmHg',cor:[230,80,80],  fs:18, pam:true },
-      { lbl:'Temp',       val:d.temp ? String(d.temp) : '-', unit:'C',   cor:[230,140,50], fs:20 },
+      { lbl:'HR·ECG',     val:d.fc   ? String(d.fc)   : '-', unit:'bpm', cor:[0,220,100],  fs:20 },
+      { lbl:'SpO2',       val:d.spo2 ? String(d.spo2) : '-', unit:'%',   cor:[0,180,230],  fs:20 },
+      { lbl:'Resp',       val:d.fr   ? String(d.fr)   : '-', unit:'rpm', cor:[220,180,0],  fs:18 },
+      { lbl:'P.Arterial', val:d.pa   ? String(d.pa)   : '-', unit:'',    cor:[230,80,80],  fs:14, pam:true },
+      { lbl:'Temp',       val:d.temp ? String(d.temp) : '-', unit:'C',   cor:[230,140,50], fs:16 },
     ];
     const altV = (mH - 16) / vitais.length;
     let yv = yM + 9;
@@ -1315,29 +1315,28 @@ function exportarPDF() {
       sd([Math.floor(r*.15)+10, Math.floor(g*.15)+10, Math.floor(b*.15)+14]);
       doc.setLineWidth(0.15); doc.rect(xV, yv, wV, altV - 0.3, 'S');
 
-      // Label (pequeno, topo)
-      st([Math.floor(r*.55), Math.floor(g*.55), Math.floor(b*.55)]);
-      ff('normal', 7); doc.text(v.lbl, xV + wV/2, yv + 4.5, { align: 'center' });
+      const mid = yv + altV / 2;
 
-      // Valor (grande, centro)
+      // Label (pequeno, acima do centro)
+      st([Math.floor(r*.55), Math.floor(g*.55), Math.floor(b*.55)]);
+      ff('normal', 6); doc.text(v.lbl, xV + wV/2, mid - 4, { align: 'center' });
+
+      // Valor (centrado no bloco)
       st(v.cor); ff('bold', v.fs);
       if (v.pam) {
-        // PA: sistólica/diastólica + PAM abaixo
-        doc.text(v.val.substring(0, 7), xV + wV/2, yv + altV - 8, { align: 'center' });
+        // PA: sistólica/diastólica centrada, PAM abaixo sem rótulo extra
+        doc.text(v.val.substring(0, 7), xV + wV/2, mid + 1, { align: 'center' });
         if (d.pam) {
           st([Math.floor(r*.7), Math.floor(g*.7), Math.floor(b*.7)]);
-          ff('bold', 11);
-          doc.text('(' + Math.round(d.pam) + ')', xV + wV/2, yv + altV - 3.5, { align: 'center' });
+          ff('bold', 9);
+          doc.text('(' + Math.round(d.pam) + ')', xV + wV/2, mid + 5.5, { align: 'center' });
         }
-        st([Math.floor(r*.45), Math.floor(g*.45), Math.floor(b*.45)]);
-        ff('normal', 8);
-        doc.text('PAM mmHg', xV + wV/2, yv + altV - 0.5, { align: 'center' });
       } else {
-        doc.text(v.val.substring(0, 6), xV + wV/2, yv + altV - 5.5, { align: 'center' });
-        // Unidade (pequena, base)
+        doc.text(v.val.substring(0, 6), xV + wV/2, mid + 2, { align: 'center' });
+        // Unidade (pequena, abaixo do valor)
         st([Math.floor(r*.45), Math.floor(g*.45), Math.floor(b*.45)]);
-        ff('normal', 8);
-        doc.text(v.unit, xV + wV/2, yv + altV - 1.5, { align: 'center' });
+        ff('normal', 7);
+        doc.text(v.unit, xV + wV/2, mid + 5.5, { align: 'center' });
       }
       yv += altV;
     });
@@ -1380,30 +1379,23 @@ function exportarPDF() {
     secTitle('O2 e Ventilação Mecânica');
     fieldRow([
       { label: 'Dispositivo', value: d.o2_dispositivo || null, span: 1 },
-      { label: 'Modo',        value: d.vm_modo  || null, span: 1 },
-      { label: 'FiO2',        value: d.vm_fio2  ? d.vm_fio2  + '%'      : null, span: 1 },
-      { label: 'PEEP',        value: d.vm_peep  ? d.vm_peep  + ' cmH2O' : null, span: 1 },
+      { label: 'Fluxo',       value: d.o2_flow ? d.o2_flow + ' L/min' : null, span: 1 },
     ]);
-    if (d.vm_volume || d.vm_freq || d.vm_ps) {
+    if (d.o2_dispositivo && ['VMI','VNI','CPAP'].includes(d.o2_dispositivo)) {
       fieldRow([
-        { label: 'Vol. corrente',    value: d.vm_volume ? d.vm_volume + ' ml'   : null, span: 1 },
-        { label: 'Freq. programada', value: d.vm_freq   ? d.vm_freq   + ' rpm'  : null, span: 1 },
-        { label: 'Pressão suporte',  value: d.vm_ps     ? d.vm_ps     + ' cmH2O': null, span: 1 },
-        { label: 'Tempo insp.',      value: d.vm_ti     ? d.vm_ti     + ' s'    : null, span: 1 },
+        { label: 'Modo',  value: d.vm_modo  || null, span: 1 },
+        { label: 'FiO2',  value: d.vm_fio2  ? d.vm_fio2  + '%'      : null, span: 1 },
+        { label: 'PEEP',  value: d.vm_peep  ? d.vm_peep  + ' cmH2O' : null, span: 1 },
       ]);
-    }
-    // Linha Dispositivo + Fluxo (antes da barra de O2)
-    if (d.o2_dispositivo || d.o2_flow) {
-      checkPage(8);
-      st([80, 100, 120]); ff('bold', 7.5);
-      doc.text('Dispositivo: ' + (d.o2_dispositivo || '-'), ML + 2, y + 4.5);
-      if (d.o2_flow) {
-        ff('bold', 7.5);
-        doc.text('Fluxo: ' + d.o2_flow + ' L/min', ML + CW, y + 4.5, { align: 'right' });
+      if (d.vm_volume || d.vm_freq || d.vm_ps) {
+        fieldRow([
+          { label: 'Vol. corrente',    value: d.vm_volume ? d.vm_volume + ' ml'    : null, span: 1 },
+          { label: 'Freq. programada', value: d.vm_freq   ? d.vm_freq   + ' rpm'   : null, span: 1 },
+          { label: 'Pressão suporte',  value: d.vm_ps     ? d.vm_ps     + ' cmH2O' : null, span: 1 },
+          { label: 'Tempo insp.',      value: d.vm_ti     ? d.vm_ti     + ' s'     : null, span: 1 },
+        ]);
       }
-      y += 7;
     }
-
     if (d.o2_litros_necessarios) {
       checkPage(10);
       sf(C.secBg); sd(C.green); doc.setLineWidth(0.25);
@@ -1411,31 +1403,10 @@ function exportarPDF() {
       st([59, 109, 17]); ff('normal', 8);
       const cils = d.o2_cilindros_necessarios;
       doc.text(
-        'O2 necessário: ' + d.o2_litros_necessarios + ' L' + (cils ? ' · Cilindro E = ' + cils : ''),
+        'O2 necessario: ' + d.o2_litros_necessarios + ' L' + (cils ? ' · Cilindro E = ' + cils : ''),
         ML + 4, y + 5.5
       );
       y += 10;
-    }
-
-    // Parâmetros ventilatórios (VMI / VNI / CPAP)
-    if (d.o2_dispositivo && ['VMI','VNI','CPAP'].includes(d.o2_dispositivo)) {
-      const vmParams = [
-        d.vm_modo   ? ['Modo',             d.vm_modo   + '']         : null,
-        d.vm_fio2   ? ['FiO2',             d.vm_fio2   + '%']        : null,
-        d.vm_peep   ? ['PEEP',             d.vm_peep   + ' cmH2O']   : null,
-        d.vm_volume ? ['Volume corrente',   d.vm_volume + ' ml']      : null,
-        d.vm_freq   ? ['Freq. programada',  d.vm_freq   + ' rpm']     : null,
-      ].filter(Boolean);
-      vmParams.forEach(([lbl, val]) => {
-        checkPage(7);
-        doc.setTextColor(130,130,130); ff('bold', 6.5);
-        doc.text(lbl + ':', ML + 6, y + 4.5);
-        st(C.text); ff('normal', 7);
-        doc.text(val, ML + 52, y + 4.5);
-        sd([240,240,240]); doc.setLineWidth(0.15);
-        ln(ML + 4, y + 6.5, ML + CW, y + 6.5);
-        y += 7;
-      });
     }
   }
 
@@ -1444,10 +1415,14 @@ function exportarPDF() {
   const drogaList = (() => { try { return d.outras_drogas ? (typeof d.outras_drogas === 'string' ? JSON.parse(d.outras_drogas) : d.outras_drogas) : []; } catch(e) { return []; } })();
 
   if (d.infusao_continua && (dvaList.length || drogaList.length)) {
-    checkPage(25);
-    secTitle('Drogas Vasoativas em Infusão');
-    [...dvaList, ...drogaList].forEach(item => {
-      if (!item.droga) return;
+    const DVA_NOMES = ['Norepinefrina','Epinefrina','Dopamina','Dobutamina','Vasopressina',
+      'Fenilefrina','Milrinona','Levosimendan','Prostaglandina','Terlipressina','Angiotensina'];
+    const isDVA = nome => DVA_NOMES.some(n => nome.toLowerCase().includes(n.toLowerCase()));
+    const todasDrogas  = [...dvaList, ...drogaList].filter(item => item.droga);
+    const dvasRender   = todasDrogas.filter(item =>  isDVA(item.droga));
+    const outrasRender = todasDrogas.filter(item => !isDVA(item.droga));
+
+    const renderDrug = item => {
       checkPage(10);
       sf([255,248,240]); sd([240,160,64]); doc.setLineWidth(0.2);
       doc.roundedRect(ML, y, CW, 8, 1.5, 1.5, 'FD');
@@ -1457,7 +1432,18 @@ function exportarPDF() {
       st([133, 79, 11]); ff('normal', 8);
       doc.text(doseStr, ML + CW - 4, y + 5.5, { align: 'right' });
       y += 10;
-    });
+    };
+
+    if (dvasRender.length) {
+      checkPage(25);
+      secTitle('Drogas Vasoativas em Infusao');
+      dvasRender.forEach(renderDrug);
+    }
+    if (outrasRender.length) {
+      checkPage(25);
+      secTitle('Outras Drogas em Infusao Continua');
+      outrasRender.forEach(renderDrug);
+    }
   }
 
   // ─── ALTITUDE DETALHES ──────────────────────────────────────────────

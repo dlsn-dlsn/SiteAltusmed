@@ -1,0 +1,325 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  .pdf { background: #fff; max-width: 680px; font-family: 'Segoe UI', Arial, sans-serif; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.12); }
+  .pdf-header { background: #0f1e35; padding: 14px 18px 10px; }
+  .pdf-header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .pdf-logo { display: flex; align-items: center; gap: 9px; }
+  .pdf-logo-text { color: #fff; font-size: 14px; font-weight: 600; letter-spacing: 0.08em; }
+  .pdf-logo-sub { color: rgba(255,255,255,0.45); font-size: 8px; letter-spacing: 0.1em; }
+  .pdf-title-main { color: #78BE20; font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-align: right; }
+  .pdf-title-code { color: #fff; font-size: 17px; font-weight: 600; text-align: right; margin-top: 1px; }
+  .pdf-header-bot { display: flex; justify-content: space-between; padding-top: 8px; border-top: 1px solid rgba(120,190,32,0.25); }
+  .pdf-header-bot span { color: rgba(255,255,255,0.45); font-size: 9px; }
+  .slogan { color: rgba(120,190,32,0.7); font-style: italic; font-size: 9px; }
+  .pdf-accent { height: 3px; background: #78BE20; }
+  .pdf-body { padding: 12px 18px; }
+  .sec { margin-bottom: 10px; }
+  .sec-title { font-size: 9px; font-weight: 600; color: #0f1e35; text-transform: uppercase; letter-spacing: 0.07em; padding: 3px 7px; border-left: 3px solid #78BE20; background: #f0f7e8; margin-bottom: 7px; border-radius: 0 3px 3px 0; }
+  .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .g4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; }
+  .f { background: #f8f9fa; border: 0.5px solid #e0e0e0; border-radius: 4px; padding: 4px 8px; }
+  .fl { font-size: 8px; color: #999; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 1px; }
+  .fv { font-size: 11px; color: #1f2937; font-weight: 500; }
+  .alert-box { background: #fef2f2; border: 1px solid #dc2626; border-radius: 5px; padding: 6px 10px; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .alert-text { font-size: 10px; color: #991b1b; font-weight: 600; }
+  .trechos { display: flex; align-items: center; gap: 3px; flex-wrap: wrap; margin-bottom: 6px; }
+  .tr-item { background: #f0f7e8; border: 0.5px solid #78BE20; border-radius: 3px; padding: 2px 6px; font-size: 10px; color: #27500A; font-weight: 600; }
+  .tr-sep { color: #78BE20; font-size: 12px; }
+  .tr-km { font-size: 8px; color: #888; }
+  .tr-total { font-size: 10px; color: #78BE20; font-weight: 600; background: #f0f7e8; padding: 2px 8px; border-radius: 3px; border: 0.5px solid #78BE20; margin-left: 4px; }
+
+  /* ── MONITOR ── */
+  .monitor-wrap { background: #0a0e14; border-radius: 6px; border: 1.5px solid #1a2a3a; overflow: hidden; margin-bottom: 10px; }
+  .mon-hdr { background: #0f1e35; padding: 5px 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1a3a2a; }
+  .mon-hdr-logo { display: flex; align-items: center; gap: 6px; }
+  .mon-hdr-logo-text { color: #78BE20; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; font-family: 'Courier New', monospace; }
+  .mon-hdr-right { display: flex; align-items: center; gap: 12px; }
+  .mon-patient-name { color: #fff; font-size: 9px; }
+  .mon-patient-info { color: rgba(255,255,255,0.45); font-size: 8px; }
+  .mon-time { color: #78BE20; font-size: 14px; font-weight: 700; font-family: 'Courier New', monospace; }
+  .mon-body { display: grid; grid-template-columns: 1fr 110px; }
+  .mon-waves { padding: 4px 8px; border-right: 1px solid #1a2a3a; }
+  .wave-row { margin-bottom: 2px; padding-bottom: 2px; border-bottom: 0.5px solid #111a24; }
+  .wave-row:last-child { border-bottom: none; margin-bottom: 0; }
+  .wave-lbl { font-size: 7px; color: rgba(255,255,255,0.35); letter-spacing: 0.07em; font-family: 'Courier New', monospace; margin-bottom: 1px; }
+  .wave-svg { width: 100%; height: 24px; display: block; }
+  .mon-vals { padding: 4px 6px; display: flex; flex-direction: column; gap: 3px; background: #080c12; }
+  .vb { border-radius: 3px; padding: 3px 6px; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  .vl { font-size: 7px; letter-spacing: 0.08em; opacity: 0.7; font-family: 'Courier New', monospace; margin-bottom: 0px; }
+  .vn { font-size: 20px; font-weight: 700; line-height: 1; font-family: 'Courier New', monospace; }
+  .vu { font-size: 7px; opacity: 0.55; font-family: 'Courier New', monospace; }
+  .vs { font-size: 10px; font-weight: 700; opacity: 0.8; font-family: 'Courier New', monospace; }
+  .c-ecg { color: #00ff88; }
+  .c-spo2 { color: #00ccff; }
+  .c-resp { color: #ffcc00; }
+  .c-nibp { color: #ff6666; }
+  .c-temp { color: #ff9944; }
+  .b-ecg { background: rgba(0,255,136,0.07); border: 0.5px solid rgba(0,255,136,0.18); }
+  .b-spo2 { background: rgba(0,204,255,0.07); border: 0.5px solid rgba(0,204,255,0.18); }
+  .b-resp { background: rgba(255,204,0,0.07); border: 0.5px solid rgba(255,204,0,0.18); }
+  .b-nibp { background: rgba(255,102,102,0.07); border: 0.5px solid rgba(255,102,102,0.18); }
+  .b-temp { background: rgba(255,153,68,0.07); border: 0.5px solid rgba(255,153,68,0.18); }
+  .mon-bot { background: #060a0f; padding: 4px 10px; display: flex; justify-content: space-between; align-items: center; border-top: 0.5px solid #1a2a3a; }
+  .mon-alert { display: flex; align-items: center; gap: 5px; }
+  .mon-alert-dot { width: 5px; height: 5px; border-radius: 50%; background: #dc2626; }
+  .mon-alert-text { font-size: 8px; color: #ff6666; font-weight: 600; font-family: 'Courier New', monospace; }
+  .mon-gcs { font-size: 8px; color: #ffcc44; font-family: 'Courier New', monospace; }
+  .mon-naca { background: #dc2626; color: #fff; font-size: 8px; font-weight: 700; padding: 1px 6px; border-radius: 2px; font-family: 'Courier New', monospace; }
+
+  /* resto do PDF */
+  .naca-badge { display: inline-block; background: #dc2626; color: #fff; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 3px; }
+  .dva-item { background: #fff8f0; border: 0.5px solid #f0a040; border-radius: 4px; padding: 4px 8px; display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .dva-name { font-size: 10px; color: #1f2937; font-weight: 500; }
+  .dva-dose { font-size: 10px; color: #854F0B; }
+  .o2-bar { background: #f0f7e8; border: 0.5px solid #78BE20; border-radius: 4px; padding: 5px 8px; font-size: 10px; color: #3B6D11; }
+  .fluxo-badge { display: inline-flex; align-items: center; gap: 5px; background: #e8f4d4; border: 1px solid #78BE20; border-radius: 12px; padding: 3px 12px; font-size: 11px; color: #3B6D11; font-weight: 600; }
+  .sig-area { border-top: 2px solid #D4A820; margin-top: 10px; padding-top: 8px; display: flex; justify-content: space-between; align-items: flex-end; }
+  .sig-line { width: 130px; border-bottom: 0.5px solid #333; margin: 0 auto 3px; height: 22px; }
+  .sig-label { font-size: 9px; color: #555; text-align: center; }
+  .sig-crm { font-size: 9px; color: #D4A820; font-weight: 600; text-align: center; }
+  .pdf-footer { background: #f5f5f5; padding: 6px 18px; display: flex; justify-content: space-between; border-top: 0.5px solid #e0e0e0; }
+  .pdf-footer span { font-size: 8px; color: #bbb; }
+  .obs-txt { font-size: 10px; color: #444; background: #f8f9fa; border: 0.5px solid #e0e0e0; border-radius: 4px; padding: 5px 8px; }
+  .toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; border-bottom: 0.5px solid #f0f0f0; font-size: 10px; }
+  .toggle-row:last-child { border-bottom: none; }
+  .toggle-label { color: #444; }
+  .toggle-sim { background: #dc2626; color: #fff; font-size: 8px; font-weight: 600; padding: 1px 7px; border-radius: 3px; }
+  .toggle-nao { background: #f0f0f0; color: #888; font-size: 8px; padding: 1px 7px; border-radius: 3px; }
+</style>
+
+<div class="pdf">
+
+  <!-- CABEÇALHO -->
+  <div class="pdf-header">
+    <div class="pdf-header-top">
+      <div class="pdf-logo">
+        <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+          <rect width="30" height="30" rx="7" fill="rgba(120,190,32,0.15)"/>
+          <path d="M3 17 L8 10 L11 14 L16 6 L22 17" stroke="#78BE20" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          <rect x="20" y="8" width="6" height="6" rx="1" fill="none" stroke="#78BE20" stroke-width="1.2"/>
+          <path d="M22 11 L24.5 11 M23.2 9.5 L23.2 12.5" stroke="#78BE20" stroke-width="1"/>
+        </svg>
+        <div>
+          <div class="pdf-logo-text">ALTUSMED</div>
+          <div class="pdf-logo-sub">TRANSPORTE AEROMÉDICO</div>
+        </div>
+      </div>
+      <div>
+        <div class="pdf-title-main">Ficha de Regulação Aeromédica</div>
+        <div class="pdf-title-code">AM-137131</div>
+      </div>
+    </div>
+    <div class="pdf-header-bot">
+      <span>07/05/2026 · 14:32</span>
+      <span class="slogan">Cuidados sem fronteiras, dedicação sem limites</span>
+      <span>Dr. Davi Nunes · CRM/PA 16.615</span>
+    </div>
+  </div>
+  <div class="pdf-accent"></div>
+
+  <div class="pdf-body">
+
+    <!-- ALERTA -->
+    <div class="alert-box">
+      <i class="ti ti-alert-triangle" style="font-size:16px;color:#dc2626;" aria-hidden="true"></i>
+      <div class="alert-text">⚠ Recomendação de voo com altitude de cabine reduzida — &lt;5.000 pés · Cirurgia recente &lt;7 dias</div>
+    </div>
+
+    <!-- LOGÍSTICA -->
+    <div class="sec">
+      <div class="sec-title">Logística</div>
+      <div class="trechos">
+        <div class="tr-item">BEL</div><span class="tr-sep">→</span>
+        <div class="tr-item">MCP <span class="tr-km">330km</span></div><span class="tr-sep">→</span>
+        <div class="tr-item">BSB <span class="tr-km">1.804km</span></div><span class="tr-sep">→</span>
+        <div class="tr-item">CGH <span class="tr-km">872km</span></div>
+        <div class="tr-total">3.006 km</div>
+      </div>
+      <div class="g3">
+        <div class="f"><div class="fl">Aeronave</div><div class="fv">UTI Aérea</div></div>
+        <div class="f"><div class="fl">Tempo voo estimado</div><div class="fv">6h 30min</div></div>
+        <div class="f"><div class="fl">Tempo total missão</div><div class="fv">7h 30min</div></div>
+      </div>
+    </div>
+
+    <!-- PACIENTE -->
+    <div class="sec">
+      <div class="sec-title">Paciente</div>
+      <div class="g4" style="margin-bottom:5px;">
+        <div class="f" style="grid-column:span 2;"><div class="fl">Nome</div><div class="fv">José Pereira da Silva</div></div>
+        <div class="f"><div class="fl">Idade / Peso</div><div class="fv">67a · 78kg</div></div>
+        <div class="f"><div class="fl">NACA</div><div style="margin-top:2px;"><span class="naca-badge">NACA V</span></div></div>
+      </div>
+      <div class="g2">
+        <div class="f"><div class="fl">Diagnóstico</div><div class="fv">IAM com BCRE novo — Killip III</div></div>
+        <div class="f"><div class="fl">Hospital origem</div><div class="fv">HU Macapá · Leito UTI 12</div></div>
+      </div>
+    </div>
+
+    <!-- MONITOR MULTIPARAMÉTRICO -->
+    <div class="sec">
+      <div class="sec-title">Sinais vitais — Monitor AltusMed</div>
+      <div class="monitor-wrap">
+        <div class="mon-hdr">
+          <div class="mon-hdr-logo">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect width="20" height="20" rx="4" fill="rgba(120,190,32,0.15)"/>
+              <path d="M2 12 L5 7 L7 10 L11 4 L15 12" stroke="#78BE20" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+            </svg>
+            <div class="mon-hdr-logo-text">ALTUSMED MONITOR</div>
+          </div>
+          <div class="mon-hdr-right">
+            <div>
+              <div class="mon-patient-name">José P. da Silva · 67a · 78kg</div>
+              <div class="mon-patient-info">IAM Killip III · VMI · MCP→CGH</div>
+            </div>
+            <div class="mon-time">14:32</div>
+          </div>
+        </div>
+
+        <div class="mon-body">
+          <div class="mon-waves">
+            <div class="wave-row">
+              <div class="wave-lbl" style="color:rgba(0,255,136,0.5);">ECG · II · 25mm/s</div>
+              <svg class="wave-svg" viewBox="0 0 500 24" preserveAspectRatio="none">
+                <polyline points="0,12 18,12 22,12 24,3 26,21 28,12 36,12 54,12 58,12 60,3 62,21 64,12 72,12 90,12 94,12 96,3 98,21 100,12 108,12 126,12 130,12 132,3 134,21 136,12 144,12 162,12 166,12 168,3 170,21 172,12 180,12 198,12 202,12 204,3 206,21 208,12 216,12 234,12 238,12 240,3 242,21 244,12 252,12 270,12 274,12 276,3 278,21 280,12 288,12 306,12 310,12 312,3 314,21 316,12 324,12 342,12 346,12 348,3 350,21 352,12 360,12 378,12 382,12 384,3 386,21 388,12 396,12 414,12 418,12 420,3 422,21 424,12 432,12 450,12 454,12 456,3 458,21 460,12 468,12 486,12 490,12 492,3 494,21 496,12 500,12" fill="none" stroke="#00ff88" stroke-width="1.3" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="wave-row">
+              <div class="wave-lbl" style="color:rgba(0,204,255,0.5);">SpO2 · Pleth</div>
+              <svg class="wave-svg" viewBox="0 0 500 24" preserveAspectRatio="none">
+                <path d="M0,16 Q12,16 24,14 Q36,12 48,8 Q60,3 72,7 Q84,12 96,15 Q108,17 120,16 Q132,16 144,14 Q156,12 168,8 Q180,3 192,7 Q204,12 216,15 Q228,17 240,16 Q252,16 264,14 Q276,12 288,8 Q300,3 312,7 Q324,12 336,15 Q348,17 360,16 Q372,16 384,14 Q396,12 408,8 Q420,3 432,7 Q444,12 456,15 Q468,17 480,16 L500,16" fill="none" stroke="#00ccff" stroke-width="1.3"/>
+              </svg>
+            </div>
+            <div class="wave-row">
+              <div class="wave-lbl" style="color:rgba(255,204,0,0.5);">Resp · II</div>
+              <svg class="wave-svg" viewBox="0 0 500 24" preserveAspectRatio="none">
+                <path d="M0,12 Q31,4 62,12 Q93,20 124,12 Q155,4 186,12 Q217,20 248,12 Q279,4 310,12 Q341,20 372,12 Q403,4 434,12 Q465,20 500,12" fill="none" stroke="#ffcc00" stroke-width="1.3"/>
+              </svg>
+            </div>
+            <div class="wave-row">
+              <div class="wave-lbl" style="color:rgba(255,102,102,0.5);">PA invasiva · art</div>
+              <svg class="wave-svg" viewBox="0 0 500 24" preserveAspectRatio="none">
+                <path d="M0,18 Q4,18 8,16 L12,5 Q15,1 17,6 L19,13 Q21,18 26,18 Q30,18 34,16 L38,5 Q41,1 43,6 L45,13 Q47,18 52,18 Q56,18 60,16 L64,5 Q67,1 69,6 L71,13 Q73,18 78,18 Q82,18 86,16 L90,5 Q93,1 95,6 L97,13 Q99,18 104,18 Q108,18 112,16 L116,5 Q119,1 121,6 L123,13 Q125,18 130,18 Q134,18 138,16 L142,5 Q145,1 147,6 L149,13 Q151,18 156,18 Q160,18 164,16 L168,5 Q171,1 173,6 L175,13 Q177,18 182,18 Q186,18 190,16 L194,5 Q197,1 199,6 L201,13 Q203,18 208,18 Q212,18 216,16 L220,5 Q223,1 225,6 L227,13 Q229,18 234,18 Q238,18 242,16 L246,5 Q249,1 251,6 L253,13 Q255,18 260,18 Q264,18 268,16 L272,5 Q275,1 277,6 L279,13 Q281,18 286,18 Q290,18 294,16 L298,5 Q301,1 303,6 L305,13 Q307,18 312,18 Q316,18 320,16 L324,5 Q327,1 329,6 L331,13 Q333,18 338,18 Q342,18 346,16 L350,5 Q353,1 355,6 L357,13 Q359,18 364,18 Q368,18 372,16 L376,5 Q379,1 381,6 L383,13 Q385,18 390,18 Q394,18 398,16 L402,5 Q405,1 407,6 L409,13 Q411,18 416,18 Q420,18 424,16 L428,5 Q431,1 433,6 L435,13 Q437,18 442,18 Q446,18 450,16 L454,5 Q457,1 459,6 L461,13 Q463,18 468,18 Q472,18 476,16 L480,5 Q483,1 485,6 L487,13 Q489,18 494,18 L500,18" fill="none" stroke="#ff6666" stroke-width="1.3"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="mon-vals">
+            <div class="vb b-ecg">
+              <div class="vl c-ecg">HR · ECG</div>
+              <div class="vn c-ecg">96</div>
+              <div class="vu c-ecg">bpm</div>
+            </div>
+            <div class="vb b-spo2">
+              <div class="vl c-spo2">SpO2</div>
+              <div class="vn c-spo2">94</div>
+              <div class="vu c-spo2">%</div>
+            </div>
+            <div class="vb b-resp">
+              <div class="vl c-resp">Resp</div>
+              <div class="vn c-resp">24</div>
+              <div class="vu c-resp">rpm</div>
+            </div>
+            <div class="vb b-nibp">
+              <div class="vl c-nibp">PA</div>
+              <div class="vn c-nibp" style="font-size:15px;line-height:1.1;">138<span style="font-size:11px;">/88</span></div>
+              <div class="vs c-nibp">(102)</div>
+              <div class="vu c-nibp">PAM mmHg</div>
+            </div>
+            <div class="vb b-temp">
+              <div class="vl c-temp">Temp</div>
+              <div class="vn c-temp" style="font-size:16px;">37.8</div>
+              <div class="vu c-temp">°C</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mon-bot">
+          <div class="mon-alert">
+            <div class="mon-alert-dot"></div>
+            <div class="mon-alert-text">ALTITUDE CABINE REDUZIDA</div>
+          </div>
+          <div class="mon-gcs">GCS 12 · O3 V4 M5</div>
+          <div style="display:flex;align-items:center;gap:5px;">
+            <div class="mon-naca">NACA V</div>
+            <div style="font-size:8px;color:rgba(255,153,68,0.8);font-family:'Courier New',monospace;">VMI FiO2 60%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- O2 -->
+    <div class="sec">
+      <div class="sec-title">O2 e ventilação mecânica</div>
+      <div class="g4" style="margin-bottom:5px;">
+        <div class="f"><div class="fl">Dispositivo</div><div class="fv">VMI · TOT</div></div>
+        <div class="f"><div class="fl">Modo</div><div class="fv">VCV</div></div>
+        <div class="f"><div class="fl">FiO2</div><div class="fv">60%</div></div>
+        <div class="f"><div class="fl">PEEP</div><div class="fv">8 cmH2O</div></div>
+      </div>
+      <div class="o2-bar">O2 necessário: <strong>540 L</strong> · Cilindros: C=3,2 · D=1,3 · E=0,8 · H=0,1</div>
+    </div>
+
+    <!-- DVA -->
+    <div class="sec">
+      <div class="sec-title">Drogas vasoativas em infusão</div>
+      <div class="dva-item"><span class="dva-name">Norepinefrina</span><span class="dva-dose">0,15 mcg/kg/min</span></div>
+      <div class="dva-item"><span class="dva-name">Dobutamina</span><span class="dva-dose">5 mcg/kg/min</span></div>
+    </div>
+
+    <!-- ALTITUDE -->
+    <div class="sec">
+      <div class="sec-title">Recomendações de altitude de cabine</div>
+      <div style="background:#fef2f2;border:0.5px solid #dc2626;border-radius:4px;padding:6px 10px;margin-bottom:5px;">
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:4px;">
+          <span style="font-size:10px;font-weight:600;color:#991b1b;">⚠ ALTITUDE DE CABINE REDUZIDA — &lt;5.000 pés ou a critério médico</span>
+        </div>
+        <div class="toggle-row"><span class="toggle-label">Cirurgia recente &lt; 7 dias</span><span class="toggle-sim">SIM</span></div>
+        <div class="toggle-row"><span class="toggle-label">Pneumotórax / Pneumoencéfalo não drenado</span><span class="toggle-nao">NÃO</span></div>
+        <div class="toggle-row"><span class="toggle-label">Obstrução intestinal</span><span class="toggle-nao">NÃO</span></div>
+      </div>
+    </div>
+
+    <!-- OBSERVAÇÕES -->
+    <div class="sec">
+      <div class="sec-title">Observações e anotações</div>
+      <div class="obs-txt">Paciente em choque cardiogênico refratário. Monitorização contínua de PA invasiva obrigatória durante o voo. Manter VMI com parâmetros atuais. Adrenalina 1mg disponível na mochila de emergência.</div>
+    </div>
+
+    <!-- FLUXO E EQUIPE -->
+    <div class="g2" style="margin-bottom:10px;">
+      <div class="sec">
+        <div class="sec-title">Decisão médica</div>
+        <span class="fluxo-badge">✓ Liberado para voo</span>
+      </div>
+      <div class="sec">
+        <div class="sec-title">Equipe de voo</div>
+        <div class="f" style="margin-bottom:4px;"><div class="fl">Médico</div><div class="fv">Dr. Davi Nunes · CRM/PA 16.615</div></div>
+        <div class="f"><div class="fl">Enfermeiro(a)</div><div class="fv">Enf. Karoline Medeiros · COREN/PA 568.534</div></div>
+      </div>
+    </div>
+
+    <!-- ASSINATURA -->
+    <div class="sig-area">
+      <div>
+        <div class="sig-line"></div>
+        <div class="sig-label">Médico Regulador</div>
+        <div class="sig-crm">Dr. Davi Nunes · CRM/PA 16.615</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:8px;color:#bbb;">Documento gerado eletronicamente</div>
+        <div style="font-size:9px;color:#D4A820;font-weight:600;margin-top:1px;">AM-137131 · AltusMed v0.01b</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="pdf-footer">
+    <span>AltusMed Transporte Aeromédico · CNPJ 58.633.654/0001-32</span>
+    <span>ngmmedicos@gmail.com · (91) 9117-0682 · altusmed.med.br</span>
+  </div>
+
+</div>

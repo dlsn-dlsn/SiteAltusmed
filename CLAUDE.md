@@ -26,6 +26,7 @@ HTML/CSS/JS vanilla | Supabase JS v2 | Vercel | jsPDF 2.5.1 (CDN) | DM Sans (Goo
 
 ### Colunas em `trechos_missao`
 `missao_id` UUID | `regulacao_id` UUID | `origem` TEXT | `destino` TEXT | `km` NUMERIC
+`origem_codigo` TEXT | `destino_codigo` TEXT | `distancia_km` NUMERIC | `ordem` INT
 
 ### Colunas em `config_financeiro`
 Configurações de valor por km/pernoite por cargo; usada em `calcularValores()`.
@@ -69,9 +70,19 @@ Label registro: `CRM` (médico/diretor) | `COREN` (enfermeiro) — dinâmico.
 
 **Financeiro tab** — admin vê todos; médico/enfermeiro vê só as próprias missões via `.or('medico_voo_id.eq.X,enfermeiro_voo_id.eq.X,medico_id.eq.X')`. Sub-tabs: Resumo | Prestadores | Configurações. Widget "Meus Voos" para não-admin.
 
-**exportarFechamentoPDF** — async, busca dados diretamente do Supabase (NÃO lê o DOM). Usa `mesAtual`/`anoAtual` globais. Status exato no filtro: `'Concluída'` (com acento). Agrupa por `medico_voo_id` e `enfermeiro_voo_id` em separado.
+**exportarFechamentoPDF** — async, busca dados diretamente do Supabase (NÃO lê o DOM). Usa `mesAtual`/`anoAtual` globais. Status exato no filtro: `'Concluída'` (com acento). Agrupa por `medico_voo_id` e `enfermeiro_voo_id` em separado. Busca `perfis` pelos IDs para obter `cargo_tipo`, `crm`, `registro_tipo`, `registro_uf`, `registro_numero`. Valores monetários formatados com `toLocaleString('pt-BR', {minimumFractionDigits:2})`. Tabela manual (sem autoTable): header navy, linhas alternadas branco/#f8f9fa, divisores verticais, totais em bloco dourado, pendente vermelho, quitado verde.
+
+**exportarPDFMissao(id)** — em `restrito.html`. Gera PDF de encerramento para missões Concluídas. Busca `missoes` + `trechos_missao` em paralelo, depois `regulacoes` e `perfis` da equipe. Seções: Rota Voada (cards por trecho), Dados do Paciente, Equipe de Voo, Assinaturas 2×2 (equipe preenchida + receptores em branco). Botão "📄 Exportar PDF" aparece no modal de detalhes somente se `status === 'Concluída'`. ID da missão armazenado em `window.modalMissaoId`.
 
 **Modal fechamento** — radio "Gerar e exportar PDF" / "Apenas gerar". `confirmarFechamento()` lê o radio, atualiza `mesAtual`/`anoAtual`, chama `carregarFinanceiro()`, exporta PDF se selecionado.
+
+**renderizarTabela — código clicável por status** — `m.status === 'Concluída'` → `abrirDetalhesMissao(id)`; `'Em andamento'` → `abrirEncerramento(id, codigo)`; outros → sem ação, cursor padrão.
+
+**PDF regulacao.html — seção O2** — fieldRow 2 colunas [Dispositivo | Fluxo]. Parâmetros de VM (Modo, FiO2, PEEP, Vol, Freq, PS) só aparecem se dispositivo for VMI/VNI/CPAP. Sem linha de texto separada; só a barra verde de O2 abaixo dos cards.
+
+**PDF regulacao.html — drogas** — classifica cada item de `duas` e `outras_drogas` contra `DVA_NOMES` (Norepinefrina, Epinefrina, Dopamina, Dobutamina, Vasopressina, Fenilefrina, Milrinona, Levosimendan, Prostaglandina, Terlipressina, Angiotensina). Seção "Drogas Vasoativas em Infusao" só se houver DVAs; "Outras Drogas em Infusao Continua" só se houver outras.
+
+**PDF regulacao.html — monitor vitais** — painel lateral 34mm. Vitais: HR·ECG fs:20, SpO2 fs:20, Resp fs:18, P.Arterial fs:14, Temp fs:16. Vertical centering: `mid = yv + altV/2`; label em `mid-4`, valor em `mid+1`, unidade em `mid+5.5`. PAM exibido como número entre parênteses abaixo do valor de PA (sem texto "PAM mmHg").
 
 ---
 
@@ -97,6 +108,10 @@ Label registro: `CRM` (médico/diretor) | `COREN` (enfermeiro) — dinâmico.
 ✅ Modal fechamento com opção PDF — exportarFechamentoPDF busca do Supabase.
 ✅ Filtro de deletados em todas as queries.
 ✅ km_total correto no dashboard e Meus Voos.
+✅ exportarPDF em regulacao.html — identidade visual completa (monitor, O2, DVAs, GCS, PAM, trechos, assinatura).
+✅ exportarPDFMissao em restrito.html — encerramento com rota, paciente, equipe e assinaturas 2×2.
+✅ exportarFechamentoPDF reformulado — tabela estilizada, COREN correto, cargo por cargo_tipo, valores pt-BR.
+✅ Código da missão clicável por status (Concluída → detalhes, Em andamento → encerramento).
 
 ## Próximos passos
 - [ ] Listagem + edição de regulações anteriores no painel

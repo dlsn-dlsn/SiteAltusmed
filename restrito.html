@@ -2401,7 +2401,7 @@ async function exportarFechamentoPDF() {
     const xV = 134;  // Valor Total
     const xD = 165;  // Pendente
     const xE = 196;  // fim
-    const rowH = 11;
+    const rowH = 12;
     const hdrH = 9;
 
     // Busca missoes do periodo
@@ -2436,17 +2436,18 @@ async function exportarFechamentoPDF() {
     // Busca perfis para cargo_tipo e registro
     const uids = Object.keys(prestMap);
     const { data: perfis } = uids.length
-      ? await db.from('perfis').select('id,cargo_tipo,registro_tipo,registro_uf,registro_numero').in('id', uids)
+      ? await db.from('perfis').select('id,cargo_tipo,crm,registro_tipo,registro_uf,registro_numero').in('id', uids)
       : { data: [] };
     const perfilMap = {};
     (perfis || []).forEach(p => { perfilMap[p.id] = p; });
 
     const cargoLabel = tipo => {
-      if (tipo === 'diretor')    return 'Diretor Aeromedico';
-      if (tipo === 'medico')     return 'Medico';
-      if (tipo === 'enfermeiro') return 'Enfermeiro(a)';
-      if (tipo === 'regulador')  return 'Regulador(a)';
-      return tipo || 'Prestador';
+      if (tipo === 'diretor')        return 'Diretor Aeromedico';
+      if (tipo === 'medico')         return 'Medico';
+      if (tipo === 'enfermeiro')     return 'Enfermeiro(a)';
+      if (tipo === 'regulador')      return 'Regulador(a)';
+      if (tipo === 'administrativo') return 'Administrativo';
+      return tipo || 'Medico';
     };
     const fmtReg = p => (p && p.registro_numero)
       ? (p.registro_tipo || 'CRM') + (p.registro_uf ? '-' + p.registro_uf : '') + ' ' + p.registro_numero
@@ -2479,7 +2480,7 @@ async function exportarFechamentoPDF() {
     sf(Co.navy); doc.rect(0, 0, PW, 28, 'F');
 
     st(Co.green); ff('bold', 16); doc.text('ALTUSMED', ML, 13);
-    st(Co.white); ff('normal', 7); doc.text('Medicina e Resgate Aereo', ML, 19);
+    st(Co.white); ff('normal', 7); doc.text('Transporte Aeromedico', ML, 19);
 
     st(Co.white); ff('bold', 11);
     doc.text('Fechamento Financeiro', PW / 2, 12, { align: 'center' });
@@ -2536,13 +2537,17 @@ async function exportarFechamentoPDF() {
       sd(Co.border); doc.setLineWidth(0.15);
       [xC, xM, xK, xN, xV, xD].forEach(cx => doc.line(cx - 0.5, y, cx - 0.5, y + rowH));
 
-      // Nome
-      st(Co.text); ff('bold', 7.5);
-      doc.text(p.nome.substring(0, 32), xP + 1.5, y + 4.5);
-      // Registro (linha abaixo)
-      if (regStr) {
-        st(Co.gray); ff('normal', 6);
-        doc.text(regStr, xP + 1.5, y + 8.5);
+      // Nome (linha 1) + Registro (linha 2)
+      const linha1 = (p.nome || '').substring(0, 35);
+      const regTipo = perf?.registro_tipo || (perf?.cargo_tipo === 'enfermeiro' ? 'COREN' : 'CRM');
+      const regUF   = perf?.registro_uf ? '/' + perf.registro_uf : '';
+      const regNum  = perf?.crm || perf?.registro_numero || '';
+      const linha2  = regNum ? regTipo + regUF + ' ' + regNum : '';
+      st(Co.text); ff('bold', 8.5);
+      doc.text(linha1, xP + 1.5, y + 4.5);
+      if (linha2) {
+        st(Co.gray); ff('normal', 7);
+        doc.text(linha2, xP + 1.5, y + 9);
       }
 
       // Cargo
@@ -2561,13 +2566,14 @@ async function exportarFechamentoPDF() {
       doc.text(String(p.pernoites), xN + 1.5, y + 4.5);
 
       // Valor Total
+      const fmtBRL = v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
       st(Co.text); ff('bold', 7.5);
-      doc.text('R$ ' + p.valor.toFixed(2), xV + 1.5, y + 4.5);
+      doc.text(fmtBRL(p.valor), xV + 1.5, y + 4.5);
 
       // Pendente
       if (pendente > 0.01) {
         st(Co.red); ff('bold', 7.5);
-        doc.text('R$ ' + pendente.toFixed(2), xD + 1.5, y + 4.5);
+        doc.text(fmtBRL(pendente), xD + 1.5, y + 4.5);
       } else {
         st(Co.greenPd); ff('bold', 7);
         doc.text('Quitado', xD + 1.5, y + 4.5);
@@ -2585,11 +2591,12 @@ async function exportarFechamentoPDF() {
     sf(Co.amberBg); sd(Co.amber); doc.setLineWidth(0.3);
     doc.roundedRect(ML, y, xE - ML, 10, 1.5, 1.5, 'FD');
     st([133, 100, 4]); ff('bold', 8);
+    const fmtBRLT = v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
     doc.text('TOTAL GERAL', xP + 1.5, y + 6.5);
-    doc.text('R$ ' + totalValor.toFixed(2), xV + 1.5, y + 6.5);
+    doc.text(fmtBRLT(totalValor), xV + 1.5, y + 6.5);
     if (totalPendente > 0.01) {
       st(Co.red);
-      doc.text('R$ ' + totalPendente.toFixed(2), xD + 1.5, y + 6.5);
+      doc.text(fmtBRLT(totalPendente), xD + 1.5, y + 6.5);
     } else {
       st(Co.greenPd);
       doc.text('Quitado', xD + 1.5, y + 6.5);

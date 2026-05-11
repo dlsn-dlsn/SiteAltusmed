@@ -1358,9 +1358,12 @@ function renderizarTabela(missoes, tbodyId, completo) {
   tb.innerHTML = missoes.map(m => {
     const badgeCls = m.status === 'Em andamento' ? 'badge-green'
                    : m.status === 'Pendente'      ? 'badge-amber' : 'badge-gray';
-    const codigoEl = m.status === 'Em andamento'
-      ? `<span class="mission-code" style="cursor:pointer;" onclick="abrirEncerramento(${m.id}, '${m.codigo}')">${m.codigo}</span>`
-      : `<span class="mission-code">${m.codigo}</span>`;
+    const clicavel = m.status === 'Concluída'
+      ? `onclick="abrirDetalhesMissao(${m.id})" title="Ver detalhes e exportar PDF"`
+      : m.status === 'Em andamento'
+      ? `onclick="abrirEncerramento(${m.id}, '${m.codigo}')" title="Encerrar missão"`
+      : '';
+    const codigoEl = `<span class="mission-code" style="cursor:${clicavel ? 'pointer' : 'default'};" ${clicavel}>${m.codigo}</span>`;
     const btnDel = completo && isAdmin
       ? `<td><button onclick="abrirModalDeletar('missao',${m.id})"
           style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:.9rem;"

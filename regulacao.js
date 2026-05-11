@@ -905,9 +905,10 @@ function exportarPDF() {
     red:    [220, 38, 38],
     amber:  [212, 168, 32],
     text:   [31, 41, 55],
-    bg:     [248, 249, 250],
-    border: [224, 224, 224],
+    bg:     [255, 255, 255],
+    border: [210, 218, 228],
     secBg:  [240, 247, 232],
+    pageBg: [240, 244, 248],
   };
 
   const sf = (r) => doc.setFillColor(...r);
@@ -920,7 +921,13 @@ function exportarPDF() {
     pts.reduce((p, c) => { if (p) ln(p[0], p[1], c[0], c[1]); return c; });
   }
 
+  function bgPage() {
+    doc.setFillColor(...C.pageBg);
+    doc.rect(0, 0, PW, 297, 'F');
+  }
+
   function miniHeader() {
+    bgPage();
     sf(C.navy); doc.rect(0, 0, PW, 8, 'F');
     st(C.green); ff('bold', 7);
     doc.text('ALTUSMED', ML, 5.5);
@@ -938,6 +945,7 @@ function exportarPDF() {
   }
 
   // ─── CABEÇALHO ────────────────────────────────────────────────────────
+  bgPage();
   const HDR_H = 22;
   sf(C.navy); doc.rect(0, 0, PW, HDR_H, 'F');
 
@@ -1164,8 +1172,8 @@ function exportarPDF() {
   checkPage(85);
 
   (() => {
-    const mX = ML, mW = CW, mH = 80;
-    const xV = mX + mW - 32, wV = 32, wC = mW - wV - 1;
+    const mX = ML, mW = CW, mH = 95;
+    const xV = mX + mW - 34, wV = 34, wC = mW - wV - 1;
     const yM = y;
 
     // Fundo escuro
@@ -1292,12 +1300,11 @@ function exportarPDF() {
 
     // Painel lateral de valores
     const vitais = [
-      { lbl:'HR·ECG', val:d.fc   ? String(d.fc)   : '-', unit:'bpm',  cor:[0,220,100] },
-      { lbl:'SpO2',   val:d.spo2 ? String(d.spo2) : '-', unit:'%',    cor:[0,180,230] },
-      { lbl:'Resp',   val:d.fr   ? String(d.fr)   : '-', unit:'rpm',  cor:[220,180,0] },
-      { lbl:'P.Arterial', val:d.pa ? String(d.pa) : '-',
-        unit:d.pam ? '('+Math.round(d.pam)+')' : 'mmHg', cor:[230,80,80], small:true },
-      { lbl:'Temp',   val:d.temp ? String(d.temp) : '-', unit:'C',    cor:[230,140,50] },
+      { lbl:'HR·ECG',     val:d.fc   ? String(d.fc)   : '-', unit:'bpm', cor:[0,220,100],  fs:28 },
+      { lbl:'SpO2',       val:d.spo2 ? String(d.spo2) : '-', unit:'%',   cor:[0,180,230],  fs:26 },
+      { lbl:'Resp',       val:d.fr   ? String(d.fr)   : '-', unit:'rpm', cor:[220,180,0],  fs:24 },
+      { lbl:'P.Arterial', val:d.pa   ? String(d.pa)   : '-', unit:'mmHg',cor:[230,80,80],  fs:18, pam:true },
+      { lbl:'Temp',       val:d.temp ? String(d.temp) : '-', unit:'C',   cor:[230,140,50], fs:20 },
     ];
     const altV = (mH - 16) / vitais.length;
     let yv = yM + 9;
@@ -1307,13 +1314,29 @@ function exportarPDF() {
       doc.rect(xV, yv, wV, altV - 0.3, 'F');
       sd([Math.floor(r*.15)+10, Math.floor(g*.15)+10, Math.floor(b*.15)+14]);
       doc.setLineWidth(0.15); doc.rect(xV, yv, wV, altV - 0.3, 'S');
-      st([Math.floor(r*.5), Math.floor(g*.5), Math.floor(b*.5)]);
-      ff('normal', 4.5); doc.text(v.lbl, xV + 1.5, yv + 3.5);
-      st(v.cor); ff('bold', v.small ? 6.5 : 9);
-      doc.text(v.val.substring(0, 6), xV + wV/2, yv + altV - 5, { align: 'center' });
-      if (v.unit) {
+
+      // Label (pequeno, topo)
+      st([Math.floor(r*.55), Math.floor(g*.55), Math.floor(b*.55)]);
+      ff('normal', 7); doc.text(v.lbl, xV + wV/2, yv + 4.5, { align: 'center' });
+
+      // Valor (grande, centro)
+      st(v.cor); ff('bold', v.fs);
+      if (v.pam) {
+        // PA: sistólica/diastólica + PAM abaixo
+        doc.text(v.val.substring(0, 7), xV + wV/2, yv + altV - 8, { align: 'center' });
+        if (d.pam) {
+          st([Math.floor(r*.7), Math.floor(g*.7), Math.floor(b*.7)]);
+          ff('bold', 11);
+          doc.text('(' + Math.round(d.pam) + ')', xV + wV/2, yv + altV - 3.5, { align: 'center' });
+        }
         st([Math.floor(r*.45), Math.floor(g*.45), Math.floor(b*.45)]);
-        ff('normal', 4.5);
+        ff('normal', 8);
+        doc.text('PAM mmHg', xV + wV/2, yv + altV - 0.5, { align: 'center' });
+      } else {
+        doc.text(v.val.substring(0, 6), xV + wV/2, yv + altV - 5.5, { align: 'center' });
+        // Unidade (pequena, base)
+        st([Math.floor(r*.45), Math.floor(g*.45), Math.floor(b*.45)]);
+        ff('normal', 8);
         doc.text(v.unit, xV + wV/2, yv + altV - 1.5, { align: 'center' });
       }
       yv += altV;
@@ -1369,6 +1392,18 @@ function exportarPDF() {
         { label: 'Tempo insp.',      value: d.vm_ti     ? d.vm_ti     + ' s'    : null, span: 1 },
       ]);
     }
+    // Linha Dispositivo + Fluxo (antes da barra de O2)
+    if (d.o2_dispositivo || d.o2_flow) {
+      checkPage(8);
+      st([80, 100, 120]); ff('bold', 7.5);
+      doc.text('Dispositivo: ' + (d.o2_dispositivo || '-'), ML + 2, y + 4.5);
+      if (d.o2_flow) {
+        ff('bold', 7.5);
+        doc.text('Fluxo: ' + d.o2_flow + ' L/min', ML + CW, y + 4.5, { align: 'right' });
+      }
+      y += 7;
+    }
+
     if (d.o2_litros_necessarios) {
       checkPage(10);
       sf(C.secBg); sd(C.green); doc.setLineWidth(0.25);
@@ -1380,18 +1415,6 @@ function exportarPDF() {
         ML + 4, y + 5.5
       );
       y += 10;
-    }
-
-    // Fluxo e dispositivo
-    if (d.o2_flow || d.o2_dispositivo) {
-      checkPage(8);
-      const fluxoParts = [
-        d.o2_flow       ? 'Fluxo: ' + d.o2_flow + ' L/min' : null,
-        d.o2_dispositivo ? 'Dispositivo: ' + d.o2_dispositivo : null,
-      ].filter(Boolean);
-      st(C.textM || [100,100,100]); ff('normal', 7.5);
-      doc.text(fluxoParts.join(' · '), ML + 2, y + 4.5);
-      y += 7;
     }
 
     // Parâmetros ventilatórios (VMI / VNI / CPAP)

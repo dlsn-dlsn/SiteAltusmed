@@ -1629,7 +1629,9 @@ async function salvarMissao() {
 // ── Financeiro ────────────────────────────────────────────────────────────
 let mesAtual = null;
 let anoAtual = null;
-let _missoesPeriodo = [];
+let _missoesPeriodo     = [];
+let _regulacoesPeriodo  = [];
+let _valorPorRegulacao  = 0;
 
 function finTab(aba) {
   ['resumo','prestadores','config'].forEach(a => {
@@ -1646,24 +1648,32 @@ async function carregarFinanceiro(mes, ano) {
   const inicio = new Date(ano, mes-1, 1).toISOString();
   const fim    = new Date(ano, mes, 0, 23, 59, 59).toISOString();
 
-  let query = db.from('missoes')
+  let queryMissoes = db.from('missoes')
     .select('*')
     .gte('created_at', inicio)
     .lte('created_at', fim)
     .eq('status', 'Concluída')
     .or('deletado.is.null,deletado.eq.false');
 
+  let queryRegs = db.from('regulacoes')
+    .select('medico_id, created_at, codigo, pago')
+    .gte('created_at', inicio)
+    .lte('created_at', fim);
+
   if (!perfilAtual.is_admin && perfilAtual.cargo_tipo !== 'administrativo') {
-    query = query.or(
+    queryMissoes = queryMissoes.or(
       'medico_voo_id.eq.' + usuarioAtual.id +
       ',enfermeiro_voo_id.eq.' + usuarioAtual.id +
       ',medico_id.eq.' + usuarioAtual.id
     );
+    queryRegs = queryRegs.eq('medico_id', usuarioAtual.id);
   }
 
-  const [{ data: missoes, error }, { data: perfisData }] = await Promise.all([
-    query,
-    db.from('perfis').select('id, registro_tipo, registro_uf, crm'),
+  const [{ data: missoes, error }, { data: perfisData }, { data: regulacoes }, { data: cfgData }] = await Promise.all([
+    queryMissoes,
+    db.from('perfis').select('id, nome, registro_tipo, registro_uf, crm'),
+    queryRegs,
+    db.from('config_financeiro').select('regulador_por_regulacao').eq('id', 1).single(),
   ]);
 
   if (error) { console.error('Erro financeiro:', error); return; }
@@ -1671,23 +1681,35 @@ async function carregarFinanceiro(mes, ano) {
   const perfisMapa = {};
   (perfisData || []).forEach(pf => { perfisMapa[pf.id] = pf; });
 
-  _missoesPeriodo = missoes || [];
-  renderizarResumoFinanceiro(_missoesPeriodo);
-  renderizarPrestadores(_missoesPeriodo, perfisMapa);
+  _valorPorRegulacao  = parseFloat(cfgData?.regulador_por_regulacao) || 0;
+  _missoesPeriodo     = missoes    || [];
+  _regulacoesPeriodo  = regulacoes || [];
+
+  renderizarResumoFinanceiro(_missoesPeriodo, _regulacoesPeriodo, _valorPorRegulacao);
+  renderizarPrestadores(_missoesPeriodo, _regulacoesPeriodo, perfisMapa, _valorPorRegulacao);
 }
 
-function renderizarResumoFinanceiro(missoes) {
-  const totalKm    = missoes.reduce((s, m) => s + (parseFloat(m.km_total) || 0), 0);
-  const totalPagar = missoes.reduce((s, m) =>
+function renderizarResumoFinanceiro(missoes, regulacoes, valorPorRegulacao) {
+  const totalKm     = missoes.reduce((s, m) => s + (parseFloat(m.km_total) || 0), 0);
+
+  const transpPagar = missoes.reduce((s, m) =>
     s + (parseFloat(m.valor_medico)||0) + (parseFloat(m.valor_enfermeiro)||0) + (parseFloat(m.valor_regulador)||0), 0);
-  const totalPago  = missoes.reduce((s, m) => {
+  const transpPago  = missoes.reduce((s, m) => {
     let v = 0;
     if (m.pago_medico)     v += parseFloat(m.valor_medico)     || 0;
     if (m.pago_enfermeiro) v += parseFloat(m.valor_enfermeiro) || 0;
     if (m.pago_regulador)  v += parseFloat(m.valor_regulador)  || 0;
     return s + v;
   }, 0);
-  const pendente = totalPagar - totalPago;
+
+  const vpReg    = valorPorRegulacao || 0;
+  const regList  = regulacoes || [];
+  const regPagar = regList.length * vpReg;
+  const regPago  = regList.filter(r => r.pago).length * vpReg;
+
+  const totalPagar  = transpPagar + regPagar;
+  const totalPago   = transpPago  + regPago;
+  const pendente    = totalPagar  - totalPago;
 
   const fmt = v => 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
 
@@ -1696,10 +1718,11 @@ function renderizarResumoFinanceiro(missoes) {
   document.getElementById('fin-total-pagar').textContent    = fmt(totalPagar);
   document.getElementById('fin-total-pago').textContent     = fmt(totalPago);
   document.getElementById('fin-total-pendente').textContent = fmt(pendente);
-  document.getElementById('fin-resumo-vazio').style.display = missoes.length ? 'none' : 'block';
+  document.getElementById('fin-resumo-vazio').style.display = (missoes.length || regList.length) ? 'none' : 'block';
 }
 
-function renderizarPrestadores(missoes, perfisMapa = {}) {
+function renderizarPrestadores(missoes, regulacoes, perfisMapa = {}, valorPorRegulacao = 0) {
+  // ── Seção A: Transportadores ──────────────────────────────────────────
   const mapa = {};
   missoes.forEach(m => {
     const adicionar = (id, nome, cargo, tipo, valorKey, pagoKey) => {
@@ -1720,80 +1743,178 @@ function renderizarPrestadores(missoes, perfisMapa = {}) {
       p.valorTotal += val;
       if (m[pagoKey]) p.valorPago += val;
     };
-    adicionar(m.medico_voo_id,     m.medico_voo_nome,     'Médico',      'medico',     'valor_medico',     'pago_medico');
-    adicionar(m.enfermeiro_voo_id, m.enfermeiro_voo_nome, 'Enfermeiro',  'enfermeiro', 'valor_enfermeiro', 'pago_enfermeiro');
+    adicionar(m.medico_voo_id,     m.medico_voo_nome,     'Médico',     'medico',     'valor_medico',     'pago_medico');
+    adicionar(m.enfermeiro_voo_id, m.enfermeiro_voo_nome, 'Enfermeiro', 'enfermeiro', 'valor_enfermeiro', 'pago_enfermeiro');
   });
+  const transportadores = Object.values(mapa);
+
+  // ── Seção B: Reguladores ──────────────────────────────────────────────
+  const regMapa = {};
+  (regulacoes || []).forEach(r => {
+    if (!r.medico_id) return;
+    if (!regMapa[r.medico_id]) {
+      const pf = perfisMapa[r.medico_id] || {};
+      regMapa[r.medico_id] = {
+        id: r.medico_id,
+        nome: pf.nome || '—',
+        regulacoes: [],
+        valorTotal: 0,
+        valorPago: 0,
+        registro_tipo: pf.registro_tipo || 'CRM',
+        registro_uf:   pf.registro_uf   || null,
+        crm:           pf.crm           || null,
+      };
+    }
+    const rp = regMapa[r.medico_id];
+    rp.regulacoes.push(r);
+    rp.valorTotal += valorPorRegulacao;
+    if (r.pago) rp.valorPago += valorPorRegulacao;
+  });
+  const reguladores = Object.values(regMapa);
 
   const tb = document.getElementById('fin-tbody-prestadores');
-  const prestadores = Object.values(mapa);
 
-  if (!prestadores.length) {
+  if (!transportadores.length && !reguladores.length) {
     tb.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--text-m);padding:2rem;">
       Nenhum prestador com missões no período.</td></tr>`;
     return;
   }
 
   const fmt = v => 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+  let html = '';
 
-  tb.innerHTML = prestadores.map(p => {
-    const pendente = p.valorTotal - p.valorPago;
-    const missaoRows = p.missoes.map(m => {
-      const val   = parseFloat(m['valor_' + p.tipo]) || 0;
-      const pago  = m['pago_' + p.tipo];
-      const badge = pago
-        ? `<span style="color:var(--green);font-size:.78rem;">✓ Pago</span>`
-        : `<button class="btn-sm" style="font-size:.75rem;padding:.2rem .6rem;"
-            onclick="pagarMissaoIndividual(${m.id},'${p.tipo}')">Pagar</button>`;
-      return `<tr style="background:rgba(255,255,255,.02);">
-        <td style="padding-left:2.5rem;font-size:.82rem;">
-          <span style="color:var(--green);font-weight:700;cursor:pointer;text-decoration:underline;"
-            onclick="abrirDetalhesMissao(${m.id})">${m.codigo}</span>
+  // ── Grupo: Transportadores ────────────────────────────────────────────
+  if (transportadores.length) {
+    html += `<tr><td colspan="9" style="background:rgba(120,190,32,.08);padding:.4rem 1rem;
+      font-size:.75rem;font-weight:700;color:var(--green);text-transform:uppercase;
+      letter-spacing:.06em;border-left:3px solid var(--green);">
+      Médicos e Enfermeiros Transportadores</td></tr>`;
+
+    html += transportadores.map(p => {
+      const pendente = p.valorTotal - p.valorPago;
+      const missaoRows = p.missoes.map(m => {
+        const val   = parseFloat(m['valor_' + p.tipo]) || 0;
+        const pago  = m['pago_' + p.tipo];
+        const badge = pago
+          ? `<span style="color:var(--green);font-size:.78rem;">✓ Pago</span>`
+          : `<button class="btn-sm" style="font-size:.75rem;padding:.2rem .6rem;"
+              onclick="pagarMissaoIndividual(${m.id},'${p.tipo}')">Pagar</button>`;
+        return `<tr style="background:rgba(255,255,255,.02);">
+          <td style="padding-left:2.5rem;font-size:.82rem;">
+            <span style="color:var(--green);font-weight:700;cursor:pointer;text-decoration:underline;"
+              onclick="abrirDetalhesMissao(${m.id})">${m.codigo}</span>
+          </td>
+          <td style="font-size:.82rem;color:var(--text-m);">${(m.km_total||0)} km</td>
+          <td style="font-size:.82rem;color:var(--text-m);">${m.pernoites||0}</td>
+          <td style="font-size:.82rem;">${fmt(val)}</td>
+          <td></td><td></td><td>${badge}</td>
+        </tr>`;
+      }).join('');
+
+      const reg    = p.registro_tipo || 'CRM';
+      const uf     = p.registro_uf   || '';
+      const num    = p.crm           || '';
+      const regStr = num ? ` — ${reg}${uf ? '/'+uf : ''} ${num}` : '';
+
+      return `<tr>
+        <td><strong>${p.nome || '—'}</strong><br>
+          <span style="font-size:.75rem;color:var(--text-m);">${regStr.trim()}</span></td>
+        <td>${p.cargo}</td>
+        <td>${p.missoes.length}</td>
+        <td>${p.kmTotal.toFixed(0)} km</td>
+        <td>${p.pernoites}</td>
+        <td>${fmt(p.valorTotal)}</td>
+        <td style="color:var(--green);">${fmt(p.valorPago)}</td>
+        <td style="color:var(--amber);">${fmt(pendente)}</td>
+        <td style="display:flex;gap:.4rem;flex-wrap:wrap;">
+          ${pendente > 0 ? `<button class="btn-primary btn-sm" style="font-size:.78rem;"
+            onclick="pagarPeriodo('${p.id}','${p.tipo}',${mesAtual},${anoAtual})">Pagar Período</button>` : ''}
+          <button class="btn-sm" style="font-size:.78rem;"
+            onclick="toggleMissoesDetalhes('det-${p.id}-${p.tipo}')">Ver Missões</button>
         </td>
-        <td style="font-size:.82rem;color:var(--text-m);">${(m.km_total||0)} km</td>
-        <td style="font-size:.82rem;color:var(--text-m);">${m.pernoites||0}</td>
-        <td style="font-size:.82rem;">${fmt(val)}</td>
-        <td></td><td></td><td>${badge}</td>
+      </tr>
+      <tr id="det-${p.id}-${p.tipo}" style="display:none;">
+        <td colspan="9" style="padding:0;">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:rgba(255,255,255,.03);">
+                <th style="padding:.4rem 2.5rem;text-align:left;font-size:.78rem;">Missão</th>
+                <th style="text-align:left;font-size:.78rem;">Km</th>
+                <th style="text-align:left;font-size:.78rem;">Pernoites</th>
+                <th style="text-align:left;font-size:.78rem;">Valor</th>
+                <th colspan="3"></th>
+              </tr>
+            </thead>
+            <tbody>${missaoRows}</tbody>
+          </table>
+        </td>
       </tr>`;
     }).join('');
+  }
 
-    const reg    = p.registro_tipo || 'CRM';
-    const uf     = p.registro_uf  || '';
-    const num    = p.crm          || '';
-    const regStr = num ? ` — ${reg}${uf ? '/'+uf : ''} ${num}` : '';
+  // ── Grupo: Reguladores ──────────────��─────────────────────────────────
+  if (reguladores.length) {
+    html += `<tr><td colspan="9" style="background:rgba(212,168,32,.06);padding:.4rem 1rem;
+      font-size:.75rem;font-weight:700;color:var(--amber);text-transform:uppercase;
+      letter-spacing:.06em;border-left:3px solid var(--amber);">
+      Reguladores</td></tr>`;
 
-    return `<tr>
-      <td><strong>${p.nome || '—'}</strong><br><span style="font-size:.75rem;color:var(--text-m);">${regStr.trim()}</span></td>
-      <td>${p.cargo}</td>
-      <td>${p.missoes.length}</td>
-      <td>${p.kmTotal.toFixed(0)} km</td>
-      <td>${p.pernoites}</td>
-      <td>${fmt(p.valorTotal)}</td>
-      <td style="color:var(--green);">${fmt(p.valorPago)}</td>
-      <td style="color:var(--amber);">${fmt(pendente)}</td>
-      <td style="display:flex;gap:.4rem;flex-wrap:wrap;">
-        ${pendente > 0 ? `<button class="btn-primary btn-sm" style="font-size:.78rem;"
-          onclick="pagarPeriodo('${p.id}','${p.tipo}',${mesAtual},${anoAtual})">Pagar Período</button>` : ''}
-        <button class="btn-sm" style="font-size:.78rem;"
-          onclick="toggleMissoesDetalhes('det-${p.id}-${p.tipo}')">Ver Missões</button>
-      </td>
-    </tr>
-    <tr id="det-${p.id}-${p.tipo}" style="display:none;">
-      <td colspan="9" style="padding:0;">
-        <table style="width:100%;border-collapse:collapse;">
-          <thead>
-            <tr style="background:rgba(255,255,255,.03);">
-              <th style="padding:.4rem 2.5rem;text-align:left;font-size:.78rem;">Missão</th>
-              <th style="text-align:left;font-size:.78rem;">Km</th>
-              <th style="text-align:left;font-size:.78rem;">Pernoites</th>
-              <th style="text-align:left;font-size:.78rem;">Valor</th>
-              <th colspan="3"></th>
-            </tr>
-          </thead>
-          <tbody>${missaoRows}</tbody>
-        </table>
-      </td>
-    </tr>`;
-  }).join('');
+    html += reguladores.map(r => {
+      const pendente = r.valorTotal - r.valorPago;
+      const regRows = r.regulacoes.map(reg => `<tr style="background:rgba(255,255,255,.02);">
+        <td style="padding-left:2.5rem;font-size:.82rem;color:var(--text-m);">${reg.codigo || '—'}</td>
+        <td style="font-size:.82rem;color:var(--text-m);">
+          ${new Date(reg.created_at).toLocaleDateString('pt-BR')}</td>
+        <td></td>
+        <td style="font-size:.82rem;">${fmt(valorPorRegulacao)}</td>
+        <td></td><td></td>
+        <td>${reg.pago
+          ? `<span style="color:var(--green);font-size:.78rem;">✓ Pago</span>`
+          : `<span style="color:var(--text-m);font-size:.78rem;">Pendente</span>`}</td>
+      </tr>`).join('');
+
+      const reg    = r.registro_tipo || 'CRM';
+      const uf     = r.registro_uf   || '';
+      const num    = r.crm           || '';
+      const regStr = num ? ` — ${reg}${uf ? '/'+uf : ''} ${num}` : '';
+
+      return `<tr>
+        <td><strong>${r.nome || '—'}</strong><br>
+          <span style="font-size:.75rem;color:var(--text-m);">${regStr.trim()}</span></td>
+        <td>Regulador</td>
+        <td>${r.regulacoes.length} reg.</td>
+        <td>—</td>
+        <td>—</td>
+        <td>${fmt(r.valorTotal)}</td>
+        <td style="color:var(--green);">${fmt(r.valorPago)}</td>
+        <td style="color:var(--amber);">${fmt(pendente)}</td>
+        <td style="display:flex;gap:.4rem;flex-wrap:wrap;">
+          ${pendente > 0 ? `<button class="btn-primary btn-sm" style="font-size:.78rem;"
+            onclick="pagarPeriodo('${r.id}','regulador',${mesAtual},${anoAtual})">Pagar Período</button>` : ''}
+          <button class="btn-sm" style="font-size:.78rem;"
+            onclick="toggleMissoesDetalhes('det-reg-${r.id}')">Ver Regulações</button>
+        </td>
+      </tr>
+      <tr id="det-reg-${r.id}" style="display:none;">
+        <td colspan="9" style="padding:0;">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:rgba(255,255,255,.03);">
+                <th style="padding:.4rem 2.5rem;text-align:left;font-size:.78rem;">Código</th>
+                <th style="text-align:left;font-size:.78rem;">Data</th>
+                <th></th>
+                <th style="text-align:left;font-size:.78rem;">Valor</th>
+                <th colspan="3"></th>
+              </tr>
+            </thead>
+            <tbody>${regRows}</tbody>
+          </table>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  tb.innerHTML = html;
 }
 
 function toggleMissoesDetalhes(rowId) {
@@ -1804,15 +1925,24 @@ function toggleMissoesDetalhes(rowId) {
 async function pagarPeriodo(prestadorId, tipo, mes, ano) {
   const inicio = new Date(ano, mes-1, 1).toISOString();
   const fim    = new Date(ano, mes, 0, 23, 59, 59).toISOString();
-  const agora  = new Date().toISOString();
-  const campo  = 'pago_' + tipo;
-  const dataC  = 'data_pagamento_' + tipo;
-  const idC    = tipo === 'medico' ? 'medico_voo_id' : 'enfermeiro_voo_id';
 
-  await db.from('missoes').update({ [campo]: true, [dataC]: agora })
-    .eq(idC, prestadorId)
-    .gte('created_at', inicio).lte('created_at', fim)
-    .eq('status', 'Concluída').eq(campo, false);
+  if (tipo === 'regulador') {
+    await db.from('regulacoes')
+      .update({ pago: true })
+      .eq('medico_id', prestadorId)
+      .gte('created_at', inicio)
+      .lte('created_at', fim)
+      .eq('pago', false);
+  } else {
+    const agora = new Date().toISOString();
+    const campo = 'pago_' + tipo;
+    const dataC = 'data_pagamento_' + tipo;
+    const idC   = tipo === 'medico' ? 'medico_voo_id' : 'enfermeiro_voo_id';
+    await db.from('missoes').update({ [campo]: true, [dataC]: agora })
+      .eq(idC, prestadorId)
+      .gte('created_at', inicio).lte('created_at', fim)
+      .eq('status', 'Concluída').eq(campo, false);
+  }
 
   toast('✓ Pagamento registrado!');
   carregarFinanceiro(mesAtual, anoAtual);
@@ -2391,8 +2521,9 @@ async function exportarFechamentoPDF() {
     const sd = rgb => doc.setDrawColor(...rgb);
     const st = rgb => doc.setTextColor(...rgb);
     const ff = (s, sz) => { doc.setFont('helvetica', s); doc.setFontSize(sz); };
+    const fmtBRL = v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 
-    // Colunas — somam 182mm (14→196)
+    // Colunas Tabela 1 — Transportadores (14->196)
     const xP = ML;   // Prestador
     const xC = 69;   // Cargo
     const xM = 94;   // Miss.
@@ -2404,39 +2535,59 @@ async function exportarFechamentoPDF() {
     const rowH = 12;
     const hdrH = 9;
 
-    // Busca missoes do periodo
+    // Colunas Tabela 2 — Reguladores (14->196)
+    const xRP = ML;   // Regulador
+    const xRQ = 75;   // Qtd regulacoes
+    const xRU = 100;  // Valor unit.
+    const xRT = 138;  // Total
+    const xRD = 168;  // Pendente
+    const xRE = 196;  // fim
+
+    // Busca dados do periodo
     const inicio = new Date(ano, mes - 1, 1).toISOString();
     const fim    = new Date(ano, mes, 0, 23, 59, 59).toISOString();
 
-    const { data: missoes } = await db.from('missoes')
-      .select('*')
-      .eq('status', 'Concluída')
-      .or('deletado.is.null,deletado.eq.false')
-      .gte('created_at', inicio)
-      .lte('created_at', fim);
+    const [{ data: missoes }, { data: regulacoes }, { data: cfgData }] = await Promise.all([
+      db.from('missoes').select('*').eq('status', 'Concluída')
+        .or('deletado.is.null,deletado.eq.false').gte('created_at', inicio).lte('created_at', fim),
+      db.from('regulacoes').select('medico_id, created_at, codigo, pago')
+        .gte('created_at', inicio).lte('created_at', fim),
+      db.from('config_financeiro').select('regulador_por_regulacao').eq('id', 1).single(),
+    ]);
 
     const lista = missoes || [];
+    const regs  = regulacoes || [];
+    const vpReg = parseFloat(cfgData?.regulador_por_regulacao) || 0;
 
-    // Agrupa por prestador
+    // Agrupa transportadores
     const prestMap = {};
     lista.forEach(m => {
       const add = (uid, nome, tipo, val, pago) => {
         if (!uid) return;
         if (!prestMap[uid]) prestMap[uid] = { id: uid, nome: nome || uid, tipo, missoes: 0, km: 0, pernoites: 0, valor: 0, pago: 0 };
         prestMap[uid].missoes++;
-        prestMap[uid].km       += parseFloat(m.km_total) || 0;
-        prestMap[uid].pernoites += parseInt(m.pernoites) || 0;
-        prestMap[uid].valor    += parseFloat(val) || 0;
-        prestMap[uid].pago     += pago ? parseFloat(val) || 0 : 0;
+        prestMap[uid].km        += parseFloat(m.km_total) || 0;
+        prestMap[uid].pernoites += parseInt(m.pernoites)  || 0;
+        prestMap[uid].valor     += parseFloat(val)        || 0;
+        prestMap[uid].pago      += pago ? (parseFloat(val) || 0) : 0;
       };
-      add(m.medico_voo_id,     m.medico_voo_nome,     'medico',     m.valor_medico,    m.pago_medico);
+      add(m.medico_voo_id,     m.medico_voo_nome,     'medico',     m.valor_medico,     m.pago_medico);
       add(m.enfermeiro_voo_id, m.enfermeiro_voo_nome, 'enfermeiro', m.valor_enfermeiro, m.pago_enfermeiro);
     });
 
-    // Busca perfis para cargo_tipo e registro
-    const uids = Object.keys(prestMap);
-    const { data: perfis } = uids.length
-      ? await db.from('perfis').select('id,cargo_tipo,crm,registro_tipo,registro_uf,registro_numero').in('id', uids)
+    // Agrupa reguladores
+    const regMap = {};
+    regs.forEach(r => {
+      if (!r.medico_id) return;
+      if (!regMap[r.medico_id]) regMap[r.medico_id] = { id: r.medico_id, qtd: 0, pago: 0 };
+      regMap[r.medico_id].qtd++;
+      if (r.pago) regMap[r.medico_id].pago++;
+    });
+
+    // Busca perfis para ambos os grupos
+    const allUids = [...new Set([...Object.keys(prestMap), ...Object.keys(regMap)])];
+    const { data: perfis } = allUids.length
+      ? await db.from('perfis').select('id,nome,cargo_tipo,crm,registro_tipo,registro_uf,registro_numero').in('id', allUids)
       : { data: [] };
     const perfilMap = {};
     (perfis || []).forEach(p => { perfilMap[p.id] = p; });
@@ -2449,17 +2600,32 @@ async function exportarFechamentoPDF() {
       if (tipo === 'administrativo') return 'Administrativo';
       return tipo || 'Medico';
     };
-    const fmtReg = p => (p && p.registro_numero)
-      ? (p.registro_tipo || 'CRM') + (p.registro_uf ? '-' + p.registro_uf : '') + ' ' + p.registro_numero
-      : '';
 
-    const prestadores = Object.values(prestMap);
+    const transportadores = Object.values(prestMap);
+    const reguladores     = Object.values(regMap).map(r => ({
+      ...r,
+      perf:       perfilMap[r.id] || null,
+      valorTotal: r.qtd  * vpReg,
+      valorPago:  r.pago * vpReg,
+    }));
 
-    // Helpers de página
+    // Helpers de pagina
     function bgPage() {
       sf(Co.pageBg); doc.rect(0, 0, PW, 297, 'F');
     }
-    function drawTableHeader() {
+    function miniHeader() {
+      bgPage();
+      sf(Co.navy); doc.rect(0, 0, PW, 8, 'F');
+      st(Co.green); ff('bold', 7); doc.text('ALTUSMED', ML, 5.5);
+      st(Co.white); ff('normal', 6);
+      doc.text('Fechamento ' + nomesMes[mes] + '/' + ano + ' — continuacao', PW / 2, 5.5, { align: 'center' });
+      sf(Co.green); doc.rect(0, 8, PW, 0.8, 'F');
+      y = 14;
+    }
+    function checkPage(need) {
+      if (y > 279 - need) { doc.addPage(); miniHeader(); }
+    }
+    function drawTableHeader1() {
       sf(Co.navy); doc.rect(ML, y, xE - ML, hdrH, 'F');
       sd(Co.hdrDiv); doc.setLineWidth(0.2);
       [xC, xM, xK, xN, xV, xD].forEach(cx => doc.line(cx - 0.5, y, cx - 0.5, y + hdrH));
@@ -2473,6 +2639,41 @@ async function exportarFechamentoPDF() {
       doc.text('Valor Total',          xV + 1.5, ty);
       doc.text('Pendente',             xD + 1.5, ty);
       y += hdrH;
+    }
+    function drawTableHeader2() {
+      sf(Co.navy); doc.rect(ML, y, xRE - ML, hdrH, 'F');
+      sd(Co.hdrDiv); doc.setLineWidth(0.2);
+      [xRQ, xRU, xRT, xRD].forEach(cx => doc.line(cx - 0.5, y, cx - 0.5, y + hdrH));
+      st(Co.white); ff('bold', 7);
+      const ty = y + 6;
+      doc.text('Regulador / Registro', xRP + 1.5, ty);
+      doc.text('Regulacoes',           xRQ + 1.5, ty);
+      doc.text('Valor Unit.',          xRU + 1.5, ty);
+      doc.text('Total',                xRT + 1.5, ty);
+      doc.text('Pendente',             xRD + 1.5, ty);
+      y += hdrH;
+    }
+    function sectionLabel(label) {
+      checkPage(14);
+      sf(Co.navy); doc.rect(ML, y, xE - ML, 7, 'F');
+      sf(Co.green); doc.rect(ML, y, 3, 7, 'F');
+      st(Co.white); ff('bold', 8);
+      doc.text(label, ML + 5, y + 5);
+      y += 10;
+    }
+    function subtotalRow(label, valor, pago, useRegCols) {
+      checkPage(12);
+      y += 2;
+      sf(Co.amberBg); sd(Co.amber); doc.setLineWidth(0.25);
+      const w = useRegCols ? xRE : xE;
+      doc.roundedRect(ML, y, w - ML, 8, 1, 1, 'FD');
+      st([133, 100, 4]); ff('bold', 7.5);
+      doc.text(label, xP + 1.5, y + 5.5);
+      doc.text(fmtBRL(valor), (useRegCols ? xRT : xV) + 1.5, y + 5.5);
+      const pend = valor - pago;
+      if (pend > 0.01) { st(Co.red);     doc.text(fmtBRL(pend), (useRegCols ? xRD : xD) + 1.5, y + 5.5); }
+      else             { st(Co.greenPd); doc.text('Quitado',     (useRegCols ? xRD : xD) + 1.5, y + 5.5); }
+      y += 11;
     }
 
     // ── CABEÇALHO ────────────────────────────────────────────────────────
@@ -2495,7 +2696,7 @@ async function exportarFechamentoPDF() {
     sf(Co.green); doc.rect(0, 28, PW, 2.5, 'F');
     y = 38;
 
-    if (prestadores.length === 0) {
+    if (!transportadores.length && !reguladores.length) {
       st(Co.gray); ff('normal', 9);
       doc.text('Nenhuma missao concluida no periodo.', ML, y + 10);
       doc.save('fechamento-' + nomesMes[mes].toLowerCase() + '-' + ano + '.pdf');
@@ -2503,104 +2704,110 @@ async function exportarFechamentoPDF() {
       return;
     }
 
-    // ── TABELA ────────────────────────────────────────────────────────────
-    drawTableHeader();
+    // ── TABELA 1: Transportadores ─────────────────────────────────────────
+    let totalTranspValor = 0, totalTranspPago = 0;
 
-    let totalValor = 0, totalPago = 0, rowIdx = 0;
+    if (transportadores.length) {
+      sectionLabel('Transportadores');
+      drawTableHeader1();
+      let rowIdx = 0;
 
-    prestadores.forEach(p => {
-      if (y > 268) {
-        doc.addPage();
-        bgPage();
-        sf(Co.navy); doc.rect(0, 0, PW, 8, 'F');
-        st(Co.green); ff('bold', 7); doc.text('ALTUSMED', ML, 5.5);
-        st(Co.white); ff('normal', 6);
-        doc.text('Fechamento ' + nomesMes[mes] + '/' + ano + ' — continuacao', PW / 2, 5.5, { align: 'center' });
-        sf(Co.green); doc.rect(0, 8, PW, 0.8, 'F');
-        y = 14;
-        drawTableHeader();
-        rowIdx = 0;
-      }
+      transportadores.forEach(p => {
+        checkPage(rowH + 2);
+        const perf     = perfilMap[p.id] || null;
+        const cargo    = cargoLabel(perf?.cargo_tipo || p.tipo);
+        const pendente = p.valor - p.pago;
+        totalTranspValor += p.valor;
+        totalTranspPago  += p.pago;
 
-      const perf    = perfilMap[p.id] || null;
-      const cargo   = cargoLabel(perf?.cargo_tipo || p.tipo);
-      const regStr  = fmtReg(perf);
-      const pendente = p.valor - p.pago;
-      totalValor += p.valor;
-      totalPago  += p.pago;
+        sf(rowIdx % 2 === 0 ? Co.white : Co.rowAlt);
+        doc.rect(ML, y, xE - ML, rowH, 'F');
+        sd(Co.border); doc.setLineWidth(0.15);
+        [xC, xM, xK, xN, xV, xD].forEach(cx => doc.line(cx - 0.5, y, cx - 0.5, y + rowH));
 
-      // Fundo alternado
-      sf(rowIdx % 2 === 0 ? Co.white : Co.rowAlt);
-      doc.rect(ML, y, xE - ML, rowH, 'F');
+        const linha1  = (p.nome || '').substring(0, 35);
+        const regTipo = perf?.registro_tipo || (perf?.cargo_tipo === 'enfermeiro' ? 'COREN' : 'CRM');
+        const regUF   = perf?.registro_uf ? '/' + perf.registro_uf : '';
+        const regNum  = perf?.crm || perf?.registro_numero || '';
+        const linha2  = regNum ? regTipo + regUF + ' ' + regNum : '';
+        st(Co.text); ff('bold', 8.5);
+        doc.text(linha1, xP + 1.5, y + 4.5);
+        if (linha2) { st(Co.gray); ff('normal', 7); doc.text(linha2, xP + 1.5, y + 9); }
 
-      // Divisores verticais entre colunas
-      sd(Co.border); doc.setLineWidth(0.15);
-      [xC, xM, xK, xN, xV, xD].forEach(cx => doc.line(cx - 0.5, y, cx - 0.5, y + rowH));
+        st(Co.text); ff('normal', 7);
+        doc.text(cargo.substring(0, 18), xC + 1.5, y + 4.5);
+        ff('bold', 7.5); doc.text(String(p.missoes), xM + 1.5, y + 4.5);
+        st(Co.text); ff('normal', 7);
+        doc.text(p.km.toFixed(0) + ' km', xK + 1.5, y + 4.5);
+        doc.text(String(p.pernoites), xN + 1.5, y + 4.5);
+        st(Co.text); ff('bold', 7.5);
+        doc.text(fmtBRL(p.valor), xV + 1.5, y + 4.5);
+        if (pendente > 0.01) { st(Co.red);     ff('bold', 7.5); doc.text(fmtBRL(pendente), xD + 1.5, y + 4.5); }
+        else                 { st(Co.greenPd); ff('bold', 7);   doc.text('Quitado',         xD + 1.5, y + 4.5); }
 
-      // Nome (linha 1) + Registro (linha 2)
-      const linha1 = (p.nome || '').substring(0, 35);
-      const regTipo = perf?.registro_tipo || (perf?.cargo_tipo === 'enfermeiro' ? 'COREN' : 'CRM');
-      const regUF   = perf?.registro_uf ? '/' + perf.registro_uf : '';
-      const regNum  = perf?.crm || perf?.registro_numero || '';
-      const linha2  = regNum ? regTipo + regUF + ' ' + regNum : '';
-      st(Co.text); ff('bold', 8.5);
-      doc.text(linha1, xP + 1.5, y + 4.5);
-      if (linha2) {
-        st(Co.gray); ff('normal', 7);
-        doc.text(linha2, xP + 1.5, y + 9);
-      }
+        y += rowH;
+        rowIdx++;
+      });
 
-      // Cargo
-      st(Co.text); ff('normal', 7);
-      doc.text(cargo.substring(0, 18), xC + 1.5, y + 4.5);
-
-      // Missoes
-      ff('bold', 7.5);
-      doc.text(String(p.missoes), xM + 1.5, y + 4.5);
-
-      // Km
-      st(Co.text); ff('normal', 7);
-      doc.text(p.km.toFixed(0) + ' km', xK + 1.5, y + 4.5);
-
-      // Pernoites
-      doc.text(String(p.pernoites), xN + 1.5, y + 4.5);
-
-      // Valor Total
-      const fmtBRL = v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-      st(Co.text); ff('bold', 7.5);
-      doc.text(fmtBRL(p.valor), xV + 1.5, y + 4.5);
-
-      // Pendente
-      if (pendente > 0.01) {
-        st(Co.red); ff('bold', 7.5);
-        doc.text(fmtBRL(pendente), xD + 1.5, y + 4.5);
-      } else {
-        st(Co.greenPd); ff('bold', 7);
-        doc.text('Quitado', xD + 1.5, y + 4.5);
-      }
-
-      y += rowH;
-      rowIdx++;
-    });
-
-    // ── TOTAIS ─────────────────────────────────────────────────────────────
-    y += 3;
-    if (y > 270) { doc.addPage(); bgPage(); y = 20; }
-
-    const totalPendente = totalValor - totalPago;
-    sf(Co.amberBg); sd(Co.amber); doc.setLineWidth(0.3);
-    doc.roundedRect(ML, y, xE - ML, 10, 1.5, 1.5, 'FD');
-    st([133, 100, 4]); ff('bold', 8);
-    const fmtBRLT = v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-    doc.text('TOTAL GERAL', xP + 1.5, y + 6.5);
-    doc.text(fmtBRLT(totalValor), xV + 1.5, y + 6.5);
-    if (totalPendente > 0.01) {
-      st(Co.red);
-      doc.text(fmtBRLT(totalPendente), xD + 1.5, y + 6.5);
-    } else {
-      st(Co.greenPd);
-      doc.text('Quitado', xD + 1.5, y + 6.5);
+      subtotalRow('SUBTOTAL TRANSPORTADORES', totalTranspValor, totalTranspPago, false);
     }
+
+    // ── TABELA 2: Reguladores ─────────────────────────────────────────────
+    let totalRegValor = 0, totalRegPago = 0;
+
+    if (reguladores.length) {
+      checkPage(20);
+      sectionLabel('Reguladores');
+      drawTableHeader2();
+      let rowIdx = 0;
+
+      reguladores.forEach(r => {
+        checkPage(rowH + 2);
+        const perf     = r.perf;
+        const pendente = r.valorTotal - r.valorPago;
+        totalRegValor += r.valorTotal;
+        totalRegPago  += r.valorPago;
+
+        sf(rowIdx % 2 === 0 ? Co.white : Co.rowAlt);
+        doc.rect(ML, y, xRE - ML, rowH, 'F');
+        sd(Co.border); doc.setLineWidth(0.15);
+        [xRQ, xRU, xRT, xRD].forEach(cx => doc.line(cx - 0.5, y, cx - 0.5, y + rowH));
+
+        const nome    = (perf?.nome || r.id || '').substring(0, 35);
+        const regTipo = perf?.registro_tipo || 'CRM';
+        const regUF   = perf?.registro_uf ? '/' + perf.registro_uf : '';
+        const regNum  = perf?.crm || perf?.registro_numero || '';
+        const linha2  = regNum ? regTipo + regUF + ' ' + regNum : '';
+        st(Co.text); ff('bold', 8.5);
+        doc.text(nome, xRP + 1.5, y + 4.5);
+        if (linha2) { st(Co.gray); ff('normal', 7); doc.text(linha2, xRP + 1.5, y + 9); }
+
+        st(Co.text); ff('bold', 7.5); doc.text(String(r.qtd), xRQ + 1.5, y + 4.5);
+        ff('normal', 7); doc.text(fmtBRL(vpReg), xRU + 1.5, y + 4.5);
+        ff('bold', 7.5); doc.text(fmtBRL(r.valorTotal), xRT + 1.5, y + 4.5);
+        if (pendente > 0.01) { st(Co.red);     ff('bold', 7.5); doc.text(fmtBRL(pendente), xRD + 1.5, y + 4.5); }
+        else                 { st(Co.greenPd); ff('bold', 7);   doc.text('Quitado',         xRD + 1.5, y + 4.5); }
+
+        y += rowH;
+        rowIdx++;
+      });
+
+      subtotalRow('SUBTOTAL REGULADORES', totalRegValor, totalRegPago, true);
+    }
+
+    // ── TOTAL GERAL ───────────────────────────────────────────────────────
+    checkPage(14);
+    y += 2;
+    const totalGeral   = totalTranspValor + totalRegValor;
+    const totalGeralPg = totalTranspPago  + totalRegPago;
+    const totalPend    = totalGeral - totalGeralPg;
+    sf(Co.navy); sd(Co.navy); doc.setLineWidth(0.3);
+    doc.roundedRect(ML, y, xE - ML, 11, 1.5, 1.5, 'FD');
+    st(Co.green); ff('bold', 9); doc.text('TOTAL GERAL', xP + 1.5, y + 7.5);
+    st(Co.white); ff('bold', 8.5); doc.text(fmtBRL(totalGeral), xV + 1.5, y + 7.5);
+    if (totalPend > 0.01) { st([255, 100, 100]); doc.text(fmtBRL(totalPend), xD + 1.5, y + 7.5); }
+    else                  { st(Co.green);         doc.text('Quitado',         xD + 1.5, y + 7.5); }
+    y += 14;
 
     // ── RODAPÉ ─────────────────────────────────────────────────────────────
     const rodapeY = 285;

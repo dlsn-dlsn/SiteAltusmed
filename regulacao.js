@@ -1065,6 +1065,19 @@ function exportarPDF() {
   checkPage(25);
   secTitle('Logística');
 
+  const origemText  = document.getElementById('origem-input')?.value
+                    || document.getElementById('log-origem')?.value
+                    || d.origem || '';
+  const destinoText = document.getElementById('destino-input')?.value
+                    || document.getElementById('log-destino')?.value
+                    || d.destino || '';
+  if (origemText || destinoText) {
+    fieldRow([
+      { label: 'Origem',  value: origemText  || null, span: 2 },
+      { label: 'Destino', value: destinoText || null, span: 2 },
+    ]);
+  }
+
   // Trechos visuais com setas
   (() => {
     const trechos = [];

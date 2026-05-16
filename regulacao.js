@@ -1065,17 +1065,25 @@ function exportarPDF() {
   checkPage(25);
   secTitle('Logística');
 
-  const origemText  = document.getElementById('origem-input')?.value
-                    || document.getElementById('log-origem')?.value
-                    || d.origem || '';
-  const destinoText = document.getElementById('destino-input')?.value
-                    || document.getElementById('log-destino')?.value
-                    || d.destino || '';
+  const origemText  = d.origem  || '';
+  const destinoText = d.destino || '';
   if (origemText || destinoText) {
-    fieldRow([
-      { label: 'Origem',  value: origemText  || null, span: 2 },
-      { label: 'Destino', value: destinoText || null, span: 2 },
-    ]);
+    checkPage(17);
+    const cardH = 14, gap = 3, hw = (CW - gap) / 2;
+
+    const drawBigCard = (label, value, fx) => {
+      sf(C.bg); sd(C.border); doc.setLineWidth(0.2);
+      doc.roundedRect(fx, y, hw, cardH, 1.5, 1.5, 'FD');
+      doc.setTextColor(150, 150, 150); ff('normal', 6.5);
+      doc.text(label, fx + 2.5, y + 4.5);
+      st(C.navy); ff('bold', 10);
+      const fit = doc.splitTextToSize(value || '—', hw - 5);
+      doc.text(fit[0], fx + 2.5, y + 11);
+    };
+
+    drawBigCard('ORIGEM',  origemText,  ML);
+    drawBigCard('DESTINO', destinoText, ML + hw + gap);
+    y += cardH + 3;
   }
 
   // Trechos visuais com setas

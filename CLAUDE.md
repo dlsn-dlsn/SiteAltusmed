@@ -30,6 +30,14 @@ HTML/CSS/JS vanilla | Supabase JS v2 | Vercel | jsPDF 2.5.1 (CDN) | DM Sans (Goo
 
 ### Colunas em `config_financeiro`
 Configurações de valor por km/pernoite por cargo; usada em `calcularValores()`.
+Inclui `regulador_por_regulacao NUMERIC` — valor fixo por regulação realizada.
+
+### Coluna adicionada em `regulacoes`
+`pago BOOLEAN DEFAULT FALSE` — indica se o regulador foi pago pelo período.
+⚠️ Rodar no Supabase antes de usar fechamento com reguladores:
+```sql
+ALTER TABLE regulacoes ADD COLUMN IF NOT EXISTS pago BOOLEAN DEFAULT FALSE;
+```
 
 ---
 
@@ -70,7 +78,11 @@ Label registro: `CRM` (médico/diretor) | `COREN` (enfermeiro) — dinâmico.
 
 **Financeiro tab** — admin vê todos; médico/enfermeiro vê só as próprias missões via `.or('medico_voo_id.eq.X,enfermeiro_voo_id.eq.X,medico_id.eq.X')`. Sub-tabs: Resumo | Prestadores | Configurações. Widget "Meus Voos" para não-admin.
 
-**exportarFechamentoPDF** — async, busca dados diretamente do Supabase (NÃO lê o DOM). Usa `mesAtual`/`anoAtual` globais. Status exato no filtro: `'Concluída'` (com acento). Agrupa por `medico_voo_id` e `enfermeiro_voo_id` em separado. Busca `perfis` pelos IDs para obter `cargo_tipo`, `crm`, `registro_tipo`, `registro_uf`, `registro_numero`. Valores monetários formatados com `toLocaleString('pt-BR', {minimumFractionDigits:2})`. Tabela manual (sem autoTable): header navy, linhas alternadas branco/#f8f9fa, divisores verticais, totais em bloco dourado, pendente vermelho, quitado verde.
+**Prestadores — duas seções visuais** — tabela `#fin-tbody-prestadores` renderiza dois grupos com header colorido: (A) "Médicos e Enfermeiros Transportadores" (borda verde, fonte de missões); (B) "Reguladores" (borda âmbar, fonte de `regulacoes.medico_id`). Valor de regulador = count × `config_financeiro.regulador_por_regulacao`. Sub-tabela "Ver Regulações" mostra código + data de cada regulação. `pagarPeriodo('id','regulador',mes,ano)` marca `pago=true` em `regulacoes`; tipos `medico`/`enfermeiro` continuam marcando `missoes`.
+
+**PDF regulacao.html — seção Logística** — primeiros elementos são dois cards lado a lado [ORIGEM][DESTINO]: fundo branco, label cinza 6.5px uppercase, valor navy 10px bold, altura 14mm. Fonte: `d.origem` / `d.destino` (lidos de `#origem`/`#destino` em `finalizarRegulacao()` e armazenados em `regulacaoSalva`). Se existirem trechos (`tr-orig-*`), exibe rota visual BEL→FOR→BSB abaixo dos cards. NÃO existe campo `log-origem` / `origem-input` — o input visível é `#origem`.
+
+**exportarFechamentoPDF** — async, busca dados diretamente do Supabase (NÃO lê o DOM). Usa `mesAtual`/`anoAtual` globais. Status exato no filtro: `'Concluída'` (com acento). **Duas tabelas separadas no PDF**: (1) Transportadores — agrupa por `medico_voo_id`/`enfermeiro_voo_id`, colunas Prestador/Cargo/Miss./Km/Pern./Valor/Pendente; (2) Reguladores — agrupa por `medico_id` em `regulacoes`, colunas Regulador/Regulações/Valor Unit./Total/Pendente. Cada tabela tem subtotal próprio; Total Geral em bloco navy unificado. Busca `perfis` + `config_financeiro` + `regulacoes` em paralelo via `Promise.all`. `checkPage()` + `miniHeader()` para paginação automática.
 
 **exportarPDFMissao(id)** — em `restrito.html`. Gera PDF de encerramento para missões Concluídas. Busca `missoes` + `trechos_missao` em paralelo, depois `regulacoes` e `perfis` da equipe. Seções: Rota Voada (cards por trecho), Dados do Paciente, Equipe de Voo, Assinaturas 2×2 (equipe preenchida + receptores em branco). Botão "📄 Exportar PDF" aparece no modal de detalhes somente se `status === 'Concluída'`. ID da missão armazenado em `window.modalMissaoId`.
 
@@ -112,8 +124,13 @@ Label registro: `CRM` (médico/diretor) | `COREN` (enfermeiro) — dinâmico.
 ✅ exportarPDFMissao em restrito.html — encerramento com rota, paciente, equipe e assinaturas 2×2.
 ✅ exportarFechamentoPDF reformulado — tabela estilizada, COREN correto, cargo por cargo_tipo, valores pt-BR.
 ✅ Código da missão clicável por status (Concluída → detalhes, Em andamento → encerramento).
+✅ Fechamento financeiro com reguladores separados de transportadores (2025-05-16).
+✅ PDF de fechamento com duas tabelas (Transportadores + Reguladores) e Total Geral unificado (2025-05-16).
+✅ Pagamento de reguladores via `pagarPeriodo(...,'regulador',...)` → atualiza `regulacoes.pago` (2025-05-16).
+✅ PDF regulacao.html — origem e destino como cards destacados no início da seção Logística (2025-05-16).
 
 ## Próximos passos
+- [ ] Rodar SQL no Supabase: `ALTER TABLE regulacoes ADD COLUMN IF NOT EXISTS pago BOOLEAN DEFAULT FALSE`
 - [ ] Listagem + edição de regulações anteriores no painel
 - [ ] Assinatura digital no PDF
 - [ ] Notificações push/e-mail ao criar missão
